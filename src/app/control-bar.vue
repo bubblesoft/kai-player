@@ -1,6 +1,6 @@
 <template lang="pug">
     div.wrap
-        div.play-button
+        div.play-button(@click="play()")
             svg(
                 width="24"
                 height="24"
@@ -10,6 +10,14 @@
 </template>
 
 <script>
+    export default {
+        methods: {
+            play() {
+                this.$store.state.playerModule.player.load([ require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3') ]);
+                this.$store.state.playerModule.player.play();
+            }
+        }
+    }
 </script>
 
 <style lang="scss" scoped>

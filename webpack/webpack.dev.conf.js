@@ -43,8 +43,8 @@ module.exports = {
                 loader: "pug-loader"
             },
             {
-                test: /\.(?:png|jpe?g|gif|svg|woff2?|eot|ttf)$/,
-                loader: "url-loader"
+                test: /\.(?:mp3)$/,
+                loader: "url-loader?limit=8192"
             },
             {
                 test: /\.json$/,
