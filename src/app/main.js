@@ -23,9 +23,9 @@ const store = new Vuex.Store({
 });
 
     new Vue({
-    el: 'app',
-    store,
-    render: (createElement) => createElement(App)
-});
+        el: 'app',
+        store,
+        render: (createElement) => createElement(App)
+    });
 
 import '../styles/base';
