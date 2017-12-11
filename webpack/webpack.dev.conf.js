@@ -48,14 +48,15 @@ module.exports = {
                 loader: "url-loader?limit=8192"
             },
             {
+                test: /\.less$/,
+                loader: [ "style-loader", "css-loader", "less-loader" ]
+            },
+            {
                 test: /\.json$/,
-                include: [ path.resolve(rootDir, "src"), ],
+                include: [ path.resolve(rootDir, "src") ],
                 loader: "json-loader"
             }
         ]
-    },
-    externals: {
-        "jquery": "window.jQuery"
     },
     plugins: [
         new HtmlWebpack({
@@ -66,6 +67,6 @@ module.exports = {
         })
     ],
     resolve: {
-        extensions: [ ".vue", ".scss", ".json", ".js", ".css" ]
+        extensions: [ ".vue", ".scss", ".less", ".json", ".js", ".css" ]
     }
 };

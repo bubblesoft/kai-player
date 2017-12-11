@@ -1,5 +1,5 @@
 <template lang="pug">
-    div.wrap
+    div#control-bar
         div.control-button.control-button_big(
             v-if="!player.playing"
             @click="play()"
@@ -72,6 +72,9 @@
                 volume: .5
             }
         },
+        computed: mapState({
+            player: state => state.playerModule.player
+        }),
         watch: {
             "volume" (to) {
                 this.player.volume = to;
@@ -80,9 +83,6 @@
         components: {
             vueSlider
         },
-        computed: mapState({
-            player: state => state.playerModule.player
-        }),
         methods: {
             formatDuration,
             ready() {
@@ -118,11 +118,11 @@
 </script>
 
 <style lang="scss" scoped>
-    .wrap {
+    #control-bar {
         display: flex;
         align-items: center;
         justify-content: center;
-        position: fixed;
+        position: absolute;
         left: 0;
         bottom: 0;
         box-sizing: border-box;

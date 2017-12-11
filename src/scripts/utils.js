@@ -49,4 +49,13 @@ const formatDuration = (val, formatStr) => {
     return formatStr;
 };
 
-export { initHowlOnProgress, formatDuration };
+const mapPanelHeading = type => {
+    switch (type) {
+        case 'playlist':
+            return 'Playlist';
+        default:
+            return 'Panel';
+    }
+};
+
+export { initHowlOnProgress, formatDuration, mapPanelHeading };
