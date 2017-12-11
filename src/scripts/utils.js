@@ -53,6 +53,8 @@ const mapPanelHeading = type => {
     switch (type) {
         case 'playlist':
             return 'Playlist';
+        case 'tracks':
+            return 'Tracks';
         default:
             return 'Panel';
     }

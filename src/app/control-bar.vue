@@ -109,7 +109,6 @@
             this.player.on('progress', (soundId, progress) => {
                 this.progress = progress;
             });
-            this.player.load([ require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3') ]);
         },
         destroyed: function () {
             this.player.off('progress');

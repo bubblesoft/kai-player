@@ -1,17 +1,18 @@
 <template lang="pug">
     div.wrap
         control-bar
-        play-list-pane(type="playlist")
+        pane-frame(type="playlist")
+        pane-frame(type="tracks")
 </template>
 
 <script>
     import controlBar from './control-bar';
-    import playListPane from './pane-frame';
+    import paneFrame from './pane-frame';
 
     export default {
         components: {
             controlBar,
-            playListPane
+            paneFrame
         }
     }
 </script>

@@ -1,8 +1,9 @@
 <template lang="pug">
     .panel.panel-default(:id="'panel_' + type")
-        .panel-heading {{ i18n.t(mapPanelHeading(type)) }}
+        .panel-heading {{ panelHeading }}
         .panel-body
             .panel-body__wrap
+                div(:is="mapComponent(type)")
 </template>
 
 <script>
@@ -13,19 +14,29 @@
 
     import { mapPanelHeading } from '../scripts/utils';
 
+    import playlistPane from './queue/playlist-pane';
+    import tracksPane from './queue/tracks-pane';
+
     export default {
         props: {
             type: String
         },
         data: () => {
             return {
+                panelHeading: 'Panel',
                 ratioX: 0,
                 ratioY: 0
             }
         },
-        computed: mapState({
-            i18n: state => state.generalModule.i18n
-        }),
+        computed: {
+            ...mapState({
+                i18n: state => state.generalModule.i18n
+            })
+        },
+        components: {
+            playlistPane,
+            tracksPane
+        },
         methods: {
             onWindowResize() {
                 const $panel = jQuery('#panel_' + this.type),
@@ -40,22 +51,38 @@
                 $panel.attr('data-x', x);
                 $panel.attr('data-y', y);
             },
-            mapPanelHeading
+            mapComponent(type) {
+                switch (type) {
+                    case 'playlist':
+                        return 'playlist-pane';
+                    case 'tracks':
+                        return 'tracks-pane';
+                    default:
+                        return null;
+                }
+            }
+        },
+        created() {
+            this.panelHeading = this.i18n.t(mapPanelHeading(this.type));
         },
         mounted() {
             const viewportWidth = jQuery(window).width(),
                 viewportHeight = jQuery(window).height(),
                 controlBarHeight = jQuery('#control-bar').height() + 10,
-                width = viewportWidth * .2 > 300 ? viewportWidth * .2 : 300,
-                height = viewportHeight * .5;
+                width = viewportWidth * .2 > 300 ? viewportWidth * .2 : 300;
 
-            let x, y;
+            let x, y, height;
 
             switch (this.type) {
                 case 'playlist':
-                    x = (viewportWidth - width);
-                    y = (viewportHeight - height - controlBarHeight - 2);
+                    x = viewportWidth - width;
+                    y = 0;
+                    height = viewportHeight * .3;
                     break;
+                case 'tracks':
+                    x = viewportWidth - width;
+                    y = viewportHeight * .3;
+                    height = viewportHeight * .5;
             }
 
             const $panel = jQuery('#panel_' + this.type);
@@ -76,12 +103,12 @@
                 const viewportWidth = jQuery(window).width(),
                     viewportHeight = jQuery(window).height(),
                     $panel = jQuery(event.target),
+
                     // keep the dragged position in the data-x/data-y attributes
                     x = (parseFloat($panel.attr('data-x')) || 0) + event.dx,
                     y = (parseFloat($panel.attr('data-y')) || 0) + event.dy;
 
-                // translate the element
-                    $panel.css('transform', 'translate(' + x + 'px, ' + y + 'px)');
+                    $panel.css('transform', 'translate(' + x + 'px, ' + y + 'px)'); // translate the element
 
                 // update the posiion attributes
                 $panel.attr('data-x', x);
@@ -144,7 +171,7 @@
             top: 0;
             right: 0;
             bottom: 0;
-            margin: 47px 5px 5px;
+            margin: 50px 8px 8px;
             width: auto;
             height: auto;
         }
