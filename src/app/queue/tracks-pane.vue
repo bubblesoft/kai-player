@@ -3,15 +3,33 @@
         table.table-condensed.table.table-hover
             tbody
                 tr(
-                    v-for="track in tracks"
-                    @dblclick="playTrack(track)"
+                    v-for="(track, index) in tracks"
+                    @dblclick="playTrack(index)"
                 )
+                    td(style="width:18px")
+                        template(v-if="index === activeIndex")
+                            svg(
+                                v-if="playing"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M8 5v14l11-7z")
+                            svg(
+                                v-else
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M6 19h4V5H6v14zm8-14v14h4V5h-4z")
                     td {{ track.title }}
-                    td {{ track.length }}
+                    td {{ track.length | formatDuration('mm:ss') }}
 </template>
 
 <script>
     import { mapState } from 'vuex';
+
+    import { formatDuration } from '../../scripts/utils';
 
     export default {
         data() {
@@ -23,16 +41,25 @@
             tracks() {
               return this.queue.get();
             },
+            activeIndex() {
+                return this.queue.active;
+            },
+            playing() {
+                return this.player.playing
+            },
             ...mapState({
                 queueGroup: state => state.queueModule.queueGroup,
                 player: state => state.playerModule.player
             })
         },
         methods: {
-            playTrack(track) {
-                this.player.load(track.src);
+            playTrack(index) {
+                this.player.load(this.queue.get(this.queue.goTo(index)).src);
                 this.player.play();
             }
+        },
+        filters: {
+            formatDuration
         },
         created() {
             this.queue = this.queueGroup.get(this.queueGroup.active);
@@ -47,6 +74,12 @@
 
         tr {
             cursor: default;
+
+            svg {
+                width: 18px;
+                height: 18px;
+                fill: #fff;
+            }
         }
     }
 </style>

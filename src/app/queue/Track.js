@@ -11,8 +11,13 @@ export default class Track {
         return this._title;
     }
 
-    constructor({ src, title }) {
+    get length() {
+        return this._length;
+    }
+
+    constructor({ src, title, length }) {
         this._src = src;
         this._title = title;
+        this._length = length;
     }
 }

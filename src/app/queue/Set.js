@@ -31,6 +31,8 @@ export default class QueueGroup {
         if (this._items.length === 1) {
             this._active = 0;
         }
+
+        return this;
     }
 
     get(index) {

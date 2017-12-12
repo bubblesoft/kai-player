@@ -76,7 +76,7 @@ export default class Player {
 
         initHowlOnProgress(this._sound);
 
-        this._onProgressCallbacks.forEach((_callback) => {
+        this._onProgressCallbacks.forEach(_callback => {
             this._sound.on('progress', _callback);
         });
     }

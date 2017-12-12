@@ -1,7 +1,14 @@
 <template lang="pug">
     div#control-bar
+        div.control-button.control-button_small(@click="previousTrack()")
+            svg(
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+            )
+                path(d="M6 6h2v12H6zm3.5 6l8.5 6V6z")
         div.control-button.control-button_big(
-            v-if="!player.playing"
+            v-if="!playing"
             @click="play()"
         )
             svg(
@@ -20,6 +27,13 @@
                 viewBox="0 0 24 24"
             )
                 path(d="M9 16h2V8H9v8zm3-14C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm1-4h2V8h-2v8z")
+        div.control-button.control-button_small(@click="nextTrack()")
+            svg(
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+            )
+                path(d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z")
         div.control-button.control-button_small(@click="stop()")
             svg(
                 width="24"
@@ -32,7 +46,7 @@
             ref="slider"
             v-model="progress"
             width="30%"
-            :max="duration()"
+            :max="duration"
             :disabled="!ready()"
             tooltip="hover"
             :formatter="(v) => `${formatDuration(v * 1000, 'mm:ss')}`"
@@ -41,7 +55,7 @@
             :process-style="{ 'background-color': 'rgba(255, 255, 255, 0.9)', filter: 'drop-shadow(2px 2px 10px rgba(150, 150, 150, 1))' }"
             :tooltip-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)', 'border-color': 'rgba(255, 255, 255, 0.6)', 'border-style': 'none' }"
         )
-        div.time {{ formatDuration(progress * 1000, 'mm:ss') }} / {{ formatDuration(duration() * 1000, 'mm:ss') }}
+        div.time {{ formatDuration(progress * 1000, 'mm:ss') }} / {{ formatDuration(duration * 1000, 'mm:ss') }}
         vue-slider.vue-slider(
             ref="slider"
             v-model="volume"
@@ -72,9 +86,22 @@
                 volume: .5
             }
         },
-        computed: mapState({
-            player: state => state.playerModule.player
-        }),
+        computed: {
+            playing() {
+              return this.player.playing
+            },
+            duration() {
+                return this.player.duration;
+            },
+            ...mapState({
+                queue: state => {
+                    const queueGroup = state.queueModule.queueGroup;
+
+                    return queueGroup.get(queueGroup.active);
+                },
+                player: state => state.playerModule.player
+            })
+        },
         watch: {
             "volume" (to) {
                 this.player.volume = to;
@@ -89,10 +116,8 @@
                 return this.player.ready;
             },
             play() {
+                this.player.load(this.queue.get(this.queue.active).src);
                 this.player.play();
-            },
-            duration() {
-                return this.player.duration;
             },
             pause() {
                 this.player.pause();
@@ -103,6 +128,18 @@
             },
             changeProgress(progress) {
                 this.player.progress = progress;
+            },
+            previousTrack() {
+                const nextIndex = this.queue.previous();
+
+                this.player.load(this.queue.get(nextIndex).src);
+                this.player.play();
+            },
+            nextTrack() {
+                const nextIndex = this.queue.next();
+
+                this.player.load(this.queue.get(nextIndex).src);
+                this.player.play();
             }
         },
         created: function () {
