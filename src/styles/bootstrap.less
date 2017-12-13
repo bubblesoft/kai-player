@@ -13,6 +13,14 @@
 @table-border-color: transparent;
 @table-bg-hover: rgba(255, 255, 255, 0.2);
 
+@input-bg: rgba(255, 255, 255, 0.1);
+@input-border: rgba(255, 255, 255, 0.1);
+@input-color: #fff;
+@input-border-radius: 0;
+
+@list-group-bg: transparent;
+@list-group-border: transparent;
+
 // Reset and dependencies
 @import "@{path}/normalize.less";
 //@import "print.less";
@@ -24,7 +32,7 @@
 //@import "code.less";
 //@import "grid.less";
 @import "@{path}/tables.less";
-//@import "forms.less";
+@import "@{path}/forms.less";
 //@import "buttons.less";
 
 // Components
@@ -44,7 +52,7 @@
 //@import "alerts.less";
 //@import "progress-bars.less";
 //@import "media.less";
-//@import "list-group.less";
+@import "@{path}/list-group.less";
 @import "@{path}/panels.less";
 //@import "responsive-embed.less";
 //@import "wells.less";

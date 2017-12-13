@@ -14,6 +14,8 @@
 
     import { mapPanelHeading } from '../scripts/utils';
 
+    import listPane from './source/list-pane';
+    import sourcePane from './source/source-pane';
     import playlistPane from './queue/playlist-pane';
     import tracksPane from './queue/tracks-pane';
 
@@ -34,8 +36,10 @@
             })
         },
         components: {
+            listPane,
             playlistPane,
-            tracksPane
+            tracksPane,
+            sourcePane
         },
         methods: {
             onWindowResize() {
@@ -53,6 +57,10 @@
             },
             mapComponent(type) {
                 switch (type) {
+                    case 'source':
+                        return 'source-pane';
+                    case 'list':
+                        return 'list-pane';
                     case 'playlist':
                         return 'playlist-pane';
                     case 'tracks':
@@ -74,6 +82,16 @@
             let x, y, height;
 
             switch (this.type) {
+                case 'source':
+                    x = 0;
+                    y = 0;
+                    height = viewportHeight * .2;
+                    break;
+                case 'list':
+                    x = 0;
+                    y = viewportHeight * .2;
+                    height = viewportHeight * .4;
+                    break;
                 case 'playlist':
                     x = viewportWidth - width;
                     y = 0;
@@ -83,6 +101,11 @@
                     x = viewportWidth - width;
                     y = viewportHeight * .3;
                     height = viewportHeight * .5;
+                    break;
+                default:
+                    x = 0;
+                    y = 0;
+                    height = viewportHeight * .3;
             }
 
             const $panel = jQuery('#panel_' + this.type);

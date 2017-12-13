@@ -51,6 +51,10 @@ const formatDuration = (val, formatStr) => {
 
 const mapPanelHeading = type => {
     switch (type) {
+        case 'list':
+            return 'Chart';
+        case 'source':
+            return 'Media Source';
         case 'playlist':
             return 'Playlist';
         case 'tracks':

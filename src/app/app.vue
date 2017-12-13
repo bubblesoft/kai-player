@@ -1,6 +1,8 @@
 <template lang="pug">
-    div.wrap
+    .wrap
         control-bar
+        pane-frame(type="source")
+        pane-frame(type="list")
         pane-frame(type="playlist")
         pane-frame(type="tracks")
 </template>

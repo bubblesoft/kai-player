@@ -116,8 +116,10 @@
                 return this.player.ready;
             },
             play() {
-                this.player.load(this.queue.get(this.queue.active).src);
-                this.player.play();
+                this.queue.get(this.queue.active).getSrc().then(url => {
+                    this.player.load([url])
+                        .then(() => this.player.play());
+                });
             },
             pause() {
                 this.player.pause();
@@ -132,14 +134,18 @@
             previousTrack() {
                 const nextIndex = this.queue.previous();
 
-                this.player.load(this.queue.get(nextIndex).src);
-                this.player.play();
+                this.queue.get(nextIndex).getSrc().then(url => {
+                    this.player.load([url])
+                        .then(() => this.player.play());
+                });
             },
             nextTrack() {
                 const nextIndex = this.queue.next();
 
-                this.player.load(this.queue.get(nextIndex).src);
-                this.player.play();
+                this.queue.get(nextIndex).getSrc().then(url => {
+                    this.player.load([url])
+                        .then(() => this.player.play());
+                });
             }
         },
         created: function () {

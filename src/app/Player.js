@@ -64,20 +64,30 @@ export default class Player {
     }
 
     load(urls) {
-        if (this._sound) {
-            this._sound.unload();
-        }
+        return new Promise((resolve, reject) => {
+            if (this._sound) {
+                this._sound.unload();
+            }
 
-        this._sound = new Howl({
-            src: urls,
-            volume: this.volume,
-            html5: true
-        });
+            this._sound = new Howl({
+                src: urls,
+                volume: this.volume,
+                html5: true
+            });
 
-        initHowlOnProgress(this._sound);
+            initHowlOnProgress(this._sound);
 
-        this._onProgressCallbacks.forEach(_callback => {
-            this._sound.on('progress', _callback);
+            this._onProgressCallbacks.forEach(_callback => {
+                this._sound.on('progress', _callback);
+            });
+
+            this._sound.once('load', () => {
+                resolve();
+            });
+
+            this._sound.once('loaderror', () => {
+                reject();
+            });
         });
     }
 

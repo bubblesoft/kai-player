@@ -5,10 +5,15 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 
+import jQuery from 'jquery';
 import i18next from 'i18next';
 
+import SourceGroup from './source/SourceGroup';
+import Source from './source/Source';
+import Channel from './source/Channel';
 import QueueGroup from './queue/QueueGroup';
 import Queue from './queue/Queue';
+import Track from './Track';
 import Player from './Player';
 
 import App from './app';
@@ -27,6 +32,8 @@ i18next.init({
     resources: {
         'en-US': {
             translation: {
+                'Chart': 'Chart',
+                'Media Source': 'Media Source',
                 'Playlist': 'Playlist',
                 'Tracks': 'Tracks',
                 'Panel': 'Panel'
@@ -34,6 +41,8 @@ i18next.init({
         },
         'zh-CN': {
             translation: {
+                'Chart': '排行榜',
+                'Media Source': '媒体源',
                 'Playlist': '播放列表',
                 'Tracks': '播放音频',
                 'Panel': '面板'
@@ -41,6 +50,8 @@ i18next.init({
         },
         'ja-JP': {
             translation: {
+                'Chart': 'Chart',
+                'Media Source': 'Media Source',
                 'Playlist': 'プレーリスト',
                 'Tracks': 'Tracks',
                 'Panel': 'パネル'
@@ -48,6 +59,8 @@ i18next.init({
         },
         'ko-KR': {
             translation: {
+                'Chart': 'Chart',
+                'Media Source': 'Media Source',
                 'Playlist': '재생 목록',
                 'Tracks': 'Tracks',
                 'Panel': '패널'
@@ -62,48 +75,70 @@ const generalModule = {
     }
 };
 
+const sourceGroup = new SourceGroup({ name: 'Global' }),
+    sourceWy = new Source({
+        source: 'wy',
+        name: '网易云音乐'
+    });
+
+sourceWy.add(new Channel({
+    source: 'wy',
+    type: 'hot',
+    name: '云音乐热歌榜',
+    get() {
+        return new Promise((resolve, reject) => {
+            jQuery.ajax({
+                url: require('../config').urlBase + '/top/list?idx=1',
+                method: 'GET',
+                success(res) {
+                    let output = [];
+
+                    res.playlist.tracks.forEach(el => {
+                        output.push(new Track({
+                            id: 'wy_' + el.id,
+                            name: el.name,
+                            length: el.dt,
+                            srcGetter(track) {
+                                return new Promise((resolve, reject) => {
+                                    jQuery.ajax({
+                                        url: require('../config').urlBase + '/music/url?id=' + track.id.slice(3),
+                                        method: 'GET',
+                                        success(res) {
+                                            resolve(res.data[0].url);
+                                        },
+                                        error(xhr, message) {
+                                            reject(message);
+                                        }
+                                    });
+                                });
+                            }
+                        }));
+                    });
+
+                    resolve(output);
+                },
+                error(xhr, message) {
+                    reject(message);
+                }
+            });
+        });
+    }
+}));
+sourceGroup.add(sourceWy);
+
+const sourceModule = {
+    state: {
+        sourceGroup
+    }
+};
+
 const queueGroup = new QueueGroup({ name: 'Global' });
 
 queueGroup.add(new Queue({ name: 'Temp' }));
 
-// TODO: remove later
-import Track from './queue/Track';
-queueGroup
-    .get(queueGroup.active)
-    .add(new Track({
-        src: require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3'),
-        title: 'test',
-        length: 10000
-    }))
-    .add(new Track({
-        src: require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3'),
-        title: 'test',
-        length: 10000
-    }))
-    .add(new Track({
-        src: require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3'),
-        title: 'test',
-        length: 10000
-    }))
-    .add(new Track({
-        src: require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3'),
-        title: 'test',
-        length: 10000
-    }))
-    .add(new Track({
-        src: require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3'),
-        title: 'test',
-        length: 10000
-    }))
-    .add(new Track({
-        src: require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3'),
-        title: 'test',
-        length: 10000
-    }));
-
 const queueModule = {
     state: {
-        queueGroup: queueGroup
+        queueGroup
     }
 };
 
@@ -116,6 +151,7 @@ const playerModule = {
 const store = new Vuex.Store({
     modules: {
         generalModule,
+        sourceModule,
         playerModule,
         queueModule
     }
