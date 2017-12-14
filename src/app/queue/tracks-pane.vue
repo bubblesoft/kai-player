@@ -55,18 +55,11 @@
         },
         methods: {
             playTrack(index) {
-<<<<<<< HEAD
-                this.queue.get(this.queue.goTo(index)).getSrc().then(url => {
-                    this.player.load(url);
-                    this.player.play();
-                });
-=======
                 this.queue.get(this.queue.goTo(index)).getSrc()
                     .then(url => {
                         this.player.load(url);
                         this.player.play();
                     });
->>>>>>> playback-queue
             }
         },
         filters: {

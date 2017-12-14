@@ -10,7 +10,6 @@
                 v-for="channel in sourceSelected.get()"
                 :value="channel"
             ) {{ channel.name }}
-
         table.table-condensed.table.table-hover
             tbody
                 tr(
@@ -18,7 +17,8 @@
                     @dblclick="addToPlayback(track)"
                 )
                     td {{ track.name }}
-                    td {{ track.length | formatDuration('mm:ss') }}
+                    td {{ track.artists.map(artist => artist.name).join(', ') }}
+                    td(style="width:46px") {{ track.duration | formatDuration('mm:ss') }}
 </template>
 
 <script>
@@ -43,7 +43,6 @@
             },
             ...mapState({
                 sourceGroup: state => state.sourceModule.sourceGroup,
-                queueGroup: state => state.queueModule.queueGroup,
                 queue: state => {
                     const queueGroup = state.queueModule.queueGroup;
 
@@ -54,13 +53,9 @@
         },
         methods: {
             addToPlayback(track) {
-                const queueGroup = this.queueGroup;
+                const index = this.queue.add(track);
 
-                queueGroup
-                    .get(queueGroup.active)
-                    .add(track);
-
-                this.queue.get(this.queue.active).getSrc().then(url => {
+                this.queue.get(this.queue.goTo(index)).getSrc().then(url => {
                     this.player.load([url])
                         .then(() => this.player.play());
                 });
@@ -101,6 +96,10 @@
 
         tr {
             cursor: default;
+
+            td {
+                word-break: break-all;
+            }
         }
     }
 </style>

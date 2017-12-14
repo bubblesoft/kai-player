@@ -102,7 +102,7 @@ const getWySrc = track => {
         });
     },
     sourceWy = new Source({
-        source: 'wy',
+        id: 'wy',
         name: '网易云音乐',
         search(keywords) {
             return new Promise((resolve, reject) => {

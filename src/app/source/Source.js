@@ -6,17 +6,18 @@ import Set from '../Set';
 
 export default class Source extends Set {
 
-    /**
-     * 来源：
-     *
-     *　wy   网易云音乐
-     *
-     */
-    source;
+    get id() {
+        return this._id;
+    }
 
-    constructor({ source, name }) {
+    constructor({ id, name, search }) {
         super({ name });
 
-        this.source = source;
+        this._id = id;
+        this._search = search;
+    }
+
+    search(keywords) {
+        return this._search(keywords);
     }
 }
