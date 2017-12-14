@@ -116,8 +116,11 @@
                 return this.player.ready;
             },
             play() {
-                this.player.load(this.queue.get(this.queue.active).src);
-                this.player.play();
+                this.queue.get(this.queue.active).getSrc()
+                    .then(url => {
+                        this.player.load(url);
+                        this.player.play();
+                    });
             },
             pause() {
                 this.player.pause();

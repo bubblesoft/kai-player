@@ -9,6 +9,8 @@ import i18next from 'i18next';
 
 import QueueGroup from './queue/QueueGroup';
 import Queue from './queue/Queue';
+import Track from './Track';
+import Artist from './Artist';
 import Player from './Player';
 
 import App from './app';
@@ -67,38 +69,15 @@ const queueGroup = new QueueGroup({ name: 'Global' });
 queueGroup.add(new Queue({ name: 'Temp' }));
 
 // TODO: remove later
-import Track from './queue/Track';
 queueGroup
     .get(queueGroup.active)
     .add(new Track({
-        src: require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3'),
-        title: 'test',
-        length: 10000
-    }))
-    .add(new Track({
-        src: require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3'),
-        title: 'test',
-        length: 10000
-    }))
-    .add(new Track({
-        src: require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3'),
-        title: 'test',
-        length: 10000
-    }))
-    .add(new Track({
-        src: require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3'),
-        title: 'test',
-        length: 10000
-    }))
-    .add(new Track({
-        src: require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3'),
-        title: 'test',
-        length: 10000
-    }))
-    .add(new Track({
-        src: require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3'),
-        title: 'test',
-        length: 10000
+        name: 'test',
+        duration: 10000,
+        artists: [new Artist({ name: 'test' })],
+        getSrc() {
+            return Promise.resolve(require('../assets/46e1%2F6e85%2F8eba%2F2cadf8448f7aa4dba3fff1fd92e7b2fc.mp3'));
+        }
     }));
 
 const queueModule = {
