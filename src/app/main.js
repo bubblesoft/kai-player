@@ -14,6 +14,7 @@ import Channel from './source/Channel';
 import QueueGroup from './queue/QueueGroup';
 import Queue from './queue/Queue';
 import Track from './Track';
+import Artist from './Artist';
 import Player from './Player';
 
 import App from './app';
@@ -36,7 +37,9 @@ i18next.init({
                 'Media Source': 'Media Source',
                 'Playlist': 'Playlist',
                 'Tracks': 'Tracks',
-                'Panel': 'Panel'
+                'Panel': 'Panel',
+                'Search': 'Search',
+                'Search for music': 'Search for music'
             }
         },
         'zh-CN': {
@@ -45,7 +48,9 @@ i18next.init({
                 'Media Source': '媒体源',
                 'Playlist': '播放列表',
                 'Tracks': '播放音频',
-                'Panel': '面板'
+                'Panel': '面板',
+                'Search': '搜索',
+                'Search for music': '搜索音乐'
             }
         },
         'ja-JP': {
@@ -54,7 +59,9 @@ i18next.init({
                 'Media Source': 'Media Source',
                 'Playlist': 'プレーリスト',
                 'Tracks': 'Tracks',
-                'Panel': 'パネル'
+                'Panel': 'パネル',
+                'Search': 'Search',
+                'Search for music': 'Search for music'
             }
         },
         'ko-KR': {
@@ -63,7 +70,9 @@ i18next.init({
                 'Media Source': 'Media Source',
                 'Playlist': '재생 목록',
                 'Tracks': 'Tracks',
-                'Panel': '패널'
+                'Panel': '패널',
+                'Search': 'Search',
+                'Search for music': 'Search for music'
             }
         }
     }
@@ -75,10 +84,61 @@ const generalModule = {
     }
 };
 
-const sourceGroup = new SourceGroup({ name: 'Global' }),
+const sourceGroup = new SourceGroup({ name: 'Global' });
+
+const getWySrc = track => {
+        return new Promise((resolve, reject) => {
+            jQuery.ajax({
+                url: require('../config').urlBase + '/music/url?id=' + track.id.slice(3),
+                method: 'GET',
+                dataType: 'json',
+                success(res) {
+                    resolve(res.data[0].url);
+                },
+                error(xhr, message) {
+                    reject(message);
+                }
+            });
+        });
+    },
     sourceWy = new Source({
         source: 'wy',
-        name: '网易云音乐'
+        name: '网易云音乐',
+        search(keywords) {
+            return new Promise((resolve, reject) => {
+                jQuery.ajax({
+                    url: require('../config').urlBase + '/search?keywords=' + keywords,
+                    method: 'GET',
+                    dataType: 'json',
+                    success(res) {
+                        const output = [];
+
+                        res.result.songs.forEach(el => {
+                            output.push(new Track({
+                                id: 'wy_' + el.id,
+                                name: el.name,
+                                duration: el.duration,
+                                artists: (() => {
+                                    const output = [];
+
+                                    el.artists.forEach(el => {
+                                        output.push(new Artist({ name: el.name }));
+                                    });
+
+                                    return output;
+                                })(),
+                                getSrc: getWySrc
+                            }));
+                        });
+
+                        resolve(output);
+                    },
+                    error(xhr, message) {
+                        reject(message);
+                    }
+                });
+            });
+        }
     });
 
 sourceWy.add(new Channel({
@@ -90,28 +150,25 @@ sourceWy.add(new Channel({
             jQuery.ajax({
                 url: require('../config').urlBase + '/top/list?idx=1',
                 method: 'GET',
+                dataType: 'json',
                 success(res) {
-                    let output = [];
+                    const output = [];
 
                     res.playlist.tracks.forEach(el => {
                         output.push(new Track({
                             id: 'wy_' + el.id,
                             name: el.name,
-                            length: el.dt,
-                            srcGetter(track) {
-                                return new Promise((resolve, reject) => {
-                                    jQuery.ajax({
-                                        url: require('../config').urlBase + '/music/url?id=' + track.id.slice(3),
-                                        method: 'GET',
-                                        success(res) {
-                                            resolve(res.data[0].url);
-                                        },
-                                        error(xhr, message) {
-                                            reject(message);
-                                        }
-                                    });
+                            duration: el.dt,
+                            artists: (() => {
+                                const output = [];
+
+                                el.ar.forEach(el => {
+                                    output.push(new Artist({ name: el.name }));
                                 });
-                            }
+
+                                return output;
+                            })(),
+                            getSrc: getWySrc
                         }));
                     });
 

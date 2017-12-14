@@ -23,7 +23,8 @@
                             )
                                 path(d="M6 19h4V5H6v14zm8-14v14h4V5h-4z")
                     td {{ track.name }}
-                    td {{ track.length | formatDuration('mm:ss') }}
+                    td {{ track.artists.map(artist => artist.name).join(', ') }}
+                    td {{ track.duration | formatDuration('mm:ss') }}
 </template>
 
 <script>
@@ -54,10 +55,18 @@
         },
         methods: {
             playTrack(index) {
+<<<<<<< HEAD
                 this.queue.get(this.queue.goTo(index)).getSrc().then(url => {
                     this.player.load(url);
                     this.player.play();
                 });
+=======
+                this.queue.get(this.queue.goTo(index)).getSrc()
+                    .then(url => {
+                        this.player.load(url);
+                        this.player.play();
+                    });
+>>>>>>> playback-queue
             }
         },
         filters: {

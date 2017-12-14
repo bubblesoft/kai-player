@@ -11,19 +11,24 @@ export default class Track {
         return this._name;
     }
 
-    get length() {
-        return this._length;
+    get duration() {
+        return this._duration;
     }
 
-    constructor({id, name, length, srcGetter }) {
+    get artists() {
+        return this._artists;
+    }
+
+    constructor({id, name, duration, artists, getSrc }) {
         this._id = id;
         this._name = name;
-        this._length = length;
-        this._srcGetter = srcGetter;
+        this._duration = duration;
+        this._artists = artists;
+        this._getSrc = getSrc;
     }
 
     // Return a promise
     getSrc() {
-        return this._srcGetter(this);
+        return this._getSrc(this);
     }
 }

@@ -25,6 +25,13 @@ export default class QueueGroup {
         this._active = null;
     }
 
+    /**
+     *
+     * Add item to the set, return the index of the item.
+     *
+     * @param item
+     * @returns {number}
+     */
     add(item) {
         this._items.push(item);
 
@@ -32,7 +39,7 @@ export default class QueueGroup {
             this._active = 0;
         }
 
-        return this;
+        return this.length - 1;
     }
 
     get(index) {

@@ -5,6 +5,7 @@
         pane-frame(type="list")
         pane-frame(type="playlist")
         pane-frame(type="tracks")
+        pane-frame(type="search")
 </template>
 
 <script>

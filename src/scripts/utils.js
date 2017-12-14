@@ -59,6 +59,8 @@ const mapPanelHeading = type => {
             return 'Playlist';
         case 'tracks':
             return 'Tracks';
+        case 'search':
+            return 'Search';
         default:
             return 'Panel';
     }

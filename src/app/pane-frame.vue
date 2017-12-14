@@ -18,6 +18,7 @@
     import sourcePane from './source/source-pane';
     import playlistPane from './queue/playlist-pane';
     import tracksPane from './queue/tracks-pane';
+    import searchPane from './source/search-pane';
 
     export default {
         props: {
@@ -36,10 +37,11 @@
             })
         },
         components: {
+            sourcePane,
             listPane,
             playlistPane,
             tracksPane,
-            sourcePane
+            searchPane
         },
         methods: {
             onWindowResize() {
@@ -65,6 +67,8 @@
                         return 'playlist-pane';
                     case 'tracks':
                         return 'tracks-pane';
+                    case 'search':
+                        return 'search-pane';
                     default:
                         return null;
                 }
@@ -90,7 +94,7 @@
                 case 'list':
                     x = 0;
                     y = viewportHeight * .2;
-                    height = viewportHeight * .4;
+                    height = viewportHeight * .3;
                     break;
                 case 'playlist':
                     x = viewportWidth - width;
@@ -101,6 +105,11 @@
                     x = viewportWidth - width;
                     y = viewportHeight * .3;
                     height = viewportHeight * .5;
+                    break;
+                case 'search':
+                    x = 0;
+                    y = viewportHeight * .5;
+                    height = viewportHeight * .3;
                     break;
                 default:
                     x = 0;
