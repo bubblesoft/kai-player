@@ -15,6 +15,7 @@ import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLA
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
 import Player from './Player';
+import Visualizer from './visualization/Visualizer';
 
 import App from './app';
 
@@ -219,12 +220,19 @@ const playerModule = {
     }
 };
 
+const visualizationModule = {
+    state: {
+        visualizer: new Visualizer({ })
+    }
+}
+
 const store = new Vuex.Store({
     modules: {
         generalModule,
         sourceModule,
+        queueModule,
         playerModule,
-        queueModule
+        visualizationModule
     }
 });
 

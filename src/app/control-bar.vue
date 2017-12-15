@@ -241,7 +241,8 @@
             ...mapState({
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex),
                 player: state => state.playerModule.player,
-                sourceGroup: state => state.sourceModule.sourceGroup
+                sourceGroup: state => state.sourceModule.sourceGroup,
+                visualizer: state => state.visualizationModule.visualizer
             })
         },
 
@@ -263,15 +264,20 @@
 
                 await this.player.load(url);
                 this.player.play();
+                this.visualizer.listen(this.player._sound._sounds[0]._node);
+                this.visualizer.start();
+                this.visualizer.mount(document.body);
             },
 
             pause() {
                 this.player.pause();
+                this.visualizer.stop();
             },
 
             stop() {
                 this.player.stop();
                 this.progress = 0;
+                this.visualizer.stop();
             },
 
             changeProgress(progress) {
