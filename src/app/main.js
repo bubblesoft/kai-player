@@ -17,7 +17,7 @@ import QueueGroup from './queue/QueueGroup';
 import Player from './Player';
 import Visualizer from './visualization/Visualizer';
 
-import App from './app';
+import app from './app';
 
 if (!window["Promise"]) {
     window["Promise"] = require("promise-polyfill");
@@ -222,7 +222,7 @@ const playerModule = {
 
 const visualizationModule = {
     state: {
-        visualizer: new Visualizer({ })
+        visualizer: new Visualizer({ type: 'bars' })
     }
 }
 
@@ -239,8 +239,7 @@ const store = new Vuex.Store({
 new Vue({
     el: 'app',
     store,
-    i18n,
-    render: createElement => createElement(App)
+    render: createElement => createElement(app)
 });
 
 import '../styles/bootstrap';

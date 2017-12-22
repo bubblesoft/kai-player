@@ -265,8 +265,8 @@
                 await this.player.load(url);
                 this.player.play();
                 this.visualizer.listen(this.player._sound._sounds[0]._node);
-                this.visualizer.start();
                 this.visualizer.mount(document.body);
+                this.visualizer.start();
             },
 
             pause() {

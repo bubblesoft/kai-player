@@ -60,7 +60,8 @@
         computed: {
             ...mapState({
                 panels: state => state.generalModule.panels,
-                lockActivePanelIndex: state => state.generalModule.activePanel.lock
+                lockActivePanelIndex: state => state.generalModule.activePanel.lock,
+                visualizer: state => state.visualizationModule.visualizer
             })
         },
         methods: {
@@ -132,6 +133,9 @@
             }
         },
         mounted() {
+            this.visualizer.mount(this.$el);
+            this.visualizer.init();
+
             this.interactable = interact(document.body)
                 .on('tap', e => {
                     if (!this.lockActivePanelIndex) {
