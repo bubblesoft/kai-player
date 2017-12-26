@@ -132,7 +132,8 @@
             },
             ...mapState({
                 queueGroup: state => state.queueModule.queueGroup,
-                player: state => state.playerModule.player
+                player: state => state.playerModule.player,
+                visualizer: state => state.visualizationModule.visualizer
             })
         },
         watch: {
@@ -146,8 +147,10 @@
 
                 await this.player.load(url);
                 this.player.play();
-                this.tracks[index].duration = this.player.duration * 1000;
                 this.playingQueueIndex = this.queueGroup.active;
+                this.visualizer.listen(this.player._sound._sounds[0]._node);
+                this.visualizer.start();
+                this.tracks[index].duration = this.player.duration * 1000;
             },
             select(index) {
                 const select = () => {

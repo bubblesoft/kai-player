@@ -5,7 +5,9 @@
 import jQuery from 'jquery';
 import Clubber from 'clubber';
 
-import Bars from '../../scripts/Bars';
+import Bars from '../../scripts/bars';
+
+import '../../styles/bars';
 
 const renderers = {
   'bars': new Bars
@@ -14,6 +16,7 @@ const renderers = {
 export default class Visualizer {
     renderer;
     bands;
+    _type;
     _domNode;
     _root;
 
@@ -53,16 +56,17 @@ export default class Visualizer {
                 return _bandWidth;
             })();
 
-            this.renderer.init(this._root, 128 / bandWidth);
+            this.renderer.init(this._root, 128 / bandWidth, 2);
         }
 
         this.bands = [];
 
         for (let i = 0; i < 128 / bandWidth; i++) {
             this.bands[i] = this._clubber.band({
+                template: '01234',
                 from: i * bandWidth,
                 to: i * bandWidth + bandWidth,
-                smooth: [0.1, 0.1, 0.1, 0.1]
+                smooth: [0.1, 0.1, 0.1, 0.1, 0.1]
             });
         }
     }
@@ -81,17 +85,21 @@ export default class Visualizer {
             let data = [];
 
             this.bands.forEach((band, index) => {
-                data[index] = new Array(4);
+                data[index] = new Array(5);
                 band(data[index]);
             });
 
-            this.renderer.draw(data.map(band => band[2]));
+            if (this._type === 'bars') {
+                this.renderer.draw(data.map(band => band[3]), 0);
+                this.renderer.draw(data.map(band => band[4]), 1);
+            }
 
           if (this._active) {
               requestAnimationFrame(render);
           }
         };
 
+        this.renderer.show();
         render();
     }
 
@@ -99,6 +107,7 @@ export default class Visualizer {
         this._active = false;
         requestAnimationFrame(() => {
             this.renderer.reset();
+            this.renderer.hide();
         });
     }
 

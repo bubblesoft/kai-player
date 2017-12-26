@@ -265,7 +265,6 @@
                 await this.player.load(url);
                 this.player.play();
                 this.visualizer.listen(this.player._sound._sounds[0]._node);
-                this.visualizer.mount(document.body);
                 this.visualizer.start();
             },
 
@@ -327,6 +326,7 @@
         padding: 4px;
         background-color: rgba(255, 255, 255, 0.2);
         box-shadow: 0 0 25px rgba(0, 0, 0, 0.1), inset 0 0 1px rgba(255, 255, 255, 0.6);
+        z-index: 1;
 
         .tool-bar {
             display: flex;

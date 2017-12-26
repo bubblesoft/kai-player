@@ -8,6 +8,7 @@ import { initHowlOnProgress } from '../scripts/utils';
 
 export default class Player {
     _sound;
+    _volume;
     _seek;
     _onProgressCallbacks;
     _onEndCallbacks;
@@ -146,8 +147,12 @@ export default class Player {
                 break;
 
             case 'end':
+                if (this._sound) {
+                    this._sound.on('end', callback);
+                }
                 this._onEndCallbacks.push(callback);
                 break;
+
 
         }
     }
@@ -168,6 +173,10 @@ export default class Player {
                 break;
 
             case 'end':
+                if (this._sound) {
+                    this._sound.off('end', callback);
+                }
+
                 this._onEndCallbacks.forEach((_callback, index, _callbacks) => {
                     if (callback === _callback) {
                         _callbacks.splice(index, 1);

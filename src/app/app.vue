@@ -61,6 +61,7 @@
             ...mapState({
                 panels: state => state.generalModule.panels,
                 lockActivePanelIndex: state => state.generalModule.activePanel.lock,
+                player: state => state.playerModule.player,
                 visualizer: state => state.visualizationModule.visualizer
             })
         },
@@ -144,6 +145,10 @@
 
                     e.preventDefault();
                 });
+
+            this.player.on('end', () => {
+                this.visualizer.stop();
+            });
         },
         destroyed() {
             if (this.interactable) {
@@ -160,6 +165,7 @@
         top: 0;
         width: 100%;
         height: 100%;
+        z-index: 1;
     }
 
 

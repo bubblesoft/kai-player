@@ -73,7 +73,9 @@
             ...mapState({
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 queueGroup: state => state.queueModule.queueGroup,
-                player: state => state.playerModule.player
+                queue: state => state.queueModule.queueGroup.get(state.queueModule.queueGroup.active),
+                player: state => state.playerModule.player,
+                visualizer: state => state.visualizationModule.visualizer
             })
         },
         methods: {
@@ -84,8 +86,10 @@
 
                 await this.player.load([url]);
                 this.player.play();
-                track.duration = this.player.duration * 1000;
                 this.playingQueueIndex = this.queueGroup.active;
+                this.visualizer.listen(this.player._sound._sounds[0]._node);
+                this.visualizer.start();
+                track.duration = this.player.duration * 1000;
             },
             ...mapMutations([
                 UPDATE_PLAYING_QUEUE_INDEX,
