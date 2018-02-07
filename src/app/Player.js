@@ -72,7 +72,8 @@ export default class Player {
             this._sound = new Howl({
                 src: urls,
                 volume: this.volume,
-                html5: true
+                html5: true,
+                format: ['mp3']
             });
 
             initHowlOnProgress(this._sound);
@@ -85,8 +86,8 @@ export default class Player {
                 resolve();
             });
 
-            this._sound.once('loaderror', () => {
-                reject();
+            this._sound.once('loaderror', (id, err) => {
+                reject(err);
             });
         });
     }

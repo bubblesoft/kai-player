@@ -1,15 +1,16 @@
 <template lang="pug">
-    .wrap
-        div.list-group
-            label.list-group-item(
-                v-for="source in sources"
-                href="javascript:;"
-            )
-                input(
-                    v-model="source.active"
-                    type="checkbox"
+    .source-pane
+        table.table-condensed.table.table-hover
+            tbody
+                tr(
+                    v-for="source in sources"
                 )
-                span {{ source.name }}
+                    td
+                        input(
+                            v-model="source.active"
+                            type="checkbox"
+                        )
+                    td {{ source.name }}
 
 </template>
 
@@ -18,20 +19,19 @@
 
     export default {
         computed: {
-            sources() {
-              return this.sourceGroup.get()
-            },
             ...mapState({
-                sourceGroup: state => state.sourceModule.sourceGroup,
+                sources: state => state.sourceModule.sources,
+                sourceGroup: state => state.sourceModule.sourceGroup
             })
         }
     }
 </script>
 
 <style lang="scss" scoped>
-    .wrap {
+    .source-pane {
         height: 100%;
         background-color: rgba(255, 255, 255, .15);
+        overflow: auto;
 
         tr {
             cursor: default;

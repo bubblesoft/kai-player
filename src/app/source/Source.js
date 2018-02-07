@@ -10,14 +10,9 @@ export default class Source extends Set {
         return this._id;
     }
 
-    constructor({ id, name, search }) {
+    constructor({ id, name }) {
         super({ name });
 
         this._id = id;
-        this._search = search;
-    }
-
-    search(keywords) {
-        return this._search(keywords);
     }
 }
