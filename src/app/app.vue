@@ -1,23 +1,23 @@
 <template lang="pug">
-    div.wrap
+    .app
         control-bar
-        play-list-pane(type="playlist")
+        paneFrame(type="playlist")
 </template>
 
 <script>
     import controlBar from './control-bar';
-    import playListPane from './pane-frame';
+    import paneFrame from './pane-frame';
 
     export default {
         components: {
             controlBar,
-            playListPane
+            paneFrame
         }
     }
 </script>
 
 <style lang="scss" scoped>
-    .wrap {
+    .app {
         position: fixed;
         left: 0;
         top: 0;
