@@ -1,6 +1,6 @@
 <template lang="pug">
-    .panel.panel-default(:id="'panel_' + type")
-        .panel-heading {{ panelHeading }}
+    .panel.panel-default
+        .panel-heading {{ i18n.t(mapPanelHeading(type)) }}
         .panel-body
             .panel-body__wrap
                 div(:is="mapComponent(type)")
@@ -28,7 +28,13 @@
             return {
                 panelHeading: 'Panel',
                 ratioX: 0,
-                ratioY: 0
+                bottomY: 0,
+
+                // Whether attached to a side.
+                attachedToHorizontal1: null,
+                attachedToVertical1: null,
+                attachedToHorizontal2: null,
+                attachedToVertical2: null
             }
         },
         computed: {
@@ -45,13 +51,30 @@
         },
         methods: {
             onWindowResize() {
-                const $panel = jQuery('#panel_' + this.type),
+                const $panel = jQuery(this.$el),
                     viewportWidth = jQuery(window).width(),
                     viewportHeight = jQuery(window).height(),
+                    controlBarHeight = jQuery('#control-bar').height() + 10,
                     width = $panel.width(),
-                    height = $panel.height(),
-                    x = viewportWidth * this.ratioX - width / 2,
-                    y = viewportHeight * this.ratioY - height / 2;
+                    height = $panel.height();
+
+                let x, y;
+
+                if (this.attachedToHorizontal === 'left') {
+                    x = 0;
+                } else if (this.attachedToHorizontal === 'right') {
+                    x = viewportWidth - width;
+                } else {
+                    x = viewportWidth * this.ratioX - width / 2
+                }
+
+                if (this.attachedToVertical === 'top') {
+                    y = 0;
+                } else if (this.attachedToVertical === 'bottom') {
+                    y = viewportHeight - height;
+                } else {
+                    y = viewportHeight - controlBarHeight - this.bottomY - height - 2;
+                }
 
                 $panel.css('transform', 'translate(' + x + 'px, ' + y + 'px)');
                 $panel.attr('data-x', x);
@@ -97,14 +120,10 @@
                     height = viewportHeight * .3;
                     break;
                 case 'playlist':
-                    x = viewportWidth - width;
-                    y = 0;
-                    height = viewportHeight * .3;
-                    break;
-                case 'tracks':
-                    x = viewportWidth - width;
-                    y = viewportHeight * .3;
-                    height = viewportHeight * .5;
+                    x = (viewportWidth - width);
+                    y = (viewportHeight - height - controlBarHeight - 2);
+                    this.attachedToHorizontal = 'right';
+                    this.attachedToVertical = null;
                     break;
                 case 'search':
                     x = 0;
@@ -117,7 +136,7 @@
                     height = viewportHeight * .3;
             }
 
-            const $panel = jQuery('#panel_' + this.type);
+            const $panel = jQuery(this.$el);
 
             $panel
                 .css('transform', 'translate(' + x + 'px, ' + y + 'px)')
@@ -127,14 +146,16 @@
                 .height(height);
 
             this.ratioX = (x + width / 2) / viewportWidth;
-            this.ratioY = (y + height / 2) / viewportHeight;
+            this.bottomY = viewportHeight - controlBarHeight - y - height;
 
             jQuery(window).bind('resize', this.onWindowResize);
 
             const dragMoveListener =  (event) => {
                 const viewportWidth = jQuery(window).width(),
                     viewportHeight = jQuery(window).height(),
+                    controlBarHeight = jQuery('#control-bar').height() + 10,
                     $panel = jQuery(event.target),
+                    height = $panel.height(),
 
                     // keep the dragged position in the data-x/data-y attributes
                     x = (parseFloat($panel.attr('data-x')) || 0) + event.dx,
@@ -147,10 +168,12 @@
                 $panel.attr('data-y', y);
 
                 this.ratioX = (x + width / 2) / viewportWidth;
-                this.ratioY = (y + width / 2) / viewportHeight;
+                this.bottomY = viewportHeight - controlBarHeight - y - height;
             };
 
-            interact('#panel_' + this.type, {
+            let count = 1;
+
+            interact(this.$el, {
                 ignoreFrom: '.panel-body__wrap'
             })
                 .draggable({
@@ -159,6 +182,48 @@
                         restriction: 'parent',
                     },
                     onmove: dragMoveListener,
+                    snap: {
+                        targets: [
+                            (x, y, test) => {
+                                const viewportWidth = jQuery(window).width(),
+                                    viewportHeight = jQuery(window).height(),
+                                    $panel = jQuery(this.$el),
+                                    width = $panel.width(),
+                                    height = $panel.height();
+
+                                if (Math.abs(x) < 30) {
+                                    this.attachedToHorizontal = 'left';
+                                    return { x: 0, y: y };
+                                } else {
+                                    this.attachedToHorizontal = null;
+                                }
+
+                                if (Math.abs(x + width - viewportWidth) < 30) {
+                                    this.attachedToHorizontal = 'right';
+                                    return { x: viewportWidth - width, y: y };
+                                } else {
+                                    this.attachedToHorizontal = null;
+                                }
+
+                                if (Math.abs(y) < 30) {
+                                    this.attachedToVertical = 'top';
+                                    return { x: x, y: 0 };
+                                } else {
+                                    this.attachedToVertical = null;
+                                }
+
+                                if (Math.abs(y + height - viewportHeight) < 30) {
+                                    this.attachedToVertical = 'bottom';
+                                    return { x: x, y: viewportHeight - height };
+                                } else {
+                                    this.attachedToVertical = null;
+                                }
+                            }
+                        ],
+                        relativePoints: [
+                            {x: 0, y: 0}, // snap relative to the element's top-left
+                        ]
+                    }
                 })
                 .resizable({
                     edges: { left: true, right: true, bottom: true, top: true }, // resize from all edges and corners

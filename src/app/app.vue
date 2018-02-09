@@ -1,5 +1,5 @@
 <template lang="pug">
-    .wrap
+    .app
         control-bar
         pane-frame(type="source")
         pane-frame(type="list")
@@ -21,7 +21,7 @@
 </script>
 
 <style lang="scss" scoped>
-    .wrap {
+    .app {
         position: fixed;
         left: 0;
         top: 0;
