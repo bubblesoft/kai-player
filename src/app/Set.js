@@ -2,7 +2,11 @@
  * Created by qhyang on 2017/12/11.
  */
 
-export default class QueueGroup {
+export default class Set {
+    active;
+    _name;
+    _items;
+
     get name() {
         return this._name;
     }
@@ -11,18 +15,9 @@ export default class QueueGroup {
         return this._items.length;
     }
 
-    get active() {
-        return this._active;
-    }
-
-    set active(index) {
-        this._active = index;
-    }
-
     constructor({ name }) {
         this._name = name;
         this._items = [];
-        this._active = null;
     }
 
     /**
@@ -34,10 +29,6 @@ export default class QueueGroup {
      */
     add(item) {
         this._items.push(item);
-
-        if (this._items.length === 1) {
-            this._active = 0;
-        }
 
         return this.length - 1;
     }

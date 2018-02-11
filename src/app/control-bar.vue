@@ -115,12 +115,11 @@
             ready() {
                 return this.player.ready;
             },
-            play() {
-                this.queue.get(this.queue.active).getSrc()
-                    .then(url => {
-                        this.player.load(url);
-                        this.player.play();
-                    });
+            async play() {
+                const url = await this.queue.get(this.queue.active).getStreamUrl();
+
+                await this.player.load(url);
+                this.player.play();
             },
             pause() {
                 this.player.pause();
@@ -132,29 +131,27 @@
             changeProgress(progress) {
                 this.player.progress = progress;
             },
-            previousTrack() {
-                const nextIndex = this.queue.previous();
+            async previousTrack() {
+                const nextIndex = this.queue.previous(),
+                    url = await this.queue.get(nextIndex).getStreamUrl();
 
-                this.queue.get(nextIndex).getSrc().then(url => {
-                    this.player.load([url])
-                        .then(() => this.player.play());
-                });
+                await this.player.load([url]);
+                this.player.play();
             },
-            nextTrack() {
-                const nextIndex = this.queue.next();
+            async nextTrack() {
+                const nextIndex = this.queue.next(),
+                    url = await this.queue.get(nextIndex).getStreamUrl();
 
-                this.queue.get(nextIndex).getSrc().then(url => {
-                    this.player.load([url])
-                        .then(() => this.player.play());
-                });
+                await this.player.load([url]);
+                this.player.play();
             }
         },
-        created: function () {
+        created() {
             this.player.on('progress', (soundId, progress) => {
                 this.progress = progress;
             });
         },
-        destroyed: function () {
+        destroyed() {
             this.player.off('progress');
         }
     }

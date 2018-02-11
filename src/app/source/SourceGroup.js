@@ -3,16 +3,56 @@
  */
 
 import Set from '../Set';
+import Source from '../source/Source';
+import Channel from '../source/Channel';
+
+import config from '../../config';
 
 export default class SourceGroup extends Set {
-    add(item) {
-        item.active = true;
+    async fetch() {
+        (await (await fetch(config.urlBase + '/audio/sources', {
+            method: 'POST',
+            headers: new Headers({
+                'Content-Type': 'application/json'
+            })
+        })).json()).data.forEach(source => {
+            const _source = new Source({
+                id: source.id,
+                name: source.name
+            });
 
-        return super.add(item);
+            source.channels.forEach(channel => {
+                _source.add(new Channel({
+                    source: source.id,
+                    type: channel.type,
+                    name: channel.name
+                }))
+            });
+
+            this.add(_source);
+        });
     }
 
-    search(keywords) {
-        // TODO: change this later
-        return this.get()[0].search(keywords);
+    async get(index) {
+        if (!this._items.length) {
+            await this.fetch();
+        }
+
+        return super.get(index);
+    }
+
+    search(keywords, sources) {
+        return (async() => {
+            return (await (await fetch(config.urlBase + '/audio/search', {
+                method: 'POST',
+                body: JSON.stringify({
+                    keywords,
+                    sources
+                }),
+                headers: new Headers({
+                    'Content-Type': 'application/json'
+                })
+            })).json()).data;
+        })();
     }
 }

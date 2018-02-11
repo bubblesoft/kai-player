@@ -1,5 +1,5 @@
 <template lang="pug">
-    .wrap
+    .list-pane(v-if="sources.length")
         select.form-control(v-model="sourceSelected")
             option(
                 v-for="source in sources"
@@ -35,13 +35,8 @@
           }
         },
         computed: {
-            sources() {
-                return this.sourceGroup.get()
-            },
-            channels() {
-                return this.sourceSelected.get()
-            },
             ...mapState({
+                sources: state => state.sourceModule.sources,
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 queue: state => {
                     const queueGroup = state.queueModule.queueGroup;
@@ -52,23 +47,27 @@
             })
         },
         methods: {
-            addToPlayback(track) {
-                const index = this.queue.add(track);
+            async addToPlayback(track) {
+                const index = this.queue.add(track),
+                    url = await this.queue.get(this.queue.goTo(index)).getStreamUrl();
 
-                this.queue.get(this.queue.goTo(index)).getSrc().then(url => {
-                    this.player.load([url])
-                        .then(() => this.player.play());
-                });
+                this.player.load([url])
+                    .then(() => this.player.play())
+                    .catch(err => {
+                        console.log(err);
+                    });
             }
         },
         filters: {
             formatDuration
         },
         created() {
-            this.sourceSelected = this.sources[0];
-            this.channelSelected = this.channels[0];
-
-            this.channelSelected.get();
+            (async () => {
+                if (this.sources.length) {
+                    this.sourceSelected = this.sources[0];
+                    this.channelSelected = this.sourceSelected.get()[0];
+                }
+            })();
         },
         watch: {
             channelSelected(channel) {
@@ -77,20 +76,18 @@
                     .then(tracks => {
                         this.tracks = tracks;
                     });
+            },
+            sources(sources) {
+                this.sourceSelected = sources[0];
+                this.channelSelected = this.sourceSelected.get()[0];
             }
         }
     }
 </script>
 
 <style lang="scss" scoped>
-    .wrap {
-        position: absolute;
-        left: 0;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: auto;
-        height: auto;
+    .list-pane {
+        height: 100%;
         background-color: rgba(255, 255, 255, .15);
         overflow: auto;
 

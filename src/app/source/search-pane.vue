@@ -20,11 +20,18 @@
                 )
                     td {{ track.name }}
                     td {{ track.artists.map(artist => artist.name).join(', ') }}
-                    td(style="width:46px") {{ track.duration | formatDuration('mm:ss') }}
+                    td(
+                        v-if="track.duration"
+                        style="width:46px"
+                    ) {{ track.duration | formatDuration('mm:ss') }}
+                    td(v-else)
 </template>
 
 <script>
     import { mapState } from 'vuex';
+
+    import Track from '../Track';
+    import Artist from '../Artist';
 
     import { formatDuration } from '../../scripts/utils';
 
@@ -38,6 +45,7 @@
         },
         computed: {
             ...mapState({
+                sources: state => state.sourceModule.sources,
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 queue: state => {
                     const queueGroup = state.queueModule.queueGroup;
@@ -49,19 +57,34 @@
             })
         },
         methods: {
-            search(keywords) {
-                this.sourceGroup.search(keywords)
-                    .then(tracks => {
-                        this.tracks = tracks;
-                    });
-            },
-            addToPlayback(track) {
-                const index = this.queue.add(track);
+            async search(keywords) {
+                const activeSources = this.sources.filter(source => source.active)
+                    .map(source => source.id);
 
-                this.queue.get(this.queue.goTo(index)).getSrc().then(url => {
-                    this.player.load([url])
-                            .then(() => this.player.play());
-                });
+                this.tracks = (await this.sourceGroup.search(keywords, activeSources));
+            },
+            async addToPlayback(track) {
+                const index = this.queue.add(new Track({
+                    id: track.source + '_' + track.id,
+                    name: track.name,
+                    duration: track.duration || null,
+                    artists: (() => {
+                        const artists = [];
+
+                        track.artists.forEach(artist => {
+                            artists.push(new Artist({
+                                name: artist.name
+                            }));
+                        });
+
+                        return artists;
+                    })()
+                }));
+
+                const url = await this.queue.get(this.queue.goTo(index)).getStreamUrl();
+
+                await this.player.load([url]);
+                this.player.play();
             }
         },
         filters: {

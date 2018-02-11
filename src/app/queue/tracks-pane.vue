@@ -54,12 +54,11 @@
             })
         },
         methods: {
-            playTrack(index) {
-                this.queue.get(this.queue.goTo(index)).getSrc()
-                    .then(url => {
-                        this.player.load(url);
-                        this.player.play();
-                    });
+            async playTrack(index) {
+                const url = await this.queue.get(this.queue.goTo(index)).getStreamUrl();
+
+                await this.player.load(url);
+                this.player.play();
             }
         },
         filters: {
