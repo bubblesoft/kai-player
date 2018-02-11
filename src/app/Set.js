@@ -4,20 +4,20 @@
 
 export default class Set {
     active;
-    _name;
+    name;
     _items;
-
-    get name() {
-        return this._name;
-    }
 
     get length() {
         return this._items.length;
     }
 
     constructor({ name }) {
-        this._name = name;
+        this.name = name;
         this._items = [];
+    }
+
+    update(items) {
+        this._items = items;
     }
 
     /**
@@ -31,6 +31,10 @@ export default class Set {
         this._items.push(item);
 
         return this.length - 1;
+    }
+
+    insert(index, ...items) {
+        this._items.splice(index, 0 , ...items);
     }
 
     get(index) {

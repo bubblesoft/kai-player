@@ -9,9 +9,10 @@ import Vuex from 'vuex';
 
 import i18next from 'i18next';
 
+import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE } from '../scripts/mutation-types';
+
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
-import Queue from './queue/Queue';
 import Player from './Player';
 
 import { ADD_SOURCES } from './mutation-types';
@@ -38,7 +39,9 @@ i18next.init({
                 'Tracks': 'Tracks',
                 'Panel': 'Panel',
                 'Search': 'Search',
-                'Search for music': 'Search for music'
+                'Search for music': 'Search for music',
+                'Temp': 'Temp',
+                'New Playlist': 'New Playlist'
             }
         },
         'zh-CN': {
@@ -49,7 +52,9 @@ i18next.init({
                 'Tracks': '播放音频',
                 'Panel': '面板',
                 'Search': '搜索',
-                'Search for music': '搜索音乐'
+                'Search for music': '搜索音乐',
+                'Temp': '临时播放列表',
+                'New Playlist': '新建播放列表'
             }
         },
         'ja-JP': {
@@ -60,7 +65,9 @@ i18next.init({
                 'Tracks': 'Tracks',
                 'Panel': 'パネル',
                 'Search': 'Search',
-                'Search for music': 'Search for music'
+                'Search for music': 'Search for music',
+                'Temp': 'Temp',
+                'New Playlist': 'New Playlist'
             }
         },
         'ko-KR': {
@@ -71,7 +78,9 @@ i18next.init({
                 'Tracks': 'Tracks',
                 'Panel': '패널',
                 'Search': 'Search',
-                'Search for music': 'Search for music'
+                'Search for music': 'Search for music',
+                'Temp': 'Temp',
+                'New Playlist': 'New Playlist'
             }
         }
     }
@@ -99,11 +108,20 @@ const sourceModule = {
 
 const queueGroup = new QueueGroup({ name: 'Global' });
 
-queueGroup.add(new Queue({ name: 'Temp' }));
-
 const queueModule = {
     state: {
         queueGroup
+    },
+    mutations: {
+        [UPDATE_QUEUE_GROUP] (state, payload) {
+            state.queueGroup.update(payload.queues);
+        },
+        [INSERT_QUEUE] (state, payload) {
+            state.queueGroup.insert(payload.index, payload.queue);
+        },
+        [UPDATE_QUEUE] (state, payload) {
+            state.queueGroup.get(payload.index).name = payload.name;
+        }
     }
 };
 

@@ -1,17 +1,23 @@
 <template lang="pug">
-    .editable-cell(@click="focus") {{ text }}
+    .editable-box(
+        :style="{ height: this.height ? this.height + 'px' : 'auto', lineHeight: this.height ? this.height + 'px' : 'unset' }"
+        @dblclick="focus"
+    ) {{ value }}
         input(
             v-model="text"
-            @change="change"
+            @input="input"
             @blur="blur"
             :style="inputStyle"
+            @pointerdown.stop=""
+            @mousedown.stop=""
         )
 </template>
 
 <script>
     export default {
         props: {
-          value: String
+            value: String,
+            height: Number
         },
         data() {
             return {
@@ -24,7 +30,7 @@
             }
         },
         methods: {
-            change() {
+            input() {
                 this.$emit('input', this.text);
             },
             focus() {
@@ -41,19 +47,24 @@
         },
         created() {
             this.text = this.value;
+        },
+        updated() {
+            this.text = this.value;
         }
     }
 </script>
 
 <style lang="scss" scoped>
-    .editable-cell {
+    .editable-box {
         position: relative;
+        overflow: hidden;
 
         input {
             display: block;
             position: absolute;
             left: 0;
             top: 0;
+            color: #333;
             font-size: 14px;
         }
     }

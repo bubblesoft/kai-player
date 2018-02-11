@@ -1,6 +1,6 @@
 <template lang="pug">
     .panel.panel-default
-        .panel-heading {{ i18n.t(mapPanelHeading(type)) }}
+        .panel-heading {{ panelHeading }}
         .panel-body
             .panel-body__wrap
                 div(:is="mapComponent(type)")
@@ -95,7 +95,8 @@
                     default:
                         return null;
                 }
-            }
+            },
+            mapPanelHeading
         },
         created() {
             this.panelHeading = this.i18n.t(mapPanelHeading(this.type));
@@ -120,6 +121,7 @@
                     height = viewportHeight * .3;
                     break;
                 case 'playlist':
+                    height = viewportHeight * .3;
                     x = (viewportWidth - width);
                     y = (viewportHeight - height - controlBarHeight - 2);
                     this.attachedToHorizontal = 'right';
