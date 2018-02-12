@@ -94,11 +94,7 @@
                 return this.player.duration;
             },
             ...mapState({
-                queue: state => {
-                    const queueGroup = state.queueModule.queueGroup;
-
-                    return queueGroup.get(queueGroup.active);
-                },
+                queue: state => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex),
                 player: state => state.playerModule.player
             })
         },

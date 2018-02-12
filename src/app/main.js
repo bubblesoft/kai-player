@@ -9,7 +9,7 @@ import Vuex from 'vuex';
 
 import i18next from 'i18next';
 
-import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE } from '../scripts/mutation-types';
+import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
@@ -110,17 +110,27 @@ const queueGroup = new QueueGroup({ name: 'Global' });
 
 const queueModule = {
     state: {
-        queueGroup
+        queueGroup,
+        playingQueueIndex: null
     },
     mutations: {
-        [UPDATE_QUEUE_GROUP] (state, payload) {
-            state.queueGroup.update(payload.queues);
+        [UPDATE_QUEUE_GROUP] (state, { queues, active }) {
+            if (queues) {
+                state.queueGroup.update(queues);
+            }
+
+            if (typeof active === 'number') {
+                state.queueGroup.active = active;
+            }
         },
         [INSERT_QUEUE] (state, payload) {
             state.queueGroup.insert(payload.index, payload.queue);
         },
-        [UPDATE_QUEUE] (state, payload) {
-            state.queueGroup.get(payload.index).name = payload.name;
+        [UPDATE_QUEUE] (state, { index, name }) {
+            state.queueGroup.get(index).name = name;
+        },
+        [UPDATE_PLAYING_QUEUE_INDEX] (state, { index }) {
+            state.playingQueueIndex = index;
         }
     }
 };

@@ -28,25 +28,33 @@
 </template>
 
 <script>
-    import { mapState } from 'vuex';
+    import { mapState, mapMutations } from 'vuex';
 
     import { formatDuration } from '../../scripts/utils';
 
+    import { UPDATE_PLAYING_QUEUE_INDEX } from '../../scripts/mutation-types';
+
     export default {
-        data() {
-          return {
-              queue: null
-          }
-        },
         computed: {
+            queue() {
+                return this.queueGroup.get(this.queueGroup.active);
+            },
             tracks() {
-              return this.queue.get();
+              return this.queue ? this.queue.get() : [];
             },
             activeIndex() {
                 return this.queue.active;
             },
             playing() {
                 return this.player.playing
+            },
+            playingQueueIndex: {
+                get() {
+                    return this.$store.state.queueModule.playingQueueIndex;
+                },
+                set(index) {
+                    this[UPDATE_PLAYING_QUEUE_INDEX]({ index });
+                }
             },
             ...mapState({
                 queueGroup: state => state.queueModule.queueGroup,
@@ -59,13 +67,12 @@
 
                 await this.player.load(url);
                 this.player.play();
-            }
+                this.playingQueueIndex = this.queueGroup.active;
+            },
+        ...mapMutations([UPDATE_PLAYING_QUEUE_INDEX])
         },
         filters: {
             formatDuration
-        },
-        created() {
-            this.queue = this.queueGroup.get(this.queueGroup.active);
         }
     }
 </script>

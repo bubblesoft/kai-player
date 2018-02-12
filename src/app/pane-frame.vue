@@ -122,8 +122,15 @@
                     break;
                 case 'playlist':
                     height = viewportHeight * .3;
-                    x = (viewportWidth - width);
-                    y = (viewportHeight - height - controlBarHeight - 2);
+                    x = viewportWidth - width;
+                    y = viewportHeight - viewportHeight * .3 - height - controlBarHeight - 2;
+                    this.attachedToHorizontal = 'right';
+                    this.attachedToVertical = null;
+                    break;
+                case 'tracks':
+                    height = viewportHeight * .3;
+                    x = viewportWidth - width;
+                    y = viewportHeight - height - controlBarHeight - 2;
                     this.attachedToHorizontal = 'right';
                     this.attachedToVertical = null;
                     break;

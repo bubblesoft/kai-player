@@ -30,11 +30,11 @@ export default class Set {
     add(item) {
         this._items.push(item);
 
-        return this.length - 1;
-    }
+        if (this._items.length === 1) {
+            this.active = 0;
+        }
 
-    insert(index, ...items) {
-        this._items.splice(index, 0 , ...items);
+        return this.length - 1;
     }
 
     get(index) {
