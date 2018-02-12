@@ -115,9 +115,7 @@ const queueModule = {
     },
     mutations: {
         [UPDATE_QUEUE_GROUP] (state, { queues, active }) {
-            if (queues) {
-                state.queueGroup.update(queues);
-            }
+            queues && state.queueGroup.update(queues);
 
             if (typeof active === 'number') {
                 state.queueGroup.active = active;
@@ -126,8 +124,15 @@ const queueModule = {
         [INSERT_QUEUE] (state, payload) {
             state.queueGroup.insert(payload.index, payload.queue);
         },
-        [UPDATE_QUEUE] (state, { index, name }) {
-            state.queueGroup.get(index).name = name;
+        [UPDATE_QUEUE] (state, { index, name, tracks, active }) {
+            const queue = state.queueGroup.get(index);
+
+            name && (queue.name = name);
+            tracks && queue.update(tracks);
+
+            if (typeof active === 'number') {
+                queue.active = active;
+            }
         },
         [UPDATE_PLAYING_QUEUE_INDEX] (state, { index }) {
             state.playingQueueIndex = index;

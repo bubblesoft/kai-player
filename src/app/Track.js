@@ -5,9 +5,9 @@
 import config from '../config';
 
 export default class Track {
+    duration;
     _id;
     _name;
-    _duration;
     _artists;
     _getStreamUrl;
 
@@ -19,10 +19,6 @@ export default class Track {
         return this._name;
     }
 
-    get duration() {
-        return this._duration;
-    }
-
     get artists() {
         return this._artists;
     }
@@ -30,7 +26,7 @@ export default class Track {
     constructor({id, name, duration, artists, getStreamUrl }) {
         this._id = id;
         this._name = name;
-        this._duration = duration;
+        this.duration = duration;
         this._artists = artists;
         this._getStreamUrl = getStreamUrl;
     }

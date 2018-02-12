@@ -1,30 +1,57 @@
 <template lang="pug">
-    .wrap
-        table.table-condensed.table.table-hover
-            tbody
-                tr(
-                    v-for="(track, index) in tracks"
-                    @dblclick="playTrack(index)"
+    .tracks-pane
+        .toolbar
+            draggable.tool-button(
+                v-model="trashCan.data"
+                :options="{ group: 'tracks' }"
+                @dragover.native="trashCan.hover = true"
+                @dragleave.native="trashCan.hover = false"
+                :class="{ active: dragging && trashCan.hover }"
+            )
+                svg(
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
                 )
-                    td(style="width:18px")
-                        template(v-if="index === activeIndex")
-                            svg(
-                                v-if="playing"
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M8 5v14l11-7z")
-                            svg(
-                                v-else
-                                width="24"
-                                height="24"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M6 19h4V5H6v14zm8-14v14h4V5h-4z")
-                    td {{ track.name }}
-                    td {{ track.artists.map(artist => artist.name).join(', ') }}
-                    td {{ track.duration | formatDuration('mm:ss') }}
+                    path(d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z")
+        .list-wrap
+            table.table-condensed.table.table-hover
+                draggable(
+                    v-model="tracks"
+                    :options="{ group: 'tracks' }"
+                    @sort="onSort"
+                    @start="dragging = true"
+                    @end="dragging = false"
+                    element="tbody"
+                )
+                    tr(
+                        v-for="(track, index) in tracks"
+                        @dblclick="playTrack(index)"
+                        @click="select(index)"
+                    )
+                        td(style="width:18px")
+                            template(v-if="queueGroup.active === playingQueueIndex && index === activeIndex")
+                                svg(
+                                    v-if="playing"
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                )
+                                    path(d="M8 5v14l11-7z")
+                                svg(
+                                    v-else
+                                    width="24"
+                                    height="24"
+                                    viewBox="0 0 24 24"
+                                )
+                                    path(d="M6 19h4V5H6v14zm8-14v14h4V5h-4z")
+                        td {{ track.name }}
+                        td {{ track.artists.map(artist => artist.name).join(', ') }}
+                        td(
+                            v-if="track.duration"
+                            style="width:46px"
+                        ) {{ track.duration | formatDuration('mm:ss') }}
+                        td(v-else)
 </template>
 
 <script>
@@ -32,18 +59,52 @@
 
     import { formatDuration } from '../../scripts/utils';
 
-    import { UPDATE_PLAYING_QUEUE_INDEX } from '../../scripts/mutation-types';
+    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX } from '../../scripts/mutation-types';
+
+    import draggable from 'vuedraggable';
+
+    import editableBox from '../editable-box';
 
     export default {
+        components: {
+            draggable,
+            editableBox
+        },
+        data() {
+          return {
+              selectedIndex: null,
+              trashCan: {
+                  hover: false,
+                  data: []
+              },
+              dragging: false
+          }
+        },
         computed: {
             queue() {
                 return this.queueGroup.get(this.queueGroup.active);
             },
-            tracks() {
-              return this.queue ? this.queue.get() : [];
+            tracks: {
+                get() {
+                    return this.queue ? this.queue.get() : [];
+                },
+                set(tracks) {
+                    this[UPDATE_QUEUE]({
+                        index: this.queueGroup.active,
+                        tracks
+                    });
+                }
             },
-            activeIndex() {
-                return this.queue.active;
+            activeIndex: {
+                get() {
+                    return this.queue.active;
+                },
+                set(active) {
+                    this[UPDATE_QUEUE]({
+                        index: this.queueGroup.active,
+                        active
+                    });
+                }
             },
             playing() {
                 return this.player.playing
@@ -67,9 +128,41 @@
 
                 await this.player.load(url);
                 this.player.play();
+                this.tracks[index].duration = this.player.duration * 1000;
                 this.playingQueueIndex = this.queueGroup.active;
             },
-        ...mapMutations([UPDATE_PLAYING_QUEUE_INDEX])
+            select(index) {
+                const select = () => {
+                    document.removeEventListener('click', select);
+                    this.selectedIndex = index;
+                };
+
+                document.addEventListener('click', select);
+            },
+            onSort(e) {
+                if (this.activeIndex !== null) {
+                    if (e.from === e.to) {
+                        if (e.oldIndex === this.activeIndex) {
+                            this.activeIndex = e.newIndex;
+                        } else if (e.oldIndex > this.activeIndex && e.newIndex <= this.activeIndex) {
+                            this.activeIndex++;
+                        } else if (e.oldIndex < this.activeIndex && e.newIndex >= this.activeIndex) {
+                            this.activeIndex--;
+                        }
+                    } else if (e.from !== e.to) {
+                        if (e.oldIndex === this.activeIndex) {
+                            this.player.unload();
+                            this.activeIndex = null;
+                        } else if (e.oldIndex < this.activeIndex) {
+                            this.activeIndex--;
+                        }
+                    }
+                }
+            },
+            ...mapMutations([
+                UPDATE_QUEUE,
+                UPDATE_PLAYING_QUEUE_INDEX
+            ])
         },
         filters: {
             formatDuration
@@ -78,17 +171,65 @@
 </script>
 
 <style lang="scss" scoped>
-    .wrap {
+    .tracks-pane {
         height: 100%;
         background-color: rgba(255, 255, 255, .15);
 
-        tr {
-            cursor: default;
+        .toolbar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 0 5px;
+            box-shadow: inset 0 -2px 1px -1.5px rgba(0, 0, 0, 0.2);
 
-            svg {
-                width: 18px;
-                height: 18px;
-                fill: #fff;
+            .tool-button {
+                margin: 0 2px;
+                cursor: pointer;
+
+                svg {
+                    fill: rgba(255, 255, 255, 0.6);
+                }
+
+                &:hover svg {
+                    fill: rgba(255, 255, 255, 0.9);
+                    -webkit-filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
+                    filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
+                    -ms-filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
+                    filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
+                }
+
+                &.active svg {
+                    fill: rgba(211, 101, 98, .9);
+                }
+
+                tr {
+                    display: none;
+                }
+            }
+        }
+
+        .list-wrap {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: calc(100% - 30px);
+            margin-top: 29px;
+            box-shadow: inset 0 2px 1px -1.5px rgba(255, 255, 255, 0.2);
+            overflow: auto;
+
+            tr {
+                cursor: default;
+
+                svg {
+                    width: 18px;
+                    height: 18px;
+                    fill: #fff;
+                }
+
+                &.queue-active {
+                    background-color: rgba(0, 0, 0, .3);
+                }
             }
         }
     }

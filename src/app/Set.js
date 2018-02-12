@@ -14,6 +14,7 @@ export default class Set {
     constructor({ name }) {
         this.name = name;
         this._items = [];
+        this.active = null;
     }
 
     update(items) {
@@ -35,6 +36,10 @@ export default class Set {
         }
 
         return this.length - 1;
+    }
+
+    insert(index, ...items) {
+        this._items.splice(index, 0 , ...items);
     }
 
     get(index) {

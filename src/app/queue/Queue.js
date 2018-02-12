@@ -10,7 +10,6 @@ export default class Queue extends Set {
     constructor({ name }) {
         super({ name });
         this.mode = 'repeat-all';
-        this._active = null;
     }
 
     insert(index, ...items) {
@@ -24,26 +23,26 @@ export default class Queue extends Set {
     }
 
     previous() {
-        if (this._active > 0) {
-            this._active--;
+        if (this.active > 0) {
+            this.active--;
         } else {
-            this._active = this.length - 1;
+            this.active = this.length - 1;
         }
 
-        return this._active;
+        return this.active;
     }
 
     next() {
-        if (this._active < this.length - 1) {
-            this._active++;
+        if (this.active < this.length - 1) {
+            this.active++;
         } else {
-            this._active = 0;
+            this.active = 0;
         }
 
         return this._active;
     }
 
     goTo(index) {
-        return this._active = index;
+        return this.active = index;
     }
 }

@@ -72,11 +72,11 @@
         data() {
             return {
                 selectedIndex: null,
-                dragging: false,
                 trashCan: {
                     hover: false,
                     data: []
-                }
+                },
+                dragging: false
             }
         },
         computed: {
@@ -140,7 +140,7 @@
                     } else if (e.oldIndex > this.playingIndex && e.newIndex <= this.playingIndex) {
                         this.playingIndex++;
                     } else if (e.oldIndex < this.playingIndex && e.newIndex >= this.playingIndex) {
-                        this.playingIndex--
+                        this.playingIndex--;
                     }
                 } else if (e.from !== e.to) {
                     if (this.queueGroup.length === 0) {
@@ -152,10 +152,6 @@
                         this.playingIndex = null;
                     } else if (e.oldIndex < this.playingIndex) {
                         this.playingIndex--;
-                    }
-
-                    if (e.oldIndex === this.activeIndex) {
-
                     }
                 }
             },
