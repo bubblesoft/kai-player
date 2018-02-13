@@ -111,14 +111,18 @@
 
             switch (this.type) {
                 case 'source':
-                    x = 0;
-                    y = 0;
                     height = viewportHeight * .2;
+                    x = 0;
+                    y = viewportHeight - viewportHeight * .6 - height - controlBarHeight - 2;
+                    this.attachedToHorizontal = 'left';
+                    this.attachedToVertical = null;
                     break;
                 case 'list':
-                    x = 0;
-                    y = viewportHeight * .2;
                     height = viewportHeight * .3;
+                    x = 0;
+                    y = viewportHeight - viewportHeight * .3 - height - controlBarHeight - 2;
+                    this.attachedToHorizontal = 'left';
+                    this.attachedToVertical = null;
                     break;
                 case 'playlist':
                     height = viewportHeight * .3;
@@ -135,9 +139,11 @@
                     this.attachedToVertical = null;
                     break;
                 case 'search':
-                    x = 0;
-                    y = viewportHeight * .5;
                     height = viewportHeight * .3;
+                    x = 0;
+                    y = viewportHeight - height - controlBarHeight - 2;
+                    this.attachedToHorizontal = 'left';
+                    this.attachedToVertical = null;
                     break;
                 default:
                     x = 0;

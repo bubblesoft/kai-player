@@ -52,6 +52,11 @@
                             style="width:46px"
                         ) {{ track.duration | formatDuration('mm:ss') }}
                         td(v-else)
+                    tr(
+                        slot="footer"
+                        v-if="!tracks.length"
+                        style="display: block; height: 80px; opacity: 0;"
+                    )
 </template>
 
 <script>

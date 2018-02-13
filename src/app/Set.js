@@ -38,10 +38,6 @@ export default class Set {
         return this.length - 1;
     }
 
-    insert(index, ...items) {
-        this._items.splice(index, 0 , ...items);
-    }
-
     get(index) {
         if (typeof index === 'number') {
             return this._items[index];

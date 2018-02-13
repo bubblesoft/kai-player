@@ -40,7 +40,7 @@ export default class Channel {
         }
 
         return (async() => {
-            const data = (await (await fetch(require('../../config').urlBase + '/audio/list', {
+            return (await (await fetch(require('../../config').urlBase + '/audio/list', {
                 method: 'POST',
                 body: JSON.stringify({
                     source: this.source,
@@ -49,27 +49,14 @@ export default class Channel {
                 headers: new Headers({
                     'Content-Type': 'application/json'
                 })
-            })).json()).data,
-                tracks = [];
-
-            data.forEach(el => {
-                tracks.push(new Track({
-                    id: 'netease_' + el.id,
-                    name: el.name,
-                    duration: el.dt,
-                    artists: (() => {
-                        const output = [];
-
-                        el.artists.forEach(el => {
-                            output.push(new Artist({ name: el.name }));
-                        });
-
-                        return output;
-                    })()
-                }));
+            })).json()).data.map(trackData => {
+                return new Track({
+                    id: 'netease_' + trackData.id,
+                    name: trackData.name,
+                    duration: trackData.dt,
+                    artists: trackData.artists.map(artist => new Artist({ name: artist.name }))
+                })
             });
-
-            return tracks;
         })();
     }
 }

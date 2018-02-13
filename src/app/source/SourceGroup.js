@@ -5,6 +5,8 @@
 import Set from '../Set';
 import Source from '../source/Source';
 import Channel from '../source/Channel';
+import Track from '../Track';
+import Artist from '../Artist';
 
 import config from '../../config';
 
@@ -52,7 +54,14 @@ export default class SourceGroup extends Set {
                 headers: new Headers({
                     'Content-Type': 'application/json'
                 })
-            })).json()).data;
+            })).json()).data.map(trackData => {
+                return new Track({
+                    id: trackData.source + '_' + trackData.id,
+                    name: trackData.name,
+                    duration: trackData.duration || null,
+                    artists: trackData.artists.map(artist => new Artist({ name: artist.name }))
+                });
+            });
         })();
     }
 }
