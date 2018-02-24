@@ -11,8 +11,8 @@
             draggable.tool-button(
                 v-model="trashCan.data"
                 :options="{ group: 'queues' }"
-                @dragover.native="trashCan.hover = true"
-                @dragleave.native="trashCan.hover = false"
+                @pointerover.native="trashCan.hover = true"
+                @pointerleave.native="trashCan.hover = false"
                 :class="{ active: dragging && trashCan.hover }"
             )
                 svg(
@@ -25,7 +25,7 @@
             table.table-condensed.table.table-hover
                 draggable(
                     v-model="queues"
-                    :options="{ group: 'queues' }"
+                    :options="{ group: 'queues', handle: '.active', forceFallback: true, fallbackOnBody: true }"
                     @sort="onSort"
                     @start="dragging = true"
                     @end="dragging = false"
@@ -33,7 +33,7 @@
                 )
                     tr(
                         v-for="(queue, index) in queues"
-                        @dblclick="activeIndex = index;"
+                        v-hammer:doubletap="() => activeIndex = index"
                         @click="select(index)"
                         :class="{ active: selectedIndex === index, 'queue-active': activeIndex === index }"
                     )
@@ -107,14 +107,14 @@
             ...mapState({
                 queueGroup: state => state.queueModule.queueGroup,
                 player: state => state.playerModule.player,
-                i18n: state => state.generalModule.i18n
+                i18next: state => state.generalModule.i18next
             })
         },
         methods: {
             insert(index) {
                 this[INSERT_QUEUE]({
                     index,
-                    queue: new Queue({ name: this.i18n.t('New Playlist') })
+                    queue: new Queue({ name: this.i18next.t('New Playlist') })
                 });
             },
             select(index) {
@@ -155,6 +155,9 @@
                     }
                 }
             },
+            unSelect() {
+                this.selectedIndex = null;
+            },
             ...mapMutations([
                 INSERT_QUEUE,
                 UPDATE_QUEUE_GROUP,
@@ -162,10 +165,14 @@
             ])
         },
         created() {
-            this.queueGroup.insert(0, new Queue({ name: this.i18n.t('Temp') }));
-            document.addEventListener('click', () => {
-               this.selectedIndex = null;
-            });
+            if (!this.queueGroup.length) {
+                this.queueGroup.insert(0, new Queue({ name: this.i18next.t('Temp') }));
+            }
+
+            document.addEventListener('click', this.unSelect);
+        },
+        destroyed() {
+            document.removeEventListener('click', this.unSelect);
         }
     }
 </script>
@@ -221,16 +228,24 @@
             tr {
                 cursor: default;
 
-                svg {
-                    width: 18px;
-                    height: 18px;
-                    fill: #fff;
+                &.active {
+                    cursor: move;
                 }
 
                 &.queue-active {
                     background-color: rgba(0, 0, 0, .3);
                 }
+
+                svg {
+                    width: 18px;
+                    height: 18px;
+                    fill: #fff;
+                }
             }
         }
+    }
+
+    .sortable-fallback {
+        color: #fff;
     }
 </style>

@@ -1,5 +1,8 @@
 <template lang="pug">
-    .panel.panel-default
+    .panel-frame.panel.panel-default(
+        @pointerdown="activate"
+        :class="{ active: activePanelIndex === type }"
+    )
         .panel-heading {{ panelHeading }}
         .panel-body
             .panel-body__wrap
@@ -7,12 +10,13 @@
 </template>
 
 <script>
-    import { mapState } from 'vuex';
+    import { mapState, mapMutations } from 'vuex';
 
-    import jQuery from 'jquery';
     import interact from 'interactjs';
 
     import { mapPanelHeading } from '../scripts/utils';
+
+    import { UPDATE_ACTIVE_PANEL_INDEX, SET_ACTIVE_PANEL_INDEX_LOCK } from '../scripts/mutation-types';
 
     import listPane from './source/list-pane';
     import sourcePane from './source/source-pane';
@@ -38,8 +42,16 @@
             }
         },
         computed: {
+            activePanelIndex: {
+                get() {
+                    return this.$store.state.generalModule.activePanel.index;
+                },
+                set(panelType) {
+                    this[UPDATE_ACTIVE_PANEL_INDEX](panelType);
+                }
+            },
             ...mapState({
-                i18n: state => state.generalModule.i18n
+                i18next: state => state.generalModule.i18next
             })
         },
         components: {
@@ -51,12 +63,12 @@
         },
         methods: {
             onWindowResize() {
-                const $panel = jQuery(this.$el),
-                    viewportWidth = jQuery(window).width(),
-                    viewportHeight = jQuery(window).height(),
-                    controlBarHeight = jQuery('#control-bar').height() + 10,
-                    width = $panel.width(),
-                    height = $panel.height();
+                const panel = this.$el,
+                    viewportWidth = window.innerWidth,
+                    viewportHeight = window.innerHeight,
+                    controlBarHeight = document.querySelector('#control-bar').offsetHeight,
+                    width = panel.offsetWidth,
+                    height = panel.offsetHeight;
 
                 let x, y;
 
@@ -76,9 +88,9 @@
                     y = viewportHeight - controlBarHeight - this.bottomY - height - 2;
                 }
 
-                $panel.css('transform', 'translate(' + x + 'px, ' + y + 'px)');
-                $panel.attr('data-x', x);
-                $panel.attr('data-y', y);
+                panel.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+                panel.setAttribute('data-x', x);
+                panel.setAttribute('data-y', y);
             },
             mapComponent(type) {
                 switch (type) {
@@ -96,91 +108,151 @@
                         return null;
                 }
             },
-            mapPanelHeading
+            activate() {
+                const activate = () => {
+                    document.removeEventListener('click', activate);
+                    this[SET_ACTIVE_PANEL_INDEX_LOCK](false);
+                    this.activePanelIndex = this.type;
+                };
+
+                document.addEventListener('click', activate);
+                this[SET_ACTIVE_PANEL_INDEX_LOCK](true);
+            },
+            mapPanelHeading,
+            ...mapMutations([
+                UPDATE_ACTIVE_PANEL_INDEX,
+                SET_ACTIVE_PANEL_INDEX_LOCK
+            ])
         },
         created() {
-            this.panelHeading = this.i18n.t(mapPanelHeading(this.type));
+            this.panelHeading = this.i18next.t(mapPanelHeading(this.type));
         },
         mounted() {
-            const viewportWidth = jQuery(window).width(),
-                viewportHeight = jQuery(window).height(),
-                controlBarHeight = jQuery('#control-bar').height() + 10,
+            const viewportWidth = window.innerWidth,
+                viewportHeight = window.innerHeight,
+                controlBarHeight = document.querySelector('#control-bar').offsetHeight;
+
+            let x, y, height, width;
+
+            if (viewportWidth < 600) {
+                width = viewportWidth;
+
+                switch (this.type) {
+                    case 'source':
+                        height = viewportHeight * .2;
+                        x = 0;
+                        y = viewportHeight - viewportHeight * .3 - viewportHeight * .25 - height - controlBarHeight - 2;
+                        this.attachedToHorizontal = 'left';
+                        this.attachedToVertical = null;
+                        break;
+                    case 'list':
+                        height = viewportHeight * .3;
+                        x = 0;
+                        y = viewportHeight - viewportHeight * .3 - viewportHeight * .25 - height - controlBarHeight - 2;
+                        this.attachedToHorizontal = 'left';
+                        this.attachedToVertical = null;
+                        break;
+                    case 'playlist':
+                        height = viewportHeight * .25;
+                        x = viewportWidth - width;
+                        y = viewportHeight - viewportHeight * .3 - height - controlBarHeight - 2;
+                        this.attachedToHorizontal = 'left';
+                        this.attachedToVertical = null;
+                        break;
+                    case 'tracks':
+                        height = viewportHeight * .3;
+                        x = viewportWidth - width;
+                        y = viewportHeight - height - controlBarHeight - 2;
+                        this.attachedToHorizontal = 'left';
+                        this.attachedToVertical = null;
+                        break;
+                    case 'search':
+                        height = viewportHeight * .3;
+                        x = 0;
+                        y = viewportHeight - viewportHeight * .3 - viewportHeight * .25 - height - controlBarHeight - 2;
+                        this.attachedToHorizontal = 'left';
+                        this.attachedToVertical = null;
+                        break;
+                    default:
+                        x = 0;
+                        y = 0;
+                        height = viewportHeight * .3;
+                }
+            } else {
                 width = viewportWidth * .2 > 300 ? viewportWidth * .2 : 300;
 
-            let x, y, height;
-
-            switch (this.type) {
-                case 'source':
-                    height = viewportHeight * .2;
-                    x = 0;
-                    y = viewportHeight - viewportHeight * .6 - height - controlBarHeight - 2;
-                    this.attachedToHorizontal = 'left';
-                    this.attachedToVertical = null;
-                    break;
-                case 'list':
-                    height = viewportHeight * .3;
-                    x = 0;
-                    y = viewportHeight - viewportHeight * .3 - height - controlBarHeight - 2;
-                    this.attachedToHorizontal = 'left';
-                    this.attachedToVertical = null;
-                    break;
-                case 'playlist':
-                    height = viewportHeight * .3;
-                    x = viewportWidth - width;
-                    y = viewportHeight - viewportHeight * .3 - height - controlBarHeight - 2;
-                    this.attachedToHorizontal = 'right';
-                    this.attachedToVertical = null;
-                    break;
-                case 'tracks':
-                    height = viewportHeight * .3;
-                    x = viewportWidth - width;
-                    y = viewportHeight - height - controlBarHeight - 2;
-                    this.attachedToHorizontal = 'right';
-                    this.attachedToVertical = null;
-                    break;
-                case 'search':
-                    height = viewportHeight * .3;
-                    x = 0;
-                    y = viewportHeight - height - controlBarHeight - 2;
-                    this.attachedToHorizontal = 'left';
-                    this.attachedToVertical = null;
-                    break;
-                default:
-                    x = 0;
-                    y = 0;
-                    height = viewportHeight * .3;
+                switch (this.type) {
+                    case 'source':
+                        height = viewportHeight * .2;
+                        x = 0;
+                        y = viewportHeight - viewportHeight * .6 - height - controlBarHeight - 2;
+                        this.attachedToHorizontal = 'left';
+                        this.attachedToVertical = null;
+                        break;
+                    case 'list':
+                        height = viewportHeight * .3;
+                        x = 0;
+                        y = viewportHeight - viewportHeight * .3 - height - controlBarHeight - 2;
+                        this.attachedToHorizontal = 'left';
+                        this.attachedToVertical = null;
+                        break;
+                    case 'playlist':
+                        height = viewportHeight * .3;
+                        x = viewportWidth - width;
+                        y = viewportHeight - viewportHeight * .3 - height - controlBarHeight - 2;
+                        this.attachedToHorizontal = 'right';
+                        this.attachedToVertical = null;
+                        break;
+                    case 'tracks':
+                        height = viewportHeight * .3;
+                        x = viewportWidth - width;
+                        y = viewportHeight - height - controlBarHeight - 2;
+                        this.attachedToHorizontal = 'right';
+                        this.attachedToVertical = null;
+                        break;
+                    case 'search':
+                        height = viewportHeight * .3;
+                        x = 0;
+                        y = viewportHeight - height - controlBarHeight - 2;
+                        this.attachedToHorizontal = 'left';
+                        this.attachedToVertical = null;
+                        break;
+                    default:
+                        x = 0;
+                        y = 0;
+                        height = viewportHeight * .3;
+                }
             }
 
-            const $panel = jQuery(this.$el);
+            const panel = this.$el;
 
-            $panel
-                .css('transform', 'translate(' + x + 'px, ' + y + 'px)')
-                .attr('data-x', x)
-                .attr('data-y', y)
-                .width(width)
-                .height(height);
+            panel.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+            panel.setAttribute('data-x', x);
+            panel.setAttribute('data-y', y);
+            panel.style.width = width + 'px';
+            panel.style.height = height + 'px';
 
             this.ratioX = (x + width / 2) / viewportWidth;
             this.bottomY = viewportHeight - controlBarHeight - y - height;
 
-            jQuery(window).bind('resize', this.onWindowResize);
+            window.addEventListener('resize', this.onWindowResize);
 
             const dragMoveListener =  (event) => {
-                const viewportWidth = jQuery(window).width(),
-                    viewportHeight = jQuery(window).height(),
-                    controlBarHeight = jQuery('#control-bar').height() + 10,
-                    $panel = jQuery(event.target),
-                    height = $panel.height(),
+                const viewportWidth = window.innerWidth,
+                    viewportHeight = window.innerHeight,
+                    controlBarHeight = document.querySelector('#control-bar').offsetHeight,
+                    panel = event.target,
+                    height = panel.offsetHeight,
 
                     // keep the dragged position in the data-x/data-y attributes
-                    x = (parseFloat($panel.attr('data-x')) || 0) + event.dx,
-                    y = (parseFloat($panel.attr('data-y')) || 0) + event.dy;
+                    x = (parseFloat(panel.getAttribute('data-x')) || 0) + event.dx,
+                    y = (parseFloat(panel.getAttribute('data-y')) || 0) + event.dy;
 
-                    $panel.css('transform', 'translate(' + x + 'px, ' + y + 'px)'); // translate the element
+                    panel.style.transform = 'translate(' + x + 'px, ' + y + 'px)'; // translate the element
 
                 // update the posiion attributes
-                $panel.attr('data-x', x);
-                $panel.attr('data-y', y);
+                panel.setAttribute('data-x', x);
+                panel.setAttribute('data-y', y);
 
                 this.ratioX = (x + width / 2) / viewportWidth;
                 this.bottomY = viewportHeight - controlBarHeight - y - height;
@@ -200,11 +272,11 @@
                     snap: {
                         targets: [
                             (x, y, test) => {
-                                const viewportWidth = jQuery(window).width(),
-                                    viewportHeight = jQuery(window).height(),
-                                    $panel = jQuery(this.$el),
-                                    width = $panel.width(),
-                                    height = $panel.height();
+                                const viewportWidth = window.innerWidth,
+                                    viewportHeight = window.innerHeight,
+                                    panel = this.$el,
+                                    width = panel.offsetWidth,
+                                    height = panel.offsetHeight;
 
                                 if (Math.abs(x) < 30) {
                                     this.attachedToHorizontal = 'left';
@@ -236,7 +308,7 @@
                             }
                         ],
                         relativePoints: [
-                            {x: 0, y: 0}, // snap relative to the element's top-left
+                            { x: 0, y: 0 }, // snap relative to the element's top-left
                         ]
                     }
                 })
@@ -247,35 +319,47 @@
                     },
                 })
                 .on('resizemove', function (event) {
-                    var $panel = jQuery(event.target),
-                            x = (parseFloat($panel.attr('data-x')) || 0),
-                            y = (parseFloat($panel.attr('data-y')) || 0);
+                    const panel = event.target;
+
+                    let x = (parseFloat(panel.getAttribute('data-x')) || 0),
+                        y = (parseFloat(panel.getAttribute('data-y')) || 0);
 
                     // update the element's style
-                    $panel.css('width', event.rect.width + 'px');
-                    $panel.css('height', event.rect.height + 'px');
+                    panel.style.width = event.rect.width + 'px';
+                    panel.style.height = event.rect.height + 'px';
 
                     // translate when resizing from top or left edges
                     x += event.deltaRect.left;
                     y += event.deltaRect.top;
 
-                    $panel.css('transform', 'translate(' + x + 'px,' + y + 'px)');
+                    panel.style.transform = 'translate(' + x + 'px,' + y + 'px)';
 
-                    $panel.attr('data-x', x);
-                    $panel.attr('data-y', y);
+                    panel.setAttribute('data-x', x);
+                    panel.setAttribute('data-y', y);
                 });
         },
         destroyed() {
-            jQuery(window).unbind('resize', this.onWindowResize);
+            window.removeEventListener('resize', this.onWindowResize);
         }
     }
 </script>
 
 <style lang="scss" scoped>
-    .panel {
+    .panel-frame {
         position: absolute;
         left: 0;
         top: 0;
+        opacity: .9;
+        z-index: 0;
+
+        &.active {
+            box-shadow: 0 0 60px 8px rgba(255, 255, 255, 0.15),
+                0 0 25px rgba(0, 0, 0, 0.1),
+                inset 0 0 1px rgba(255, 255, 255, 0.6);
+
+            opacity: 1;
+            z-index: 1;
+        }
 
         .panel-body__wrap {
             position: absolute;
@@ -286,6 +370,20 @@
             margin: 50px 8px 8px;
             width: auto;
             height: auto;
+        }
+    }
+</style>
+
+<style lang="scss">
+    .panel-frame {
+        .panel-heading, td, input, select {
+            color: rgba(255, 255, 255, .7);
+        }
+
+        &.active {
+            .panel-heading, td, input, select {
+                color: #fff;
+            }
         }
     }
 </style>

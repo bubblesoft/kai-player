@@ -17,12 +17,12 @@
             table.table-condensed.table.table-hover
                 draggable(
                     v-model="tracks"
-                    :options="{ group: { name: 'tracks', pull: 'clone', put: false }, sort: false }"
+                    :options="{ group: { name: 'tracks', pull: 'clone', put: false }, sort: false, handle: '.active', forceFallback: true, fallbackOnBody: true }"
                     element="tbody"
                 )
                     tr(
-                    v-for="track in tracks"
-                    @dblclick="addToPlayback(track)"
+                        v-for="track in tracks"
+                        v-hammer:doubletap="() => { addToPlayback(track); }"
                     )
                         td(style="padding: 0;")
                         td {{ track.name }}
@@ -70,7 +70,7 @@
                 queueGroup: state => state.queueModule.queueGroup,
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.queueGroup.active),
                 player: state => state.playerModule.player,
-                i18n: state => state.generalModule.i18n
+                i18next: state => state.generalModule.i18next
             })
         },
         methods: {
@@ -96,8 +96,8 @@
             formatDuration
         },
         created() {
-            this.searchButtonText = this.i18n.t('Search');
-            this.searchInputPlaceHolder = this.i18n.t('Search for music');
+            this.searchButtonText = this.i18next.t('Search');
+            this.searchInputPlaceHolder = this.i18next.t('Search for music');
         }
     }
 </script>

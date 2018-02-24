@@ -18,7 +18,7 @@
             table.table-condensed.table.table-hover
                 draggable(
                     v-model="tracks"
-                    :options="{ group: 'tracks' }"
+                    :options="{ group: 'tracks', handle: '.active', forceFallback: true, fallbackOnBody: true }"
                     @sort="onSort"
                     @start="dragging = true"
                     @end="dragging = false"
@@ -26,7 +26,7 @@
                 )
                     tr(
                         v-for="(track, index) in tracks"
-                        @dblclick="playTrack(index)"
+                        v-hammer:doubletap="() => playTrack(index)"
                         @click="select(index)"
                     )
                         td(style="width:18px")

@@ -6,10 +6,11 @@ import 'whatwg-fetch';
 
 import Vue from 'vue';
 import Vuex from 'vuex';
+import { VueHammer } from 'vue2-hammer'
 
 import i18next from 'i18next';
 
-import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX } from '../scripts/mutation-types';
+import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX, SET_ACTIVE_PANEL_INDEX_LOCK } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
@@ -23,7 +24,16 @@ if (!window["Promise"]) {
     window["Promise"] = require("promise-polyfill");
 }
 
+VueHammer.customEvents = {
+    doubletap: {
+        event: 'doubletap',
+        type: 'tap',
+        taps: 2
+    }
+};
+
 Vue.use(Vuex);
+Vue.use(VueHammer);
 
 const lang = sessionStorage.getItem("locale") || window.navigator.language || "en-US";
 
@@ -88,7 +98,41 @@ i18next.init({
 
 const generalModule = {
     state: {
-        i18n: i18next
+        panels: {
+            source: {
+                open: true
+            },
+            list: {
+                open: true
+            },
+            playlist: {
+                open: true
+            },
+            tracks: {
+                open: true
+            },
+            search: {
+                open: true
+            }
+        },
+        activePanel: {
+            index: null,
+            lock: false
+        },
+        i18next
+    },
+    mutations: {
+        [UPDATE_PANEL] (state, { index, open }) {
+            if (typeof open === 'boolean') {
+                state.panels[index].open = open;
+            }
+        },
+        [UPDATE_ACTIVE_PANEL_INDEX] (state, index) {
+            state.activePanel.index = index;
+        },
+        [SET_ACTIVE_PANEL_INDEX_LOCK] (state, boolean) {
+            state.activePanel.lock = boolean;
+        }
     }
 };
 

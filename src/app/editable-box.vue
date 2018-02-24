@@ -1,7 +1,7 @@
 <template lang="pug">
     .editable-box(
         :style="{ height: this.height ? this.height + 'px' : 'auto', lineHeight: this.height ? this.height + 'px' : 'unset' }"
-        @dblclick="focus"
+        v-hammer:doubletap="focus"
     ) {{ value }}
         input(
             v-model="text"
