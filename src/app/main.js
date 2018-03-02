@@ -10,12 +10,14 @@ import VueI18n from 'vue-i18n';
 
 import interact from 'interactjs';
 
-import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, UPDATE_PANEL, SET_ACTIVE_PANEL_INDEX_LOCK } from '../scripts/mutation-types';
+import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX, SET_ACTIVE_PANEL_INDEX_LOCK, UPDATE_ACTIVE_BACKGROUND_TYPE, SWITCH_TO_VISUALIZER, SWITCH_TO_BACKGROUND, TRIGGER_BACKGROUND_EVENT } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
 import Player from './Player';
-import Visualizer from './visualization/Visualizer';
+import { threeRenderer, histogramRenderer } from './visualization/renderers/renderers';
+import Background from './visualization/visual_controllers/Background';
+import Visualizer from './visualization/visual_controllers/Visualizer';
 
 import app from './app';
 
@@ -222,9 +224,38 @@ const playerModule = {
 
 const visualizationModule = {
     state: {
-        visualizer: new Visualizer({ type: 'bars' })
+        background: new Background('three'),
+        visualizer: new Visualizer('histogram')
+    },
+    mutations: {
+        [UPDATE_ACTIVE_BACKGROUND_TYPE](state, type) {
+            state.background.activeType = type;
+        },
+        [SWITCH_TO_BACKGROUND](state) {
+            if (state.background.activeType !== state.visualizer.activeType) {
+                state.visualizer.stop();
+                state.background.start();
+            }
+        },
+        [SWITCH_TO_VISUALIZER](state, audioSource) {
+            if (state.background.activeType !== state.visualizer.activeType) {
+                state.background.stop();
+                state.visualizer.start();
+            }
+
+            state.visualizer.listen(audioSource);
+        },
+        [TRIGGER_BACKGROUND_EVENT](state, type) {
+            state.background.event(type);
+        }
+    },
+    actions: {
+        initVisualization(context, mountPoint) {
+            threeRenderer.init(mountPoint);
+            histogramRenderer.init(mountPoint);
+        }
     }
-}
+};
 
 const store = new Vuex.Store({
     modules: {

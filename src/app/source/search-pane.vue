@@ -77,7 +77,6 @@
                 queueGroup: state => state.queueModule.queueGroup,
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.queueGroup.active),
                 player: state => state.playerModule.player,
-                visualizer: state => state.visualizationModule.visualizer,
                 i18next: state => state.generalModule.i18next
             })
         },

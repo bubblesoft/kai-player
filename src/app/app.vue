@@ -29,13 +29,13 @@
 </template>
 
 <script>
-    import { mapState, mapMutations } from 'vuex';
+    import { mapState, mapMutations, mapActions } from 'vuex';
 
     import interact from 'interactjs';
 
     import config from '../config';
 
-    import { ADD_SOURCES, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX } from '../scripts/mutation-types';
+    import { ADD_SOURCES, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX, SWITCH_TO_BACKGROUND } from '../scripts/mutation-types';
 
     import Source from './source/Source';
     import Channel from './source/Channel';
@@ -62,6 +62,7 @@
                 panels: state => state.generalModule.panels,
                 lockActivePanelIndex: state => state.generalModule.activePanel.lock,
                 player: state => state.playerModule.player,
+                background: state => state.visualizationModule.background,
                 visualizer: state => state.visualizationModule.visualizer
             })
         },
@@ -72,7 +73,11 @@
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
                 UPDATE_PANEL,
-                UPDATE_ACTIVE_PANEL_INDEX
+                UPDATE_ACTIVE_PANEL_INDEX,
+                SWITCH_TO_BACKGROUND
+            ]),
+            ...mapActions([
+                'initVisualization'
             ])
         },
         created() {
@@ -146,8 +151,12 @@
                     e.preventDefault();
                 });
 
+            this.initVisualization(this.$el);
+            this.background.start();
+
             this.player.on('end', () => {
                 this.visualizer.stop();
+                this[SWITCH_TO_BACKGROUND]();
             });
         },
         destroyed() {

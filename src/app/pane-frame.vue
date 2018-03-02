@@ -363,7 +363,7 @@
         left: 0;
         top: 0;
         opacity: .9;
-        z-index: 0;
+        z-index: 1;
         touch-action: none;
 
         &.active {
@@ -372,7 +372,7 @@
                 inset 0 0 1px rgba(255, 255, 255, 0.6);
 
             opacity: 1;
-            z-index: 1;
+            z-index: 2;
         }
 
         .panel-body__wrap {

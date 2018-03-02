@@ -4,7 +4,7 @@
 
 import * as d3 from 'd3';
 
-export default class Bars {
+export default class Histogram {
     _svg;
     _width;
     _height;

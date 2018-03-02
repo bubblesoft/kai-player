@@ -40,7 +40,7 @@
 
     import { formatDuration } from '../../scripts/utils';
 
-    import { UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK } from '../../scripts/mutation-types';
+    import { UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT } from '../../scripts/mutation-types';
 
     import draggable from 'vuedraggable';
 
@@ -74,8 +74,7 @@
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 queueGroup: state => state.queueModule.queueGroup,
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.queueGroup.active),
-                player: state => state.playerModule.player,
-                visualizer: state => state.visualizationModule.visualizer
+                player: state => state.playerModule.player
             })
         },
         methods: {
@@ -87,14 +86,21 @@
                 await this.player.load([url]);
                 this.player.play();
                 this.playingQueueIndex = this.queueGroup.active;
-                this.visualizer.listen(this.player._sound._sounds[0]._node);
-                this.visualizer.start();
+                this[TRIGGER_BACKGROUND_EVENT]('play');
+
+                setTimeout(() => {
+                    this[SWITCH_TO_VISUALIZER](this.player._sound._sounds[0]._node);
+                    this[TRIGGER_BACKGROUND_EVENT]('reset');
+                }, 2000);
+
                 track.duration = this.player.duration * 1000;
             },
             ...mapMutations([
                 UPDATE_PLAYING_QUEUE_INDEX,
-                ADD_TRACK
-            ])
+                ADD_TRACK,
+                SWITCH_TO_VISUALIZER,
+                TRIGGER_BACKGROUND_EVENT
+            ]),
         },
         filters: {
             formatDuration

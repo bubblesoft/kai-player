@@ -4,6 +4,15 @@
             .track-name(v-if="track")
                 yoyoMarquee(:title="track.name + '-' + (track.artists && track.artists.map(artist => artist.name).join(', '))")
                     span(style="color: #fff;") {{ track.name }} - {{ track.artists && track.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist') }}
+            select.form-control(v-model="activeBackgroundType")
+                option(
+                    value=""
+                    disabled
+                ) {{ backgroundSelectText }}
+                option(
+                    v-for="background in backgrounds"
+                    :value="background.value"
+                ) {{ background.name }}
             .btn-group.btn-group-xs
                 checkbox(
                     v-model="sourceOpen"
@@ -133,7 +142,7 @@
 
     import RandomQueue from './queue/RandomQueue';
 
-    import { ADD_TRACK, UPDATE_PANEL } from '../scripts/mutation-types';
+    import { ADD_TRACK, UPDATE_PANEL, UPDATE_ACTIVE_BACKGROUND_TYPE, SWITCH_TO_BACKGROUND } from '../scripts/mutation-types';
 
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
@@ -152,7 +161,8 @@
         data: () => {
             return {
                 progress: 0,
-                volume: .5
+                volume: .5,
+                backgroundSelectText: ''
             }
         },
 
@@ -167,6 +177,15 @@
 
             duration() {
                 return this.player.duration;
+            },
+
+            activeBackgroundType: {
+                get() {
+                    return this.$store.state.visualizationModule.background.activeType;
+                },
+                set(type) {
+                    this[UPDATE_ACTIVE_BACKGROUND_TYPE](type);
+                }
             },
 
             sourceOpen: {
@@ -227,7 +246,7 @@
                 },
 
                 set(open) {
-                    this[UPDATE_PANEL]({
+                    this[UPDATE_PANEL] ({
                         index: 'tracks',
                         open
                     });
@@ -242,7 +261,9 @@
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex),
                 player: state => state.playerModule.player,
                 sourceGroup: state => state.sourceModule.sourceGroup,
-                visualizer: state => state.visualizationModule.visualizer
+                visualizer: state => state.visualizationModule.visualizer,
+                backgrounds: state => state.visualizationModule.background.types,
+                i18next: state => state.generalModule.i18next
             })
         },
 
@@ -271,12 +292,14 @@
             pause() {
                 this.player.pause();
                 this.visualizer.stop();
+                this[SWITCH_TO_BACKGROUND]();
             },
 
             stop() {
                 this.player.stop();
                 this.progress = 0;
                 this.visualizer.stop();
+                this[SWITCH_TO_BACKGROUND]();
             },
 
             changeProgress(progress) {
@@ -299,7 +322,9 @@
 
             ...mapMutations([
                 ADD_TRACK,
-                UPDATE_PANEL
+                UPDATE_PANEL,
+                UPDATE_ACTIVE_BACKGROUND_TYPE,
+                SWITCH_TO_BACKGROUND
             ])
         },
 
@@ -307,6 +332,8 @@
             this.player.on('progress', (soundId, progress) => {
                 this.progress = progress;
             });
+
+            this.backgroundSelectText = this.i18next.t('Select a background');
         },
 
         destroyed() {
@@ -336,6 +363,21 @@
             .track-name {
                 width: 50%;
             }
+
+            select {
+                height: 24px;
+                width: 80px;
+                padding: 0;
+                max-width: 20%;
+                margin: 0 10px;
+
+                option {
+                    color: #000;
+                }
+            }
+
+            .btn-group {
+                margin: 0 10px;
 
             svg {
                 fill: #666;
