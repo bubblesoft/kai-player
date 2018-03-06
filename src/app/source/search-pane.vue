@@ -10,19 +10,19 @@
                 )
                 span.input-group-btn
                     button.btn.btn-default(
-                        @click="search(keywords)"
+                        v-interact:tap="() => { search(keywords); }"
                         type="button"
                     ) Search
         .list-wrap
             table.table-condensed.table.table-hover
                 draggable(
                     v-model="tracks"
-                    :options="{ group: { name: 'tracks', pull: 'clone', put: false }, sort: false, handle: '.active', forceFallback: true, fallbackOnBody: true }"
+                    :options="{ group: { name: 'tracks', pull: 'clone', put: false }, sort: false, handle: 'tr.active', forceFallback: true, fallbackOnBody: true }"
                     element="tbody"
                 )
                     tr(
                         v-for="track in tracks"
-                        v-hammer:doubletap="() => { addToPlayback(track); }"
+                        v-interact:doubletap="() => { addToPlayback(track); }"
                     )
                         td(style="padding: 0;")
                         td {{ track.name }}

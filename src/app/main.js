@@ -6,8 +6,8 @@ import 'whatwg-fetch';
 
 import Vue from 'vue';
 import Vuex from 'vuex';
-import { VueHammer } from 'vue2-hammer'
 
+import interact from 'interactjs';
 import i18next from 'i18next';
 
 import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX, SET_ACTIVE_PANEL_INDEX_LOCK } from '../scripts/mutation-types';
@@ -24,16 +24,26 @@ if (!window["Promise"]) {
     window["Promise"] = require("promise-polyfill");
 }
 
-VueHammer.customEvents = {
-    doubletap: {
-        event: 'doubletap',
-        type: 'tap',
-        taps: 2
-    }
-};
-
 Vue.use(Vuex);
-Vue.use(VueHammer);
+
+Vue.directive('interact', {
+    bind(el, bindings) {
+        const interactable = el.dataset.interactable = interact(el);
+
+        switch (bindings.arg) {
+            case 'doubletap':
+                interactable.on('doubletap', bindings.value);
+                break;
+            case 'tap':
+            default:
+                interactable.on('tap', bindings.value);
+                break;
+        }
+    },
+    unbind(el) {
+        el.dataset.interactable.unset();
+    }
+});
 
 const lang = sessionStorage.getItem("locale") || window.navigator.language || "en-US";
 
@@ -214,7 +224,7 @@ const store = new Vuex.Store({
 new Vue({
     el: 'app',
     store,
-    render: (createElement) => createElement(App)
+    render: createElement => createElement(App)
 });
 
 import '../styles/bootstrap';

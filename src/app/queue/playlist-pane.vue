@@ -25,7 +25,7 @@
             table.table-condensed.table.table-hover
                 draggable(
                     v-model="queues"
-                    :options="{ group: 'queues', handle: '.active', forceFallback: true, fallbackOnBody: true }"
+                    :options="{ group: 'queues', handle: 'tr.active', forceFallback: true, fallbackOnBody: true }"
                     @sort="onSort"
                     @start="dragging = true"
                     @end="dragging = false"
@@ -33,9 +33,9 @@
                 )
                     tr(
                         v-for="(queue, index) in queues"
-                        v-hammer:doubletap="() => activeIndex = index"
+                        v-interact:doubletap="() => activeIndex = index"
                         @click="select(index)"
-                        :class="{ active: selectedIndex === index, 'queue-active': activeIndex === index }"
+                        :class="{ active: selectedIndex === index, 'active-queue': activeIndex === index }"
                     )
                         td(style="width:18px")
                             svg(
@@ -232,7 +232,7 @@
                     cursor: move;
                 }
 
-                &.queue-active {
+                &.active-queue {
                     background-color: rgba(0, 0, 0, .3);
                 }
 

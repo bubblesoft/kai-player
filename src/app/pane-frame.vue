@@ -1,6 +1,5 @@
 <template lang="pug">
     .panel-frame.panel.panel-default(
-        @pointerdown="activate"
         :class="{ active: activePanelIndex === type }"
     )
         .panel-heading {{ panelHeading }}
@@ -38,7 +37,9 @@
                 attachedToHorizontal1: null,
                 attachedToVertical1: null,
                 attachedToHorizontal2: null,
-                attachedToVertical2: null
+                attachedToVertical2: null,
+
+                interactables: []
             }
         },
         computed: {
@@ -237,16 +238,16 @@
 
             window.addEventListener('resize', this.onWindowResize);
 
-            const dragMoveListener =  (event) => {
+            const dragMoveListener =  e => {
                 const viewportWidth = window.innerWidth,
                     viewportHeight = window.innerHeight,
                     controlBarHeight = document.querySelector('#control-bar').offsetHeight,
-                    panel = event.target,
+                    panel = e.target,
                     height = panel.offsetHeight,
 
                     // keep the dragged position in the data-x/data-y attributes
-                    x = (parseFloat(panel.getAttribute('data-x')) || 0) + event.dx,
-                    y = (parseFloat(panel.getAttribute('data-y')) || 0) + event.dy;
+                    x = (parseFloat(panel.getAttribute('data-x')) || 0) + e.dx,
+                    y = (parseFloat(panel.getAttribute('data-y')) || 0) + e.dy;
 
                     panel.style.transform = 'translate(' + x + 'px, ' + y + 'px)'; // translate the element
 
@@ -258,16 +259,18 @@
                 this.bottomY = viewportHeight - controlBarHeight - y - height;
             };
 
-            let count = 1;
-
-            interact(this.$el, {
-                ignoreFrom: '.panel-body__wrap'
-            })
+            const interactable = interact(this.$el)
+                .on('tap', e => {
+                    e.preventDefault();
+                    this.activate();
+                })
                 .draggable({
-                    inertia: true, // enable inertial throwing
+                    ignoreFrom: '.panel-body__wrap',
                     restrict: {
                         restriction: 'parent',
+                        endOnly: true
                     },
+                    inertia: true,
                     onmove: dragMoveListener,
                     snap: {
                         targets: [
@@ -308,37 +311,47 @@
                             }
                         ],
                         relativePoints: [
-                            { x: 0, y: 0 }, // snap relative to the element's top-left
+                            { x: 0, y: 0 } // snap relative to the element's top-left
                         ]
                     }
                 })
                 .resizable({
-                    edges: { left: true, right: true, bottom: true, top: true }, // resize from all edges and corners
-                    restrictSize: {
-                        min: { width: 150, height: 300 }, // minimum size
+                    ignoreFrom: '.panel-body__wrap',
+                    edges: { left: true, right: true, bottom: true, top: true },
+                    restrictEdges: {
+                        outer: 'parent',
+                        endOnly: true
                     },
+//                    restrictSize: {
+//                        min: { width: 150, height: 300 }
+//                    },
+                    inertia: true
                 })
-                .on('resizemove', function (event) {
-                    const panel = event.target;
+                .on('resizemove', e => {
+                    const panel = e.target;
 
                     let x = (parseFloat(panel.getAttribute('data-x')) || 0),
                         y = (parseFloat(panel.getAttribute('data-y')) || 0);
 
                     // update the element's style
-                    panel.style.width = event.rect.width + 'px';
-                    panel.style.height = event.rect.height + 'px';
+                    panel.style.width = e.rect.width + 'px';
+                    panel.style.height = e.rect.height + 'px';
 
                     // translate when resizing from top or left edges
-                    x += event.deltaRect.left;
-                    y += event.deltaRect.top;
+                    x += e.deltaRect.left;
+                    y += e.deltaRect.top;
 
                     panel.style.transform = 'translate(' + x + 'px,' + y + 'px)';
 
                     panel.setAttribute('data-x', x);
                     panel.setAttribute('data-y', y);
                 });
+
+            this.interactables.push(interactable);
         },
         destroyed() {
+            this.interactables.forEach(interactable => interactable.unset());
+
             window.removeEventListener('resize', this.onWindowResize);
         }
     }
@@ -351,6 +364,7 @@
         top: 0;
         opacity: .9;
         z-index: 0;
+        touch-action: none;
 
         &.active {
             box-shadow: 0 0 60px 8px rgba(255, 255, 255, 0.15),

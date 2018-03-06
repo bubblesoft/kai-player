@@ -1,5 +1,5 @@
 <template lang="pug">
-    .app
+    .app()
         control-bar
         transition(name="fade")
             pane-frame(
@@ -31,6 +31,8 @@
 <script>
     import { mapState, mapMutations } from 'vuex';
 
+    import interact from 'interactjs';
+
     import { UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX } from '../scripts/mutation-types';
 
     import controlBar from './control-bar';
@@ -40,6 +42,11 @@
         components: {
             controlBar,
             paneFrame
+        },
+        data() {
+            return {
+                interactable: null
+            }
         },
         computed: {
             ...mapState({
@@ -64,12 +71,21 @@
                     open: false
                 });
             }
+        },
+        mounted() {
+            this.interactable = interact(document.body)
+                .on('tap', e => {
+                    if (!this.lockActivePanelIndex) {
+                        this[UPDATE_ACTIVE_PANEL_INDEX](null);
+                    }
 
-            document.addEventListener('click', () => {
-                if (!this.lockActivePanelIndex) {
-                    this[UPDATE_ACTIVE_PANEL_INDEX](null);
-                }
-            });
+                    e.preventDefault();
+                });
+        },
+        destroyed() {
+            if (this.interactable) {
+                this.interactable.unset();
+            }
         }
     }
 </script>

@@ -15,12 +15,12 @@
             table.table-condensed.table.table-hover
                 draggable(
                     v-model="tracks"
-                    :options="{ group: { name: 'tracks', pull: 'clone', put: false }, sort: false, handle: '.active', forceFallback: true, fallbackOnBody: true }"
+                    :options="{ group: { name: 'tracks', pull: 'clone', put: false }, sort: false, handle: 'tr.active', forceFallback: true, fallbackOnBody: true }"
                     element="tbody"
                 )
                     tr(
                         v-for="track in tracks"
-                        v-hammer:doubletap="() => { addToPlayback(track); }"
+                        v-interact:doubletap="() => { addToPlayback(track); }"
                     )
                         td(style="padding: 0;")
                         td {{ track.name }}
@@ -70,9 +70,6 @@
             })
         },
         methods: {
-            test(){
-                console.log('test');
-            },
             async addToPlayback(track) {
                 this.queue.active = this.queue.add(track);
 

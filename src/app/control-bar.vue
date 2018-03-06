@@ -286,7 +286,7 @@
             justify-content: flex-end;
 
             .btn-group {
-                margin: 0 20px;
+                margin: 0 5%;
 
                 svg {
                     fill: #666;
