@@ -37,9 +37,14 @@
 <script>
     import { mapState, mapMutations } from 'vuex';
 
+    import config from '../../config';
+
     import { formatDuration } from '../../scripts/utils';
 
     import { UPDATE_PLAYING_QUEUE_INDEX } from '../../scripts/mutation-types';
+
+    import Track from '../Track';
+    import Artist from '../Artist';
 
     import draggable from 'vuedraggable';
 
@@ -56,6 +61,9 @@
           }
         },
         computed: {
+            sources() {
+                return this.sourceGroup.get();
+            },
             playingQueueIndex: {
                 get() {
                     return this.$store.state.queueModule.playingQueueIndex;
@@ -66,7 +74,6 @@
             },
             ...mapState({
                 sourceGroup: state => state.sourceModule.sourceGroup,
-                sources: state => state.sourceModule.sources,
                 queueGroup: state => state.queueModule.queueGroup,
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.queueGroup.active),
                 player: state => state.playerModule.player,
@@ -78,7 +85,23 @@
                 const activeSources = this.sources.filter(source => source.active)
                     .map(source => source.id);
 
-                this.tracks = (await this.sourceGroup.search(keywords, activeSources));
+                this.tracks = (await (await fetch(config.urlBase + '/audio/search', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        keywords,
+                        sources: activeSources
+                    }),
+                    headers: new Headers({
+                        'Content-Type': 'application/json'
+                    })
+                })).json()).data.map(trackData => {
+                    return new Track({
+                        id: trackData.source + '_' + trackData.id,
+                        name: trackData.name,
+                        duration: trackData.duration || null,
+                        artists: trackData.artists.map(artist => new Artist({ name: artist.name }))
+                    });
+                });
             },
             async addToPlayback(track) {
                 this.queue.active = this.queue.add(track);

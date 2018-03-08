@@ -6,7 +6,10 @@
                     v-for="source in sources"
                     :value="source"
                 ) {{ source.name }}
-            select.form-control.input-sm(v-model="channelSelected")
+            select.form-control.input-sm(
+                v-if="sourceSelected"
+                v-model="channelSelected"
+            )
                 option(
                     v-for="channel in sourceSelected.get()"
                     :value="channel"
@@ -37,7 +40,7 @@
 
     import { formatDuration } from '../../scripts/utils';
 
-    import { UPDATE_PLAYING_QUEUE_INDEX } from '../../scripts/mutation-types';
+    import { UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK } from '../../scripts/mutation-types';
 
     import draggable from 'vuedraggable';
 
@@ -53,6 +56,12 @@
           }
         },
         computed: {
+            sources() {
+              return this.sourceGroup.get();
+            },
+            queue() {
+                return this.queueGroup.get(this.queueGroup.active);
+            },
             playingQueueIndex: {
                 get() {
                     return this.$store.state.queueModule.playingQueueIndex;
@@ -63,15 +72,13 @@
             },
             ...mapState({
                 sourceGroup: state => state.sourceModule.sourceGroup,
-                sources: state => state.sourceModule.sources,
                 queueGroup: state => state.queueModule.queueGroup,
-                queue: state => state.queueModule.queueGroup.get(state.queueModule.queueGroup.active),
                 player: state => state.playerModule.player
             })
         },
         methods: {
             async addToPlayback(track) {
-                this.queue.active = this.queue.add(track);
+                this[ADD_TRACK](track);
 
                 const url = await track.getStreamUrl();
 
@@ -80,7 +87,10 @@
                 track.duration = this.player.duration * 1000;
                 this.playingQueueIndex = this.queueGroup.active;
             },
-            ...mapMutations([UPDATE_PLAYING_QUEUE_INDEX])
+            ...mapMutations([
+                UPDATE_PLAYING_QUEUE_INDEX,
+                ADD_TRACK
+            ])
         },
         filters: {
             formatDuration
@@ -88,8 +98,8 @@
         created() {
             (async () => {
                 if (this.sources.length) {
-                    this.sourceSelected = this.sources[0];
-                    this.channelSelected = this.sourceSelected.get()[0];
+                    this.sourceSelected = sources[0];
+                    this.channelSelected = this.sourceSelected.get(0);
                 }
             })();
         },
@@ -103,7 +113,10 @@
             },
             sources(sources) {
                 this.sourceSelected = sources[0];
-                this.channelSelected = this.sourceSelected.get()[0];
+                this.channelSelected = this.sourceSelected.get(0);
+            },
+            sourceSelected(source) {
+                this.channelSelected = source.get(0);
             }
         }
     }

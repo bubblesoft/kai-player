@@ -25,11 +25,11 @@ export default class Set {
      *
      * Add item to the set, return the index of the item.
      *
-     * @param item
+     * @param {...Object} item
      * @returns {number}
      */
-    add(item) {
-        this._items.push(item);
+    add(...item) {
+        this._items.push(...arguments);
 
         if (this._items.length === 1) {
             this.active = 0;

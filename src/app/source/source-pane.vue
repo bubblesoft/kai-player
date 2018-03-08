@@ -19,8 +19,10 @@
 
     export default {
         computed: {
+            sources() {
+              return this.sourceGroup.get();
+            },
             ...mapState({
-                sources: state => state.sourceModule.sources,
                 sourceGroup: state => state.sourceModule.sourceGroup
             })
         }

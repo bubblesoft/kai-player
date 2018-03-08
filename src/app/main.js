@@ -10,9 +10,13 @@ import Vuex from 'vuex';
 import interact from 'interactjs';
 import i18next from 'i18next';
 
+import config from '../config';
+
 import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX, SET_ACTIVE_PANEL_INDEX_LOCK } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
+import Source from './source/Source';
+import Channel from './source/Channel';
 import QueueGroup from './queue/QueueGroup';
 import Player from './Player';
 
@@ -150,12 +154,11 @@ const sourceGroup = new SourceGroup({ name: 'Global' });
 
 const sourceModule = {
     state: {
-        sources: [],
         sourceGroup
     },
     mutations: {
         [ADD_SOURCES] (state, payload) {
-            state.sources = payload;
+            state.sourceGroup.add(...payload);
         }
     }
 };
@@ -209,13 +212,29 @@ const store = new Vuex.Store({
     }
 });
 
-(async ()=> {
-    const sources = await sourceGroup.get();
+(async () => {
+    const sources = (await (await fetch(config.urlBase + '/audio/sources', {
+        method: 'POST',
+        headers: new Headers({
+            'Content-Type': 'application/json'
+        })
+    })).json()).data.map(source => {
+        const _source = new Source({
+            id: source.id,
+            name: source.name
+        });
 
-    sources.forEach(source => {
-        source.active = true;
+        source.channels.forEach(channel => {
+            _source.add(new Channel({
+                source: source.id,
+                type: channel.type,
+                name: channel.name
+            }))
+        });
 
-        return source;
+        _source.active = true;
+
+        return _source;
     });
 
     store.commit(ADD_SOURCES, sources);
