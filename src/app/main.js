@@ -12,15 +12,19 @@ import i18next from 'i18next';
 
 import config from '../config';
 
-import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX, SET_ACTIVE_PANEL_INDEX_LOCK } from '../scripts/mutation-types';
+import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, UPDATE_PANEL, SET_ACTIVE_PANEL_INDEX_LOCK } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
 import Source from './source/Source';
 import Channel from './source/Channel';
 import QueueGroup from './queue/QueueGroup';
+import Queue from './queue/Queue';
+import RandomQueue from './queue/RandomQueue';
 import Player from './Player';
 
 import { ADD_SOURCES } from './mutation-types';
+
+import { getRecommendedTrack } from '../scripts/utils';
 
 import App from './app';
 
@@ -30,9 +34,13 @@ if (!window["Promise"]) {
 
 Vue.use(Vuex);
 
+const interactables = [];
+
 Vue.directive('interact', {
     bind(el, bindings) {
-        const interactable = el.dataset.interactable = interact(el);
+        const interactable = interact(el);
+
+        el.dataset.interactable = interactables.push(interactable) - 1;
 
         switch (bindings.arg) {
             case 'doubletap':
@@ -45,7 +53,7 @@ Vue.directive('interact', {
         }
     },
     unbind(el) {
-        el.dataset.interactable.unset();
+        interactables[+el.dataset.interactable].unset();
     }
 });
 
@@ -65,7 +73,9 @@ i18next.init({
                 'Search': 'Search',
                 'Search for music': 'Search for music',
                 'Temp': 'Temp',
-                'New Playlist': 'New Playlist'
+                'New Playlist': 'New Playlist',
+                'Listen Randomly': 'Listen Randomly',
+                'Drag a track here and start random listening': 'Drag a track here and start random listening'
             }
         },
         'zh-CN': {
@@ -78,7 +88,9 @@ i18next.init({
                 'Search': '搜索',
                 'Search for music': '搜索音乐',
                 'Temp': '临时播放列表',
-                'New Playlist': '新建播放列表'
+                'New Playlist': '新建播放列表',
+                'Listen Randomly': '随便听听',
+                'Drag a track here and start random listening': '拖动一个音频到这里开始收听'
             }
         },
         'ja-JP': {
@@ -91,7 +103,9 @@ i18next.init({
                 'Search': 'Search',
                 'Search for music': 'Search for music',
                 'Temp': 'Temp',
-                'New Playlist': 'New Playlist'
+                'New Playlist': 'New Playlist',
+                'Listen Randomly': 'Listen Randomly',
+                'Drag a track here and start random listening': 'Drag a track here and start random listening'
             }
         },
         'ko-KR': {
@@ -104,7 +118,9 @@ i18next.init({
                 'Search': 'Search',
                 'Search for music': 'Search for music',
                 'Temp': 'Temp',
-                'New Playlist': 'New Playlist'
+                'New Playlist': 'New Playlist',
+                'Listen Randomly': 'Listen Randomly',
+                'Drag a track here and start random listening': 'Drag a track here and start random listening'
             }
         }
     }
@@ -171,17 +187,19 @@ const queueModule = {
         playingQueueIndex: null
     },
     mutations: {
-        [UPDATE_QUEUE_GROUP] (state, { queues, active }) {
+        [UPDATE_QUEUE_GROUP](state, { queues, active }) {
             queues && state.queueGroup.update(queues);
 
             if (typeof active === 'number') {
                 state.queueGroup.active = active;
             }
         },
-        [INSERT_QUEUE] (state, payload) {
-            state.queueGroup.insert(payload.index, payload.queue);
+
+        [INSERT_QUEUE](state, { index, queue }) {
+            state.queueGroup.insert(index, queue);
         },
-        [UPDATE_QUEUE] (state, { index, name, tracks, active }) {
+
+        [UPDATE_QUEUE](state, { index, name, tracks, active }) {
             const queue = state.queueGroup.get(index);
 
             name && (queue.name = name);
@@ -191,8 +209,19 @@ const queueModule = {
                 queue.active = active;
             }
         },
-        [UPDATE_PLAYING_QUEUE_INDEX] (state, { index }) {
+
+        [UPDATE_PLAYING_QUEUE_INDEX](state, index) {
             state.playingQueueIndex = index;
+        },
+
+        [ADD_TRACK](state, track) {
+            const queue = state.queueGroup.get(state.queueGroup.active);
+
+            queue.active = queue.add(track);
+
+            const active = state.queueGroup.active;
+            state.queueGroup.active = null;
+            state.queueGroup.active = active;
         }
     }
 };
@@ -211,6 +240,22 @@ const store = new Vuex.Store({
         queueModule
     }
 });
+
+store.commit(INSERT_QUEUE, {
+    index: 0,
+    queue: new Queue({
+        name: i18next.t('Temp')
+    })
+});
+
+store.commit(INSERT_QUEUE, {
+    index: 0,
+    queue: new RandomQueue({
+        name: i18next.t('Listen Randomly')
+    })
+});
+
+store.commit(UPDATE_PLAYING_QUEUE_INDEX, 0);
 
 (async () => {
     const sources = (await (await fetch(config.urlBase + '/audio/sources', {
@@ -238,6 +283,7 @@ const store = new Vuex.Store({
     });
 
     store.commit(ADD_SOURCES, sources);
+    store.commit(ADD_TRACK, await getRecommendedTrack(null, sources));
 })();
 
 new Vue({

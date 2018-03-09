@@ -15,7 +15,7 @@ export default class Queue extends Set {
     insert(index, ...items) {
         this._items.splice(index, 0 , ...items);
 
-        if (this._items.length === 1) {
+        if (this.length === 1) {
             this.active = index;
         }
 
@@ -39,10 +39,10 @@ export default class Queue extends Set {
             this.active = 0;
         }
 
-        return this._active;
+        return this.active;
     }
 
     goTo(index) {
         return this.active = index;
     }
-}
+};

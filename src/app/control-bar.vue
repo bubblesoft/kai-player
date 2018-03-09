@@ -53,7 +53,7 @@
                     )
                         path(d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z")
         .audio-control
-            div.control-button.control-button_small(@click="previousTrack()")
+            div.control-button.control-button_small(@click="previous()")
                 svg(
                     width="24"
                     height="24"
@@ -62,7 +62,7 @@
                     path(d="M6 6h2v12H6zm3.5 6l8.5 6V6z")
             div.control-button.control-button_big(
                 v-if="!playing"
-                @click="play()"
+                @click="play(queue.get(queue.active))"
             )
                 svg(
                     width="24"
@@ -80,7 +80,7 @@
                     viewBox="0 0 24 24"
                 )
                     path(d="M9 16h2V8H9v8zm3-14C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm1-4h2V8h-2v8z")
-            div.control-button.control-button_small(@click="nextTrack()")
+            div.control-button.control-button_small(@click="next()")
                 svg(
                     width="24"
                     height="24"
@@ -128,31 +128,37 @@
 <script>
     import { mapState, mapMutations } from 'vuex';
 
-    import { UPDATE_PANEL } from '../scripts/mutation-types';
+    import RandomQueue from './queue/RandomQueue';
+
+    import { ADD_TRACK, UPDATE_PANEL } from '../scripts/mutation-types';
 
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
 
-    import { formatDuration } from '../scripts/utils';
+    import { getRecommendedTrack, formatDuration } from '../scripts/utils';
 
     export default {
         components: {
             vueSlider,
             checkbox
         },
+
         data: () => {
             return {
                 progress: 0,
                 volume: .5
             }
         },
+
         computed: {
             playing() {
                 return this.player.playing
             },
+
             duration() {
                 return this.player.duration;
             },
+
             sourceOpen: {
                 get() {
                     return this.$store.state.generalModule.panels.source.open;
@@ -164,6 +170,7 @@
                     });
                 }
             },
+
             listOpen: {
                 get() {
                     return this.$store.state.generalModule.panels.list.open;
@@ -175,6 +182,7 @@
                     });
                 }
             },
+
             searchOpen: {
                 get() {
                     return this.$store.state.generalModule.panels.search.open;
@@ -186,6 +194,7 @@
                     });
                 }
             },
+
             playlistOpen: {
                 get() {
                     return this.$store.state.generalModule.panels.playlist.open;
@@ -197,6 +206,7 @@
                     });
                 }
             },
+
             tracksOpen: {
                 get() {
                     return this.$store.state.generalModule.panels.tracks.open;
@@ -208,60 +218,77 @@
                     });
                 }
             },
+
+            sources() {
+                return this.sourceGroup.get()
+            },
+
             ...mapState({
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex),
-                player: state => state.playerModule.player
+                player: state => state.playerModule.player,
+                sourceGroup: state => state.sourceModule.sourceGroup
             })
         },
+
         watch: {
-            "volume" (to) {
+            volume() {
                 this.player.volume = to;
             }
         },
+
         methods: {
             formatDuration,
+
             ready() {
                 return this.player.ready;
             },
-            async play() {
-                const url = await this.queue.get(this.queue.active).getStreamUrl();
+
+            async play(track) {
+                const url = await track.getStreamUrl();
 
                 await this.player.load(url);
                 this.player.play();
             },
+
             pause() {
                 this.player.pause();
             },
+
             stop() {
                 this.player.stop();
                 this.progress = 0;
             },
+
             changeProgress(progress) {
                 this.player.progress = progress;
             },
-            async previousTrack() {
-                const nextIndex = this.queue.previous(),
-                    url = await this.queue.get(nextIndex).getStreamUrl();
 
-                await this.player.load([url]);
-                this.player.play();
+            async previous() {
+                this.play(this.queue.get(this.queue.previous()));
             },
-            async nextTrack() {
-                const nextIndex = this.queue.next(),
-                    url = await this.queue.get(nextIndex).getStreamUrl();
 
-                await this.player.load([url]);
-                this.player.play();
+            async next() {
+                this.player.stop();
+
+                if (this.queue.constructor === RandomQueue) {
+                    this[ADD_TRACK](await getRecommendedTrack(this.queue.get(this.queue.active), this.sources));
+                }
+
+                this.play(this.queue.get(this.queue.next()));
             },
+
             ...mapMutations([
+                ADD_TRACK,
                 UPDATE_PANEL
             ])
         },
+
         created() {
             this.player.on('progress', (soundId, progress) => {
                 this.progress = progress;
             });
         },
+
         destroyed() {
             this.player.off('progress');
         }

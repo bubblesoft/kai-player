@@ -1,21 +1,26 @@
 <template lang="pug">
     .tracks-pane
         .toolbar
-            draggable.tool-button(
-                v-model="trashCan.data"
-                :options="{ group: 'tracks' }"
-                @dragover.native="trashCan.hover = true"
-                @dragleave.native="trashCan.hover = false"
-                :class="{ active: dragging && trashCan.hover }"
-            )
-                svg(
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
+            template(v-if="queue.constructor === RandomQueue")
+            template(v-else)
+                draggable.tool-button(
+                    v-model="trashCan.data"
+                    :options="{ group: 'tracks' }"
+                    @dragover.native="trashCan.hover = true"
+                    @dragleave.native="trashCan.hover = false"
+                    :class="{ active: dragging && trashCan.hover }"
                 )
-                    path(d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z")
+                    svg(
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                    )
+                        path(d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z")
         .list-wrap
-            table.table-condensed.table.table-hover
+            .random-queue-box(v-if="queue.constructor === RandomQueue")
+                h5(v-if="playingQueueIndex === queueGroup.active && tracks[activeIndex]") {{ tracks[activeIndex].name + ' - ' + tracks[activeIndex].artists.map(artist => artist.name).join(', ') }}
+                .tips.text-muted {{ tips[0] }}
+            table.table-condensed.table.table-hover(v-else)
                 draggable(
                     v-model="tracks"
                     :options="{ group: 'tracks', handle: 'tr.active', forceFallback: true, fallbackOnBody: true }"
@@ -64,6 +69,8 @@
 
     import { formatDuration } from '../../scripts/utils';
 
+    import RandomQueue from './RandomQueue';
+
     import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX } from '../../scripts/mutation-types';
 
     import draggable from 'vuedraggable';
@@ -82,7 +89,9 @@
                   hover: false,
                   data: []
               },
-              dragging: false
+              dragging: false,
+              tips: [],
+              RandomQueue
           }
         },
         computed: {
@@ -119,13 +128,19 @@
                     return this.$store.state.queueModule.playingQueueIndex;
                 },
                 set(index) {
-                    this[UPDATE_PLAYING_QUEUE_INDEX]({ index });
+                    this[UPDATE_PLAYING_QUEUE_INDEX](index);
                 }
             },
             ...mapState({
                 queueGroup: state => state.queueModule.queueGroup,
-                player: state => state.playerModule.player
+                player: state => state.playerModule.player,
+                i18next: state => state.generalModule.i18next
             })
+        },
+        watch: {
+//            queue(to) {
+//                this.playTrack(to.active);
+//            }
         },
         methods: {
             async playTrack(index) {
@@ -171,6 +186,9 @@
         },
         filters: {
             formatDuration
+        },
+        created() {
+            this.tips[0] = this.i18next.t('Drag a track here and start random listening');
         }
     }
 </script>
@@ -222,6 +240,26 @@
             margin-top: 29px;
             box-shadow: inset 0 2px 1px -1.5px rgba(255, 255, 255, 0.2);
             overflow: auto;
+
+            .random-queue-box {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+
+                .tips {
+                    position: absolute;
+                    left: 0;
+                    bottom: 12%;
+                    width: 100%;
+                    text-align: center;
+                    font-style: italic;
+                }
+            }
 
             tr {
                 cursor: default;

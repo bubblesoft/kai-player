@@ -4,6 +4,11 @@
 
 import Moment from 'moment';
 
+import config from '../config';
+
+import Track from '../app/Track';
+import Artist from '../app/Artist';
+
 const initHowlOnProgress = (howl) => {
     howl.interval, howl._onprogress = [];
 
@@ -24,6 +29,29 @@ const initHowlOnProgress = (howl) => {
 
     howl.on('end', function(){
         clearInterval(howl.interval);
+    });
+};
+
+const getRecommendedTrack = async (track, sources) => {
+    const recommendedTrack = (await (await fetch(config.urlBase + '/audio/recommend', {
+        method: 'POST',
+        body: JSON.stringify({
+            track: track ? {
+                name: track.name,
+                artists: track.artists.map(artist => artist.name)
+            } : null,
+            sources: sources.map(source => source.id)
+        }),
+        headers: new Headers({
+            'Content-Type': 'application/json'
+        })
+    })).json()).data;
+
+    return new Track({
+        id: recommendedTrack.source + '_' + recommendedTrack.id,
+        name: recommendedTrack.name,
+        duration: recommendedTrack.duration || null,
+        artists: recommendedTrack.artists.map(artist => new Artist({ name: artist.name }))
     });
 };
 
@@ -66,4 +94,4 @@ const mapPanelHeading = type => {
     }
 };
 
-export { initHowlOnProgress, formatDuration, mapPanelHeading };
+export { initHowlOnProgress, getRecommendedTrack, formatDuration, mapPanelHeading };

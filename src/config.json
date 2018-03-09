@@ -1,3 +1,6 @@
 {
-  "urlBase": "http://localhost:3000"
+  "urlBase": "http://localhost:3000",
+  "queue": {
+    "randomQueueThreshold": 10
+  }
 }

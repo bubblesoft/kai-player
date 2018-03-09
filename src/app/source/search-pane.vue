@@ -69,7 +69,7 @@
                     return this.$store.state.queueModule.playingQueueIndex;
                 },
                 set(index) {
-                    this[UPDATE_PLAYING_QUEUE_INDEX]({ index });
+                    this[UPDATE_PLAYING_QUEUE_INDEX](index);
                 }
             },
             ...mapState({

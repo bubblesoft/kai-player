@@ -66,6 +66,7 @@
                     index: 'source',
                     open: false
                 });
+
                 this[UPDATE_PANEL]({
                     index: 'search',
                     open: false

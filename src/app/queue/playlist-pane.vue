@@ -50,7 +50,8 @@
                                 v-model="queue.name"
                                 :height="30"
                             )
-                        td {{ queue.length }}
+                        td(v-if="queue.constructor === RandomQueue") ∞
+                        td(v-else) {{ queue.length }}
 </template>
 
 <script>
@@ -59,6 +60,7 @@
     import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX } from '../../scripts/mutation-types';
 
     import Queue from './Queue';
+    import RandomQueue from './RandomQueue';
 
     import draggable from 'vuedraggable';
 
@@ -76,7 +78,8 @@
                     hover: false,
                     data: []
                 },
-                dragging: false
+                dragging: false,
+                RandomQueue
             }
         },
         computed: {
@@ -101,7 +104,7 @@
                     return this.$store.state.queueModule.playingQueueIndex;
                 },
                 set(index) {
-                    this[UPDATE_PLAYING_QUEUE_INDEX]({ index });
+                    this[UPDATE_PLAYING_QUEUE_INDEX](index);
                 }
             },
             ...mapState({
@@ -165,10 +168,6 @@
             ])
         },
         created() {
-            if (!this.queueGroup.length) {
-                this.queueGroup.insert(0, new Queue({ name: this.i18next.t('Temp') }));
-            }
-
             document.addEventListener('click', this.unSelect);
         },
         destroyed() {

@@ -5,6 +5,8 @@
 @import "@{path}/variables.less";
 @import "@{path}/mixins.less";
 
+@gray-light: lighten(@gray-base, 69.5%); // #777
+
 @panel-default-text: #fff;
 @panel-bg: transparent;
 @panel-default-border: transparent;
@@ -28,7 +30,7 @@
 
 // Core CSS
 @import "@{path}/scaffolding.less";
-//@import "type.less";
+@import "@{path}/type.less";
 //@import "code.less";
 //@import "grid.less";
 @import "@{path}/tables.less";
