@@ -33,7 +33,16 @@
 
     import interact from 'interactjs';
 
-    import { UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX } from '../scripts/mutation-types';
+    import config from '../config';
+
+    import { ADD_SOURCES, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX } from '../scripts/mutation-types';
+
+    import Source from './source/Source';
+    import Channel from './source/Channel';
+    import Queue from './queue/Queue';
+    import RandomQueue from './queue/RandomQueue';
+
+    import { getRecommendedTrack } from '../scripts/utils';
 
     import controlBar from './control-bar';
     import paneFrame from './pane-frame';
@@ -56,11 +65,60 @@
         },
         methods: {
             ...mapMutations([
+                ADD_SOURCES,
+                INSERT_QUEUE,
+                UPDATE_PLAYING_QUEUE_INDEX,
+                ADD_TRACK,
                 UPDATE_PANEL,
                 UPDATE_ACTIVE_PANEL_INDEX
             ])
         },
         created() {
+            this[INSERT_QUEUE]({
+                index: 0,
+                queue: new Queue({
+                    name: this.$t('Temp')
+                })
+            });
+
+            this[INSERT_QUEUE]({
+                index: 0,
+                queue: new RandomQueue({
+                    name: this.$t('Listen Randomly')
+                })
+            });
+
+            this[UPDATE_PLAYING_QUEUE_INDEX](0);
+
+            (async () => {
+                const sources = (await (await fetch(config.urlBase + '/audio/sources', {
+                    method: 'POST',
+                    headers: new Headers({
+                        'Content-Type': 'application/json'
+                    })
+                })).json()).data.map(source => {
+                    const _source = new Source({
+                        id: source.id,
+                        name: source.name
+                    });
+
+                    source.channels.forEach(channel => {
+                        _source.add(new Channel({
+                            source: source.id,
+                            type: channel.type,
+                            name: channel.name
+                        }))
+                    });
+
+                    _source.active = true;
+
+                    return _source;
+                });
+
+                this[ADD_SOURCES](sources);
+                this[ADD_TRACK](await getRecommendedTrack(null, sources));
+            })();
+
             if (window.innerWidth < 600) {
                 this[UPDATE_PANEL]({
                     index: 'source',

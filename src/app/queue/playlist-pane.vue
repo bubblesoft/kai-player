@@ -109,15 +109,14 @@
             },
             ...mapState({
                 queueGroup: state => state.queueModule.queueGroup,
-                player: state => state.playerModule.player,
-                i18next: state => state.generalModule.i18next
+                player: state => state.playerModule.player
             })
         },
         methods: {
             insert(index) {
                 this[INSERT_QUEUE]({
                     index,
-                    queue: new Queue({ name: this.i18next.t('New Playlist') })
+                    queue: new Queue({ name: this.$t('New Playlist') })
                 });
             },
             select(index) {

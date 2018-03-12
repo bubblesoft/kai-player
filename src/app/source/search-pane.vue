@@ -76,8 +76,7 @@
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 queueGroup: state => state.queueModule.queueGroup,
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.queueGroup.active),
-                player: state => state.playerModule.player,
-                i18next: state => state.generalModule.i18next
+                player: state => state.playerModule.player
             })
         },
         methods: {
@@ -119,8 +118,8 @@
             formatDuration
         },
         created() {
-            this.searchButtonText = this.i18next.t('Search');
-            this.searchInputPlaceHolder = this.i18next.t('Search for music');
+            this.searchButtonText = this.$t('Search');
+            this.searchInputPlaceHolder = this.$t('Search for music');
         }
     }
 </script>

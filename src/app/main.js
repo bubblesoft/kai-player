@@ -6,25 +6,15 @@ import 'whatwg-fetch';
 
 import Vue from 'vue';
 import Vuex from 'vuex';
+import VueI18n from 'vue-i18n';
 
 import interact from 'interactjs';
-import i18next from 'i18next';
 
-import config from '../config';
-
-import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, UPDATE_PANEL, SET_ACTIVE_PANEL_INDEX_LOCK } from '../scripts/mutation-types';
+import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, UPDATE_PANEL, SET_ACTIVE_PANEL_INDEX_LOCK } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
-import Source from './source/Source';
-import Channel from './source/Channel';
 import QueueGroup from './queue/QueueGroup';
-import Queue from './queue/Queue';
-import RandomQueue from './queue/RandomQueue';
 import Player from './Player';
-
-import { ADD_SOURCES } from './mutation-types';
-
-import { getRecommendedTrack } from '../scripts/utils';
 
 import App from './app';
 
@@ -33,6 +23,7 @@ if (!window["Promise"]) {
 }
 
 Vue.use(Vuex);
+Vue.use(VueI18n);
 
 const interactables = [];
 
@@ -57,73 +48,66 @@ Vue.directive('interact', {
     }
 });
 
+const messages = {
+    'en-US': {
+        'Chart': 'Chart',
+        'Media Source': 'Media Source',
+        'Playlist': 'Playlist',
+        'Tracks': 'Tracks',
+        'Panel': 'Panel',
+        'Search': 'Search',
+        'Search for music': 'Search for music',
+        'Temp': 'Temp',
+        'New Playlist': 'New Playlist',
+        'Listen Randomly': 'Listen Randomly',
+        'Drag a track here and start random listening': 'Drag a track here and start random listening'
+    },
+    'zh-CN': {
+        'Chart': '排行榜',
+        'Media Source': '媒体源',
+        'Playlist': '播放列表',
+        'Tracks': '播放音频',
+        'Panel': '面板',
+        'Search': '搜索',
+        'Search for music': '搜索音乐',
+        'Temp': '临时播放列表',
+        'New Playlist': '新建播放列表',
+        'Listen Randomly': '随便听听',
+        'Drag a track here and start random listening': '拖动一个音频到这里开始收听'
+    },
+    'ja-JP': {
+        'Chart': 'Chart',
+        'Media Source': 'Media Source',
+        'Playlist': 'プレーリスト',
+        'Tracks': 'Tracks',
+        'Panel': 'パネル',
+        'Search': 'Search',
+        'Search for music': 'Search for music',
+        'Temp': 'Temp',
+        'New Playlist': 'New Playlist',
+        'Listen Randomly': 'Listen Randomly',
+        'Drag a track here and start random listening': 'Drag a track here and start random listening'
+    },
+    'ko-KR': {
+        'Chart': 'Chart',
+        'Media Source': 'Media Source',
+        'Playlist': '재생 목록',
+        'Tracks': 'Tracks',
+        'Panel': '패널',
+        'Search': 'Search',
+        'Search for music': 'Search for music',
+        'Temp': 'Temp',
+        'New Playlist': 'New Playlist',
+        'Listen Randomly': 'Listen Randomly',
+        'Drag a track here and start random listening': 'Drag a track here and start random listening'
+    }
+};
+
 const lang = sessionStorage.getItem("locale") || window.navigator.language || "en-US";
 
-i18next.init({
-    lng: lang,
-    debug: true,
-    resources: {
-        'en-US': {
-            translation: {
-                'Chart': 'Chart',
-                'Media Source': 'Media Source',
-                'Playlist': 'Playlist',
-                'Tracks': 'Tracks',
-                'Panel': 'Panel',
-                'Search': 'Search',
-                'Search for music': 'Search for music',
-                'Temp': 'Temp',
-                'New Playlist': 'New Playlist',
-                'Listen Randomly': 'Listen Randomly',
-                'Drag a track here and start random listening': 'Drag a track here and start random listening'
-            }
-        },
-        'zh-CN': {
-            translation: {
-                'Chart': '排行榜',
-                'Media Source': '媒体源',
-                'Playlist': '播放列表',
-                'Tracks': '播放音频',
-                'Panel': '面板',
-                'Search': '搜索',
-                'Search for music': '搜索音乐',
-                'Temp': '临时播放列表',
-                'New Playlist': '新建播放列表',
-                'Listen Randomly': '随便听听',
-                'Drag a track here and start random listening': '拖动一个音频到这里开始收听'
-            }
-        },
-        'ja-JP': {
-            translation: {
-                'Chart': 'Chart',
-                'Media Source': 'Media Source',
-                'Playlist': 'プレーリスト',
-                'Tracks': 'Tracks',
-                'Panel': 'パネル',
-                'Search': 'Search',
-                'Search for music': 'Search for music',
-                'Temp': 'Temp',
-                'New Playlist': 'New Playlist',
-                'Listen Randomly': 'Listen Randomly',
-                'Drag a track here and start random listening': 'Drag a track here and start random listening'
-            }
-        },
-        'ko-KR': {
-            translation: {
-                'Chart': 'Chart',
-                'Media Source': 'Media Source',
-                'Playlist': '재생 목록',
-                'Tracks': 'Tracks',
-                'Panel': '패널',
-                'Search': 'Search',
-                'Search for music': 'Search for music',
-                'Temp': 'Temp',
-                'New Playlist': 'New Playlist',
-                'Listen Randomly': 'Listen Randomly',
-                'Drag a track here and start random listening': 'Drag a track here and start random listening'
-            }
-        }
-    }
+const i18n = new VueI18n({
+    locale: lang,
+    messages
 });
 
 const generalModule = {
@@ -148,8 +132,7 @@ const generalModule = {
         activePanel: {
             index: null,
             lock: false
-        },
-        i18next
+        }
     },
     mutations: {
         [UPDATE_PANEL] (state, { index, open }) {
@@ -241,54 +224,10 @@ const store = new Vuex.Store({
     }
 });
 
-store.commit(INSERT_QUEUE, {
-    index: 0,
-    queue: new Queue({
-        name: i18next.t('Temp')
-    })
-});
-
-store.commit(INSERT_QUEUE, {
-    index: 0,
-    queue: new RandomQueue({
-        name: i18next.t('Listen Randomly')
-    })
-});
-
-store.commit(UPDATE_PLAYING_QUEUE_INDEX, 0);
-
-(async () => {
-    const sources = (await (await fetch(config.urlBase + '/audio/sources', {
-        method: 'POST',
-        headers: new Headers({
-            'Content-Type': 'application/json'
-        })
-    })).json()).data.map(source => {
-        const _source = new Source({
-            id: source.id,
-            name: source.name
-        });
-
-        source.channels.forEach(channel => {
-            _source.add(new Channel({
-                source: source.id,
-                type: channel.type,
-                name: channel.name
-            }))
-        });
-
-        _source.active = true;
-
-        return _source;
-    });
-
-    store.commit(ADD_SOURCES, sources);
-    store.commit(ADD_TRACK, await getRecommendedTrack(null, sources));
-})();
-
 new Vue({
     el: 'app',
     store,
+    i18n,
     render: createElement => createElement(App)
 });
 

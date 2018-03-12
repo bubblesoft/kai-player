@@ -50,10 +50,7 @@
                 set(panelType) {
                     this[UPDATE_ACTIVE_PANEL_INDEX](panelType);
                 }
-            },
-            ...mapState({
-                i18next: state => state.generalModule.i18next
-            })
+            }
         },
         components: {
             sourcePane,
@@ -126,7 +123,7 @@
             ])
         },
         created() {
-            this.panelHeading = this.i18next.t(mapPanelHeading(this.type));
+            this.panelHeading = this.$t(mapPanelHeading(this.type));
         },
         mounted() {
             const viewportWidth = window.innerWidth,
