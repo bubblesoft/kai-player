@@ -177,7 +177,10 @@
                         height = viewportHeight * .3;
                 }
             } else {
-                width = viewportWidth * .2 > 300 ? viewportWidth * .2 : 300;
+                width = viewportWidth * .3;
+
+                (width < 300) && (width = 300);
+                (width > 500) && (width = 500);
 
                 switch (this.type) {
                     case 'source':
@@ -197,12 +200,12 @@
                     case 'playlist':
                         height = viewportHeight * .3;
                         x = viewportWidth - width;
-                        y = viewportHeight - viewportHeight * .3 - height - controlBarHeight - 2;
+                        y = viewportHeight - viewportHeight * .4 - height - controlBarHeight - 2;
                         this.attachedToHorizontal = 'right';
                         this.attachedToVertical = null;
                         break;
                     case 'tracks':
-                        height = viewportHeight * .3;
+                        height = viewportHeight * .4;
                         x = viewportWidth - width;
                         y = viewportHeight - height - controlBarHeight - 2;
                         this.attachedToHorizontal = 'right';

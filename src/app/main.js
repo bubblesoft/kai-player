@@ -60,7 +60,8 @@ const messages = {
         'Temp': 'Temp',
         'New Playlist': 'New Playlist',
         'Listen Randomly': 'Listen Randomly',
-        'Drag a track here and start random listening': 'Drag a track here and start random listening'
+        'Drag a track here and start random listening': 'Drag a track here and start random listening',
+        'Unknown Artist': 'Unknown Artist'
     },
     'zh-CN': {
         'Chart': '排行榜',
@@ -73,7 +74,8 @@ const messages = {
         'Temp': '临时播放列表',
         'New Playlist': '新建播放列表',
         'Listen Randomly': '随便听听',
-        'Drag a track here and start random listening': '拖动一个音频到这里开始收听'
+        'Drag a track here and start random listening': '拖动一个音频到这里开始收听',
+        'Unknown Artist': '未知艺术家'
     },
     'ja-JP': {
         'Chart': 'Chart',
@@ -86,7 +88,8 @@ const messages = {
         'Temp': 'Temp',
         'New Playlist': 'New Playlist',
         'Listen Randomly': 'Listen Randomly',
-        'Drag a track here and start random listening': 'Drag a track here and start random listening'
+        'Drag a track here and start random listening': 'Drag a track here and start random listening',
+        'Unknown Artist': 'Unknown Artist'
     },
     'ko-KR': {
         'Chart': 'Chart',
@@ -99,7 +102,8 @@ const messages = {
         'Temp': 'Temp',
         'New Playlist': 'New Playlist',
         'Listen Randomly': 'Listen Randomly',
-        'Drag a track here and start random listening': 'Drag a track here and start random listening'
+        'Drag a track here and start random listening': 'Drag a track here and start random listening',
+        'Unknown Artist': 'Unknown Artist'
     }
 };
 
