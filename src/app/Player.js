@@ -7,6 +7,11 @@ import { Howl } from 'howler';
 import { initHowlOnProgress } from '../scripts/utils';
 
 export default class Player {
+    _sound;
+    _seek;
+    _onProgressCallbacks;
+    _onEndCallbacks;
+
     get volume() {
         return this._volume;
     }
@@ -40,6 +45,14 @@ export default class Player {
         return this._sound.state() === 'loaded';
     }
 
+    get state() {
+        if (!this._sound) {
+            return 'unloaded';
+        }
+
+        return this._sound.state();
+    }
+
     get playing() {
         if (!this._sound) {
             return false;
@@ -61,6 +74,7 @@ export default class Player {
         this.volume = .5;
         this._seek = 0;
         this._onProgressCallbacks = [];
+        this._onEndCallbacks = [];
     }
 
     load(urls) {
@@ -80,6 +94,10 @@ export default class Player {
 
             this._onProgressCallbacks.forEach(_callback => {
                 this._sound.on('progress', _callback);
+            });
+
+            this._onEndCallbacks.forEach(_callback => {
+                this._sound.on('end', _callback);
             });
 
             this._sound.once('load', () => {
@@ -118,23 +136,39 @@ export default class Player {
     }
 
     on(event, callback) {
+        if (this._sound) {
+            this._sound.on(event, callback);
+        }
+
         switch (event) {
             case 'progress':
-                if (this._sound) {
-                    this._sound.on('progress', callback);
-                }
                 this._onProgressCallbacks.push(callback);
+                break;
+
+            case 'end':
+                this._onEndCallbacks.push(callback);
+                break;
+
         }
     }
 
     off(event, callback) {
+        if (this._sound) {
+            this._sound.off(event, callback);
+        }
+
         switch (event) {
             case 'progress':
-                if (this._sound) {
-                    this._sound.off('progress', callback);
-                }
-
                 this._onProgressCallbacks.forEach((_callback, index, _callbacks) => {
+                    if (callback === _callback) {
+                        _callbacks.splice(index, 1);
+                    }
+                });
+
+                break;
+
+            case 'end':
+                this._onEndCallbacks.forEach((_callback, index, _callbacks) => {
                     if (callback === _callback) {
                         _callbacks.splice(index, 1);
                     }
