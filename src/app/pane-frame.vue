@@ -50,10 +50,7 @@
                 set(panelType) {
                     this[UPDATE_ACTIVE_PANEL_INDEX](panelType);
                 }
-            },
-            ...mapState({
-                i18next: state => state.generalModule.i18next
-            })
+            }
         },
         components: {
             sourcePane,
@@ -126,7 +123,7 @@
             ])
         },
         created() {
-            this.panelHeading = this.i18next.t(mapPanelHeading(this.type));
+            this.panelHeading = this.$t(mapPanelHeading(this.type));
         },
         mounted() {
             const viewportWidth = window.innerWidth,
@@ -180,7 +177,10 @@
                         height = viewportHeight * .3;
                 }
             } else {
-                width = viewportWidth * .2 > 300 ? viewportWidth * .2 : 300;
+                width = viewportWidth * .3;
+
+                (width < 300) && (width = 300);
+                (width > 500) && (width = 500);
 
                 switch (this.type) {
                     case 'source':
@@ -200,12 +200,12 @@
                     case 'playlist':
                         height = viewportHeight * .3;
                         x = viewportWidth - width;
-                        y = viewportHeight - viewportHeight * .3 - height - controlBarHeight - 2;
+                        y = viewportHeight - viewportHeight * .4 - height - controlBarHeight - 2;
                         this.attachedToHorizontal = 'right';
                         this.attachedToVertical = null;
                         break;
                     case 'tracks':
-                        height = viewportHeight * .3;
+                        height = viewportHeight * .4;
                         x = viewportWidth - width;
                         y = viewportHeight - height - controlBarHeight - 2;
                         this.attachedToHorizontal = 'right';

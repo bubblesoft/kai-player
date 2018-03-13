@@ -1,6 +1,9 @@
 <template lang="pug">
     div#control-bar
         .tool-bar
+            .track-name(v-if="track")
+                yoyoMarquee(:title="track.name + '-' + (track.artists && track.artists.map(artist => artist.name).join(', '))")
+                    span(style="color: #fff;") {{ track.name }} - {{ track.artists && track.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist') }}
             .btn-group.btn-group-xs
                 checkbox(
                     v-model="sourceOpen"
@@ -135,12 +138,15 @@
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
 
+    import yoyoMarquee from './yoyo-marquee';
+
     import { getRecommendedTrack, formatDuration } from '../scripts/utils';
 
     export default {
         components: {
             vueSlider,
-            checkbox
+            checkbox,
+            yoyoMarquee
         },
 
         data: () => {
@@ -151,6 +157,10 @@
         },
 
         computed: {
+            track() {
+                return this.queue.get(this.queue.active);
+            },
+
             playing() {
                 return this.player.playing
             },
@@ -163,6 +173,7 @@
                 get() {
                     return this.$store.state.generalModule.panels.source.open;
                 },
+
                 set(open) {
                     this[UPDATE_PANEL]({
                         index: 'source',
@@ -175,6 +186,7 @@
                 get() {
                     return this.$store.state.generalModule.panels.list.open;
                 },
+
                 set(open) {
                     this[UPDATE_PANEL]({
                         index: 'list',
@@ -187,6 +199,7 @@
                 get() {
                     return this.$store.state.generalModule.panels.search.open;
                 },
+
                 set(open) {
                     this[UPDATE_PANEL]({
                         index: 'search',
@@ -199,6 +212,7 @@
                 get() {
                     return this.$store.state.generalModule.panels.playlist.open;
                 },
+
                 set(open) {
                     this[UPDATE_PANEL]({
                         index: 'playlist',
@@ -211,6 +225,7 @@
                 get() {
                     return this.$store.state.generalModule.panels.tracks.open;
                 },
+
                 set(open) {
                     this[UPDATE_PANEL]({
                         index: 'tracks',
@@ -310,15 +325,15 @@
         .tool-bar {
             display: flex;
             align-items: center;
-            justify-content: flex-end;
+            justify-content: space-around;
 
-            .btn-group {
-                margin: 0 5%;
+            .track-name {
+                width: 50%;
+            }
 
-                svg {
-                    fill: #666;
-                    vertical-align: middle;
-                }
+            svg {
+                fill: #666;
+                vertical-align: middle;
             }
         }
 

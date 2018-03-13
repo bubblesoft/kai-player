@@ -19,7 +19,7 @@
         .list-wrap
             .random-queue-box(v-if="queue.constructor === RandomQueue")
                 h5(v-if="playingQueueIndex === queueGroup.active && tracks[activeIndex]") {{ tracks[activeIndex].name + ' - ' + tracks[activeIndex].artists.map(artist => artist.name).join(', ') }}
-                .tips.text-muted {{ tips[0] }}
+                .tips.text-muted {{ $t('Drag a track here and start random listening') }}
             table.table-condensed.table.table-hover(v-else)
                 draggable(
                     v-model="tracks"
@@ -90,7 +90,6 @@
                   data: []
               },
               dragging: false,
-              tips: [],
               RandomQueue
           }
         },
@@ -133,8 +132,7 @@
             },
             ...mapState({
                 queueGroup: state => state.queueModule.queueGroup,
-                player: state => state.playerModule.player,
-                i18next: state => state.generalModule.i18next
+                player: state => state.playerModule.player
             })
         },
         watch: {
@@ -186,9 +184,6 @@
         },
         filters: {
             formatDuration
-        },
-        created() {
-            this.tips[0] = this.i18next.t('Drag a track here and start random listening');
         }
     }
 </script>
