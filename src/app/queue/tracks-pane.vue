@@ -3,27 +3,57 @@
         .toolbar
             template(v-if="queue.constructor === RandomQueue")
             template(v-else)
-                draggable.tool-button(
-                    v-model="trashCan.data"
-                    :options="{ group: 'tracks' }"
-                    @dragover.native="trashCan.hover = true"
-                    @dragleave.native="trashCan.hover = false"
-                    :class="{ active: dragging && trashCan.hover }"
+                tooltip(
+                    effect="fadein"
+                    placement="top"
+                    :content="$t('Drag a track here to remove it')"
                 )
-                    svg(
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
+                    draggable.tool-button(
+                        v-model="trashCan.data"
+                        :options="{ group: 'tracks', draggable: '' }"
+                        @dragover.native="trashCan.hover = true"
+                        @dragleave.native="trashCan.hover = false"
+                        :class="{ active: dragging && trashCan.hover }"
                     )
-                        path(d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z")
+                        svg(
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z")
+                tooltip(
+                    effect="fadein"
+                    placement="top"
+                    :content="editMode ? $t('Exit edit mode') : $t('Enter edit mode')"
+                )
+                    .tool-button(v-interact:tap="() => { editMode = !editMode; }")
+                        svg(
+                            v-if="editMode"
+                            width="24"
+                            height="24"
+                            viewBox="-2 -2 28 28"
+                        )
+                            path(d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z")
+                        svg(
+                            v-else
+                            width="24"
+                            height="24"
+                            viewBox="-2 -2 28 28"
+                        )
+                            path(d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z")
         .list-wrap
             .random-queue-box(v-if="queue.constructor === RandomQueue")
-                h5(v-if="playingQueueIndex === queueGroup.active && tracks[activeIndex]") {{ tracks[activeIndex].name + ' - ' + tracks[activeIndex].artists.map(artist => artist.name).join(', ') }}
+                yoyoMarquee(
+                    v-if="activeTrack"
+                    style="width: 90%;"
+                    :title="activeTrack.name + '-' + (activeTrack.artists && activeTrack.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist'))"
+                )
+                    h5(v-if="playingQueueIndex === queueGroup.active && activeTrack") {{ activeTrack.name + ' - ' + (activeTrack.artists && activeTrack.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist')) }}
                 .tips.text-muted {{ $t('Drag a track here and start random listening') }}
             table.table-condensed.table.table-hover(v-else)
                 draggable(
                     v-model="tracks"
-                    :options="{ group: 'tracks', handle: 'tr.active', forceFallback: true, fallbackOnBody: true }"
+                    :options="{ group: 'tracks', handle: '.drag-handle', forceFallback: true, fallbackOnBody: true }"
                     @sort="onSort"
                     @start="dragging = true"
                     @end="dragging = false"
@@ -34,7 +64,7 @@
                         v-interact:doubletap="() => { playTrack(index); }"
                         v-interact:tap="() => { select(index); }"
                     )
-                        td(style="width:18px")
+                        td(style="width: 18px;")
                             template(v-if="queueGroup.active === playingQueueIndex && index === activeIndex")
                                 svg(
                                     v-if="playing"
@@ -50,13 +80,26 @@
                                     viewBox="0 0 24 24"
                                 )
                                     path(d="M6 19h4V5H6v14zm8-14v14h4V5h-4z")
-                        td {{ track.name }}
+                        td(style="padding: 0;")
+                            editableBox(
+                                v-model="track.name"
+                                :editable="editMode"
+                                :height="30"
+                            )
                         td {{ track.artists.map(artist => artist.name).join(', ') }}
                         td(
                             v-if="track.duration"
                             style="width:46px"
                         ) {{ track.duration | formatDuration('mm:ss') }}
                         td(v-else)
+                        td.drag-handle(v-if="editMode")
+                            svg(
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
+
                     tr(
                         slot="footer"
                         v-if="!tracks.length"
@@ -74,17 +117,23 @@
     import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX } from '../../scripts/mutation-types';
 
     import draggable from 'vuedraggable';
+    import tooltip from 'vue-strap/src/tooltip';
 
+    import yoyoMarquee from '../yoyo-marquee';
     import editableBox from '../editable-box';
 
     export default {
         components: {
             draggable,
+            tooltip,
+            yoyoMarquee,
             editableBox
         },
+
         data() {
           return {
               selectedIndex: null,
+              editMode: false,
               trashCan: {
                   hover: false,
                   data: []
@@ -93,6 +142,7 @@
               RandomQueue
           }
         },
+
         computed: {
             queue() {
                 return this.queueGroup.get(this.queueGroup.active);
@@ -102,6 +152,7 @@
                 get() {
                     return this.queue ? this.queue.get() : [];
                 },
+
                 set(tracks) {
                     this[UPDATE_QUEUE]({
                         index: this.queueGroup.active,
@@ -118,12 +169,17 @@
                 get() {
                     return this.queue.active;
                 },
+
                 set(active) {
                     this[UPDATE_QUEUE]({
                         index: this.queueGroup.active,
                         active
                     });
                 }
+            },
+
+            activeTrack() {
+                return this.queue.get(this.activeIndex);
             },
 
             playing() {
@@ -134,6 +190,7 @@
                 get() {
                     return this.$store.state.queueModule.playingQueueIndex;
                 },
+
                 set(index) {
                     this[UPDATE_PLAYING_QUEUE_INDEX](index);
                 }
@@ -145,11 +202,13 @@
                 visualizer: state => state.visualizationModule.visualizer
             })
         },
+
         watch: {
 //            queue(to) {
 //                this.playTrack(to.active);
 //            }
         },
+
         methods: {
             async playTrack(index) {
                 const track = await this.queue.get(this.queue.goTo(index));
@@ -275,8 +334,12 @@
                     fill: #fff;
                 }
 
-                &.queue-active {
-                    background-color: rgba(0, 0, 0, .3);
+                .drag-handle {
+                    width: 28px;
+                    text-align: center;
+                    vertical-align: middle;
+                    cursor: move;
+                    cursor: -webkit-grab;
                 }
             }
         }

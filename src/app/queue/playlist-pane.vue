@@ -8,24 +8,49 @@
                     viewBox="0 0 24 24"
                 )
                     path(d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z")
-            draggable.tool-button(
-                v-model="trashCan.data"
-                :options="{ group: 'queues' }"
-                @pointerover.native="trashCan.hover = true"
-                @pointerleave.native="trashCan.hover = false"
-                :class="{ active: dragging && trashCan.hover }"
+            tooltip(
+                effect="fadein"
+                placement="top"
+                :content="$t('Drag a playlist here to remove it')"
             )
-                svg(
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
+                draggable.tool-button(
+                    v-model="trashCan.data"
+                    :options="{ group: 'queues', draggable: '' }"
+                    @pointerover.native="trashCan.hover = true"
+                    @pointerleave.native="trashCan.hover = false"
+                    :class="{ active: dragging && trashCan.hover }"
                 )
-                    path(d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z")
+                    svg(
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                    )
+                        path(d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z")
+            tooltip(
+                effect="fadein"
+                placement="top"
+                :content="editMode ? $t('Exit edit mode') : $t('Enter edit mode')"
+            )
+                .tool-button(v-interact:tap="() => { editMode = !editMode; }")
+                    svg(
+                        v-if="editMode"
+                        width="24"
+                        height="24"
+                        viewBox="-2 -2 28 28"
+                    )
+                        path(d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z")
+                    svg(
+                        v-else
+                        width="24"
+                        height="24"
+                        viewBox="-2 -2 28 28"
+                    )
+                        path(d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z")
         .list-wrap
             table.table-condensed.table.table-hover
                 draggable(
                     v-model="queues"
-                    :options="{ group: 'queues', handle: 'tr.active', forceFallback: true, fallbackOnBody: true }"
+                    :options="{ group: 'queues', handle: '.drag-handle', forceFallback: true, fallbackOnBody: true }"
                     @sort="onSort"
                     @start="dragging = true"
                     @end="dragging = false"
@@ -48,10 +73,18 @@
                         td(style="padding: 0;")
                             editableBox(
                                 v-model="queue.name"
+                                :editable="editMode"
                                 :height="30"
                             )
                         td(v-if="queue.constructor === RandomQueue") ∞
                         td(v-else) {{ queue.length }}
+                        td.drag-handle(v-if="editMode")
+                            svg(
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
 </template>
 
 <script>
@@ -63,17 +96,21 @@
     import RandomQueue from './RandomQueue';
 
     import draggable from 'vuedraggable';
+    import tooltip from 'vue-strap/src/tooltip';
 
     import editableBox from '../editable-box';
 
     export default {
         components: {
             draggable,
+            tooltip,
             editableBox
         },
+
         data() {
             return {
                 selectedIndex: null,
+                editMode: false,
                 trashCan: {
                     hover: false,
                     data: []
@@ -82,6 +119,7 @@
                 RandomQueue
             }
         },
+
         computed: {
             queues: {
                 get() {
@@ -122,6 +160,7 @@
                     queue: new Queue({ name: this.$t('New Playlist') })
                 });
             },
+
             select(index) {
                 const select = () => {
                     document.removeEventListener('click', select);
@@ -130,6 +169,7 @@
 
                 document.addEventListener('click', select);
             },
+
             onSort(e) {
                 if (e.from === e.to) {
                     if (e.oldIndex === this.activeIndex) {
@@ -160,18 +200,22 @@
                     }
                 }
             },
+
             unSelect() {
                 this.selectedIndex = null;
             },
+
             ...mapMutations([
                 INSERT_QUEUE,
                 UPDATE_QUEUE_GROUP,
                 UPDATE_PLAYING_QUEUE_INDEX
             ])
         },
+
         created() {
             document.addEventListener('click', this.unSelect);
         },
+
         destroyed() {
             document.removeEventListener('click', this.unSelect);
         }
@@ -240,6 +284,14 @@
                     width: 18px;
                     height: 18px;
                     fill: #fff;
+                }
+
+                .drag-handle {
+                    width: 28px;
+                    text-align: center;
+                    vertical-align: middle;
+                    cursor: move;
+                    cursor: -webkit-grab;
                 }
             }
         }

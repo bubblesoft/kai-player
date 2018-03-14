@@ -17,6 +17,10 @@
     export default {
         props: {
             value: String,
+            editable: {
+                type: Boolean,
+                default: true
+            },
             height: Number
         },
         data() {
@@ -33,13 +37,18 @@
             input() {
                 this.$emit('input', this.text);
             },
-            focus() {
-                this.inputStyle.width = this.$el.offsetWidth + 'px';
-                this.inputStyle.height = this.$el.offsetHeight + 'px';
-                this.inputStyle.display = 'block';
-                setTimeout(() => {
-                    this.$el.querySelector('input').focus();
-                }, 0);
+            focus(e) {
+                if (this.editable) {
+                    this.inputStyle.width = this.$el.offsetWidth + 'px';
+                    this.inputStyle.height = this.$el.offsetHeight + 'px';
+                    this.inputStyle.display = 'block';
+
+                    this.$nextTick(() => {
+                        this.$el.querySelector('input').focus();
+                    });
+
+                    e.stopPropagation();
+                }
             },
             blur() {
                 this.inputStyle.display = 'none';

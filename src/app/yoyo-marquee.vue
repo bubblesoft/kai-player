@@ -20,14 +20,14 @@
         },
 
         mounted() {
-            this.width = this.$el.offsetWidth;
-
             const contentDomElement = this.$refs.content;
 
-            contentDomElement.style.setProperty("--parent-width", this.width + 'px');
+            this.$nextTick(() => {
+                this.width = this.$el.offsetWidth;
+                contentDomElement.style.setProperty("--parent-width", this.width + 'px');
+            });
 
             mutationObserver = new MutationObserver(() => {
-                console.log('update');
                 this.contentWidth = this.$refs.content.offsetWidth;
                 contentDomElement.style.setProperty("--width", this.contentWidth + 'px');
             });
@@ -49,6 +49,7 @@
 <style lang="scss" scoped>
     .yoyo-marquee {
         overflow: hidden;
+        text-align: center;
 
         .content {
             display: inline-block;
