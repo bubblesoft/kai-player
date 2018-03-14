@@ -106,7 +106,11 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language'
+        'Select a language': 'Select a language',
+        'Enter edit mode': 'Enter edit mode',
+        'Exit edit mode': 'Exit edit mode',
+        'Drag a track here to remove it': 'Drag a track here to remove it',
+        'Drag a playlist here to remove it': 'Drag a playlist here to remove it'
     },
     'zh-CN': {
         'Confirm': '确定',
@@ -140,7 +144,11 @@ const messages = {
         'Upload': '上传图片',
         'Language': '语言',
         'Drag & Drop you files or Browse': '拖动文件到这里或者点击浏览文件',
-        'Select a language': '选择语言'
+        'Select a language': '选择语言',
+        'Enter edit mode': '进入编辑模式',
+        'Exit edit mode': '退出编辑模式',
+        'Drag a track here to remove it': '拖动一个音频到这里删除',
+        'Drag a playlist here to remove it': '拖动一个播放列表到这里删除'
     },
     'ja-JP': {
         'Confirm': 'はい',
@@ -174,7 +182,11 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language'
+        'Select a language': 'Select a language',
+        'Enter edit mode': 'Enter edit mode',
+        'Exit edit mode': 'Exit edit mode',
+        'Drag a track here to remove it': 'Drag a track here to remove it',
+        'Drag a playlist here to remove it': 'Drag a playlist here to remove it'
     },
     'ko-KR': {
         'Confirm': 'Confirm',
@@ -208,7 +220,11 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language'
+        'Select a language': 'Select a language',
+        'Enter edit mode': 'Enter edit mode',
+        'Exit edit mode': 'Exit edit mode',
+        'Drag a track here to remove it': 'Drag a track here to remove it',
+        'Drag a playlist here to remove it': 'Drag a playlist here to remove it'
     }
 };
 

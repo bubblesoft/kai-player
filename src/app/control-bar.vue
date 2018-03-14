@@ -411,7 +411,7 @@
 
                 if (this.queue.constructor === RandomQueue) {
                     this.loading = true;
-                    this[ADD_TRACK](await getRecommendedTrack(this.queue.get(this.queue.active), this.sources));
+                    this[ADD_TRACK](await getRecommendedTrack(this.track, this.sources.filter(source => source.active)));
                     this.loading = false;
                 }
 
@@ -437,10 +437,15 @@
             this.player.on('progress', (soundId, progress) => {
                 this.progress = progress;
             });
+
+            this.player.on('end', () => {
+                this.next();
+            });
         },
 
         destroyed() {
             this.player.off('progress');
+            this.player.off('end');
         }
     }
 </script>

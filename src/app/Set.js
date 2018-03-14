@@ -39,6 +39,10 @@ export default class Set {
     }
 
     get(index) {
+        if (index === null) {
+            return;
+        }
+
         if (typeof index === 'number') {
             return this._items[index];
         }
