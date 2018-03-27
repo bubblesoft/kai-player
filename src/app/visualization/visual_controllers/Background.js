@@ -11,9 +11,9 @@ export default class Background extends VisualController {
     }
 
     set activeType(type) {
-        this._renderers[this._activeType].stop();
+        this.activeRenderer.stop();
         super.activeType = type;
-        this._renderers[this._activeType].start();
+        this.activeRenderer.start();
     }
 
     constructor(type) {
@@ -25,16 +25,14 @@ export default class Background extends VisualController {
     }
 
     start() {
-        this._renderers[this.activeType].start();
-        this._renderers[this.activeType].show();
+        this.activeRenderer.animate();
     }
 
     stop() {
-        this._renderers[this.activeType].stop();
-        this._renderers[this.activeType].hide();
+        this.activeRenderer.stopAnimate();
     }
 
     event(type) {
-        this._renderers[this.activeType].event(type);
+        this.activeRenderer.event(type);
     }
 };

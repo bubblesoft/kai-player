@@ -139,9 +139,6 @@
             }
         },
         mounted() {
-            this.visualizer.mount(this.$el);
-            this.visualizer.init();
-
             this.interactable = interact(document.body)
                 .on('tap', e => {
                     if (!this.lockActivePanelIndex) {
@@ -152,7 +149,9 @@
                 });
 
             this.initVisualization(this.$el);
+            this.background.activeRenderer.start();
             this.background.start();
+            this.background.activeRenderer.show();
 
             this.player.on('end', () => {
                 this.visualizer.stop();

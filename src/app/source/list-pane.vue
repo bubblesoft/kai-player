@@ -40,7 +40,7 @@
 
     import { formatDuration } from '../../scripts/utils';
 
-    import { UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT } from '../../scripts/mutation-types';
+    import { UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../../scripts/mutation-types';
 
     import draggable from 'vuedraggable';
 
@@ -81,17 +81,17 @@
             async addToPlayback(track) {
                 this[ADD_TRACK](track);
 
-                const url = await track.getStreamUrl();
+                const url = await track.getStreamUrl(),
+                        playing = this.player.playing;
 
                 await this.player.load([url]);
                 this.player.play();
                 this.playingQueueIndex = this.queueGroup.active;
-                this[TRIGGER_BACKGROUND_EVENT]('play');
+                this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
 
-                setTimeout(() => {
-                    this[SWITCH_TO_VISUALIZER](this.player._sound._sounds[0]._node);
-                    this[TRIGGER_BACKGROUND_EVENT]('reset');
-                }, 2000);
+                if (!playing) {
+                    this[SWITCH_TO_VISUALIZER]();
+                }
 
                 track.duration = this.player.duration * 1000;
             },
@@ -99,7 +99,8 @@
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
                 SWITCH_TO_VISUALIZER,
-                TRIGGER_BACKGROUND_EVENT
+                TRIGGER_BACKGROUND_EVENT,
+                VISUALIZER_LISTEN_TO
             ]),
         },
         filters: {

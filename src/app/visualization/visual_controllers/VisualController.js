@@ -7,7 +7,9 @@ import threeRenderer from '../renderers/renderers';
 const mapTypeName = type => {
     switch (type) {
         case 'three':
-            return '3d Tiles';
+            return 'Tiles';
+        case 'histogram':
+            return 'Histogram';
     }
 };
 
@@ -36,12 +38,20 @@ export default class VisualController {
         this._activeType = type;
     }
 
+    get activeRenderer() {
+        return this._renderers[this._activeType];
+    }
+
     constructor(type) {
         this._activeType = type;
         this._mountPoint = null;
         this._root = document.createElement('div');
         this._root.style.cssText = 'width: 100%; height: 100%;';
     }
+
+    show() { }
+
+    hide() { }
 
     start() { }
 

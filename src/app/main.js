@@ -10,7 +10,7 @@ import VueI18n from 'vue-i18n';
 
 import interact from 'interactjs';
 
-import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX, SET_ACTIVE_PANEL_INDEX_LOCK, UPDATE_ACTIVE_BACKGROUND_TYPE, SWITCH_TO_VISUALIZER, SWITCH_TO_BACKGROUND, TRIGGER_BACKGROUND_EVENT } from '../scripts/mutation-types';
+import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX, SET_ACTIVE_PANEL_INDEX_LOCK, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
@@ -64,7 +64,12 @@ const messages = {
         'New Playlist': 'New Playlist',
         'Listen Randomly': 'Listen Randomly',
         'Drag a track here and start random listening': 'Drag a track here and start random listening',
-        'Unknown Artist': 'Unknown Artist'
+        'Unknown Artist': 'Unknown Artist',
+        'Select a background': 'Select a background',
+        'Select a visualizer': 'Select a visualizer',
+        'Histogram': 'Histogram',
+        'Tiles': 'Tiles',
+        'Random': 'Random'
     },
     'zh-CN': {
         'Chart': '排行榜',
@@ -78,7 +83,12 @@ const messages = {
         'New Playlist': '新建播放列表',
         'Listen Randomly': '随便听听',
         'Drag a track here and start random listening': '拖动一个音频到这里开始收听',
-        'Unknown Artist': '未知艺术家'
+        'Unknown Artist': '未知艺术家',
+        'Select a background': '选择背景',
+        'Select a visualizer': '选择可视化',
+        'Histogram': '直方图',
+        'Tiles': '方块',
+        'Random': '随机'
     },
     'ja-JP': {
         'Chart': 'Chart',
@@ -92,7 +102,12 @@ const messages = {
         'New Playlist': 'New Playlist',
         'Listen Randomly': 'Listen Randomly',
         'Drag a track here and start random listening': 'Drag a track here and start random listening',
-        'Unknown Artist': 'Unknown Artist'
+        'Unknown Artist': 'Unknown Artist',
+        'Select a background': 'Select a background',
+        'Select a visualizer': 'Select a visualizer',
+        'Histogram': 'Histogram',
+        'Tiles': 'Tiles',
+        'Random': 'Random'
     },
     'ko-KR': {
         'Chart': 'Chart',
@@ -106,7 +121,12 @@ const messages = {
         'New Playlist': 'New Playlist',
         'Listen Randomly': 'Listen Randomly',
         'Drag a track here and start random listening': 'Drag a track here and start random listening',
-        'Unknown Artist': 'Unknown Artist'
+        'Unknown Artist': 'Unknown Artist',
+        'Select a background': 'Select a background',
+        'Select a visualizer': 'Select a visualizer',
+        'Histogram': 'Histogram',
+        'Tiles': 'Tiles',
+        'Random': 'Random'
     }
 };
 
@@ -225,28 +245,86 @@ const playerModule = {
 const visualizationModule = {
     state: {
         background: new Background('three'),
-        visualizer: new Visualizer('histogram')
+        visualizer: new Visualizer('random')
     },
     mutations: {
         [UPDATE_ACTIVE_BACKGROUND_TYPE](state, type) {
+            const previousRenderer = state.background.activeRenderer,
+                playing = playerModule.state.player.playing;
+
             state.background.activeType = type;
+
+            const background = state.background;
+
+            if (playing && background.activeRenderer !== previousRenderer) {
+                previousRenderer.hide();
+                previousRenderer.pause();
+                background.activeRenderer.start();
+                background.activeRenderer.show();
+            }
+
+            state.background = null;
+            state.background = background;
         },
+
+        [UPDATE_ACTIVE_VISUALIZER_TYPE](state, type) {
+            const previousRenderer = state.visualizer.activeRenderer,
+                playing = playerModule.state.player.playing;
+
+            state.visualizer.activeType = type;
+
+            const visualizer = state.visualizer;
+
+            if (playing && visualizer.activeRenderer !== previousRenderer) {
+                previousRenderer.hide();
+                previousRenderer.pause();
+                visualizer.activeRenderer.start();
+                visualizer.activeRenderer.show();
+            }
+
+            state.visualizer = null;
+            state.visualizer = visualizer;
+        },
+
         [SWITCH_TO_BACKGROUND](state) {
-            if (state.background.activeType !== state.visualizer.activeType) {
+            if (state.background.activeRenderer !== state.visualizer.activeRenderer) {
+                state.visualizer.activeRenderer.hide();
+                state.background.activeRenderer.start();
+                state.background.start();
+                state.background.activeRenderer.show();
+                state.visualizer.stop();
+                state.visualizer.activeRenderer.pause();
+            } else {
                 state.visualizer.stop();
                 state.background.start();
             }
         },
-        [SWITCH_TO_VISUALIZER](state, audioSource) {
-            if (state.background.activeType !== state.visualizer.activeType) {
+
+        [SWITCH_TO_VISUALIZER](state) {
+            if (state.background.activeRenderer !== state.visualizer.activeRenderer) {
+                state.background.event('play');
+
+                setTimeout(() => {
+                    state.background.activeRenderer.hide();
+                    state.visualizer.activeRenderer.start();
+                    state.visualizer.start();
+                    state.visualizer.activeRenderer.show();
+                    state.background.stop();
+                    state.background.activeRenderer.pause();
+                    state.background.event('reset');
+                }, 2000);
+            } else {
                 state.background.stop();
                 state.visualizer.start();
             }
-
-            state.visualizer.listen(audioSource);
         },
+
         [TRIGGER_BACKGROUND_EVENT](state, type) {
             state.background.event(type);
+        },
+
+        [VISUALIZER_LISTEN_TO](state, audioSource) {
+            state.visualizer.listen(audioSource);
         }
     },
     actions: {
@@ -270,6 +348,7 @@ const store = new Vuex.Store({
 new Vue({
     el: 'app',
     store,
+    i18n,
     render: createElement => createElement(app)
 });
 

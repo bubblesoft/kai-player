@@ -8,11 +8,20 @@
                 option(
                     value=""
                     disabled
-                ) {{ backgroundSelectText }}
+                ) {{ $t('Select a background') }}
                 option(
-                    v-for="background in backgrounds"
-                    :value="background.value"
-                ) {{ background.name }}
+                    v-for="tpe in background.types"
+                    :value="tpe.value"
+                ) {{ $t(tpe.name) }}
+            select.form-control(v-model="activeVisualizerType")
+                option(
+                    value=""
+                    disabled
+                ) {{ $t('Select a visualizer') }}
+                option(
+                    v-for="type in visualizer.types"
+                    :value="type.value"
+                ) {{ $t(type.name) }}
             .btn-group.btn-group-xs
                 checkbox(
                     v-model="sourceOpen"
@@ -74,7 +83,7 @@
                     path(d="M6 6h2v12H6zm3.5 6l8.5 6V6z")
             div.control-button.control-button_big(
                 v-if="!playing"
-                @click="play(queue.get(queue.active))"
+                @click="play(queue.get(queue.active)); SWITCH_TO_VISUALIZER(player._sound._sounds[0]._node);"
             )
                 svg(
                     width="24"
@@ -142,7 +151,7 @@
 
     import RandomQueue from './queue/RandomQueue';
 
-    import { ADD_TRACK, UPDATE_PANEL, UPDATE_ACTIVE_BACKGROUND_TYPE, SWITCH_TO_BACKGROUND } from '../scripts/mutation-types';
+    import { ADD_TRACK, UPDATE_PANEL, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
 
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
@@ -161,8 +170,7 @@
         data: () => {
             return {
                 progress: 0,
-                volume: .5,
-                backgroundSelectText: ''
+                volume: .5
             }
         },
 
@@ -181,10 +189,19 @@
 
             activeBackgroundType: {
                 get() {
-                    return this.$store.state.visualizationModule.background.activeType;
+                    return this.background.activeType;
                 },
                 set(type) {
                     this[UPDATE_ACTIVE_BACKGROUND_TYPE](type);
+                }
+            },
+
+            activeVisualizerType: {
+                get() {
+                    return this.visualizer.activeType;
+                },
+                set(type) {
+                    this[UPDATE_ACTIVE_VISUALIZER_TYPE](type);
                 }
             },
 
@@ -261,8 +278,8 @@
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex),
                 player: state => state.playerModule.player,
                 sourceGroup: state => state.sourceModule.sourceGroup,
+                background: state => state.visualizationModule.background,
                 visualizer: state => state.visualizationModule.visualizer,
-                backgrounds: state => state.visualizationModule.background.types,
                 i18next: state => state.generalModule.i18next
             })
         },
@@ -285,8 +302,12 @@
 
                 await this.player.load(url);
                 this.player.play();
-                this.visualizer.listen(this.player._sound._sounds[0]._node);
-                this.visualizer.start();
+
+                if (this.activeVisualizerType === 'random') {
+                    this.activeVisualizerType = 'random';
+                }
+
+                this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
             },
 
             pause() {
@@ -307,7 +328,7 @@
             },
 
             async previous() {
-                this.play(this.queue.get(this.queue.previous()));
+                await this.play(this.queue.get(this.queue.previous()));
             },
 
             async next() {
@@ -317,14 +338,17 @@
                     this[ADD_TRACK](await getRecommendedTrack(this.queue.get(this.queue.active), this.sources));
                 }
 
-                this.play(this.queue.get(this.queue.next()));
+                await this.play(this.queue.get(this.queue.next()));
             },
 
             ...mapMutations([
                 ADD_TRACK,
                 UPDATE_PANEL,
                 UPDATE_ACTIVE_BACKGROUND_TYPE,
-                SWITCH_TO_BACKGROUND
+                UPDATE_ACTIVE_VISUALIZER_TYPE,
+                SWITCH_TO_VISUALIZER,
+                SWITCH_TO_BACKGROUND,
+                VISUALIZER_LISTEN_TO
             ])
         },
 
@@ -332,8 +356,6 @@
             this.player.on('progress', (soundId, progress) => {
                 this.progress = progress;
             });
-
-            this.backgroundSelectText = this.i18next.t('Select a background');
         },
 
         destroyed() {
@@ -349,7 +371,7 @@
         bottom: 0;
         box-sizing: border-box;
         width: 100%;
-        height: 12vh;
+        min-height: 12vh;
         padding: 4px;
         background-color: rgba(255, 255, 255, 0.2);
         box-shadow: 0 0 25px rgba(0, 0, 0, 0.1), inset 0 0 1px rgba(255, 255, 255, 0.6);
@@ -379,9 +401,10 @@
             .btn-group {
                 margin: 0 10px;
 
-            svg {
-                fill: #666;
-                vertical-align: middle;
+                svg {
+                    fill: #666;
+                    vertical-align: middle;
+                }
             }
         }
 

@@ -11,16 +11,57 @@ import '../../../styles/histogram';
 
 
 export default class Visualizer extends VisualController{
-    bands = [];
+    _random;
     _active;
+    _clubber;
+
+    get types() {
+        return [{
+            name: 'Random',
+            value: 'random'
+        }].concat(super.types);
+    }
+
+    get activeType() {
+        if (this._random) {
+            return 'random';
+        }
+
+        return super.activeType;
+    }
+
+    set activeType(type) {
+        if (type === 'random') {
+            this._random = true;
+
+            const rendererTypes = Object.keys(this._renderers);
+
+            super.activeType = rendererTypes[Math.floor(rendererTypes.length * Math.random())];
+
+            return;
+        }
+
+        this._random = false;
+        super.activeType = type;
+    }
 
     constructor(type) {
-        super(type);
-
-        this._renderers = {
+        const renderers = {
             three: threeRenderer,
             histogram: histogramRenderer
         };
+
+        if (type === 'random') {
+            const rendererTypes = Object.keys(renderers);
+
+            super(rendererTypes[Math.floor(rendererTypes.length * Math.random())]);
+            this._random = true;
+        } else {
+            super(type);
+        }
+
+        this._renderers = renderers;
+        this._active = false;
 
         this._clubber = new Clubber({
             size: 2048,
@@ -33,11 +74,16 @@ export default class Visualizer extends VisualController{
     }
 
     start() {
-        const renderer = this._renderers[this.activeType],
-            bandWidth = renderer.bandWidth;
+        if (this._active) {
+            return;
+        }
+
+        const bandWidth = this.activeRenderer.bandWidth;
+
+        let bands = [];
 
         for (let i = 0; i < 128 / bandWidth; i++) {
-            this.bands[i] = this._clubber.band({
+            bands[i] = this._clubber.band({
                 template: '01234',
                 from: i * bandWidth,
                 to: i * bandWidth + bandWidth,
@@ -45,26 +91,24 @@ export default class Visualizer extends VisualController{
             });
         }
 
-        this._active = true;
-
         const render = () => {
             this._clubber.update();
-            renderer.renderAudio(this.bands);
+            this.activeRenderer.renderAudio(bands);
 
-          if (this._active) {
-              requestAnimationFrame(render);
-          }
+
+            if (this._active) {
+                requestAnimationFrame(render);
+            }
         };
 
-        renderer.show();
-        render();
+        requestAnimationFrame(() => {
+            this._active = true;
+            render();
+        });
+
     }
 
     stop() {
         this._active = false;
-
-        requestAnimationFrame(() => {
-            this._renderers[this.activeType].hide();
-        });
     }
 }

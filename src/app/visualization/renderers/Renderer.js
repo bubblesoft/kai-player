@@ -5,12 +5,15 @@
 export default class Renderer {
     root;
     bandWidth;
+    active;
 
-    constructor() { }
+    constructor() {
+        this.active = false;
+    }
 
     init(mountPoint) {
         this.root = document.createElement('div');
-        this.root.style.cssText = 'width: 100%; height: 100%;';
+        this.root.style.cssText = 'position: absolute; left: 0; top: 0; width: 100%; height: 100%;';
         mountPoint.appendChild(this.root);
     }
 
@@ -26,5 +29,11 @@ export default class Renderer {
 
     start() { }
 
-    stop() { }
+    pause() {
+        this.stopAnimate();
+    }
+
+    animate() { }
+
+    stopAnimate() { }
 }
