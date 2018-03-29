@@ -6,26 +6,31 @@
                 v-if="panels.source.open"
                 type="source"
             )
+                sourcePane
         transition(name="fade")
             pane-frame(
                 v-if="panels.list.open"
                 type="list"
             )
+                listPane
         transition(name="fade")
             pane-frame(
                 v-if="panels.playlist.open"
                 type="playlist"
             )
+                playlistPane
         transition(name="fade")
             pane-frame(
                 v-if="panels.tracks.open"
                 type="tracks"
             )
+                tracksPane
         transition(name="fade")
             pane-frame(
                 v-if="panels.search.open"
                 type="search"
             )
+                searchPane
 </template>
 
 <script>
@@ -45,12 +50,22 @@
     import { getRecommendedTrack } from '../scripts/utils';
 
     import controlBar from './control-bar';
+    import listPane from './source/list-pane';
     import paneFrame from './pane-frame';
+    import sourcePane from './source/source-pane';
+    import playlistPane from './queue/playlist-pane';
+    import tracksPane from './queue/tracks-pane';
+    import searchPane from './source/search-pane';
 
     export default {
         components: {
             controlBar,
-            paneFrame
+            paneFrame,
+            listPane,
+            sourcePane,
+            playlistPane,
+            tracksPane,
+            searchPane
         },
         data() {
             return {
@@ -177,7 +192,7 @@
     }
 
 
-    /*Panel transition*/
+    /* Animation */
 
     .fade-enter-active {
         transition: opacity .3s cubic-bezier(.32,0,0,1);

@@ -115,12 +115,12 @@
                     viewBox="0 0 24 24"
                 )
                     path(d="M6 6h12v12H6z")
-            vue-slider.progress.vue-slider(
+            vue-slider.progress(
                 @callback="changeProgress($event)"
-                ref="slider"
                 v-model="progress"
                 width="30%"
                 :max="duration"
+                :speed=".2"
                 :disabled="!ready()"
                 tooltip="hover"
                 :formatter="(v) => `${formatDuration(v * 1000, 'mm:ss')}`"
@@ -129,9 +129,8 @@
                 :process-style="{ 'background-color': 'rgba(255, 255, 255, 0.9)', filter: 'drop-shadow(2px 2px 10px rgba(150, 150, 150, 1))' }"
                 :tooltip-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)', 'border-color': 'rgba(255, 255, 255, 0.6)', 'border-style': 'none' }"
             )
-            div.time {{ formatDuration(progress * 1000, 'mm:ss') }} / {{ formatDuration(duration * 1000, 'mm:ss') }}
-            vue-slider.volume.vue-slider(
-                ref="slider"
+            .time {{ formatDuration(progress * 1000, 'mm:ss') }} / {{ formatDuration(duration * 1000, 'mm:ss') }}
+            vue-slider.volume(
                 v-model="volume"
                 width="10%"
                 :max="1"
@@ -285,7 +284,7 @@
         },
 
         watch: {
-            volume() {
+            volume(to) {
                 this.player.volume = to;
             }
         },
@@ -463,7 +462,7 @@
                 }
             }
 
-            .vue-slider {
+            .vue-slider-component {
                 margin: 6px;
 
                 @media (max-width: 425px) {

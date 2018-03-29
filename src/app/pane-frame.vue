@@ -1,31 +1,50 @@
 <template lang="pug">
     .panel-frame.panel.panel-default(
         :class="{ active: activePanelIndex === type }"
+        :style="{ backgroundPosition: (2 - ratioX - ratioY) * 50 + 10 + '% ' + '0' }"
     )
-        .panel-heading {{ panelHeading }}
-        .panel-body
-            .panel-body__wrap
-                div(:is="mapComponent(type)")
+        .panel-heading
+            div {{ panelHeading }}
+            vueSlider(
+                v-if="activePanelIndex === type"
+                v-model="opacity"
+                :max="1"
+                :interval=".01"
+                tooltip="hover"
+                :stop-propagation="true"
+                :real-time="true"
+                :bg-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)' }"
+                :slider-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)' }"
+                :process-style="{ 'background-color': 'rgba(255, 255, 255, 0.9)', filter: 'drop-shadow(2px 2px 10px rgba(150, 150, 150, 1))' }"
+                :tooltip-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)', 'border-color': 'rgba(255, 255, 255, 0.6)', 'border-style': 'none' }"
+            )
+        .panel-body(:style="{ backgroundColor: frameBackgroundColor }")
+            .panel-body__wrap(:style="{ backgroundColor: contentBackgroundColor }")
+                slot
 </template>
 
 <script>
     import { mapState, mapMutations } from 'vuex';
 
     import interact from 'interactjs';
+    import { scaleLinear } from 'd3';
+
+    import vueSlider from 'vue-slider-component';
 
     import { mapPanelHeading } from '../scripts/utils';
 
     import { UPDATE_ACTIVE_PANEL_INDEX, SET_ACTIVE_PANEL_INDEX_LOCK } from '../scripts/mutation-types';
 
-    import listPane from './source/list-pane';
-    import sourcePane from './source/source-pane';
-    import playlistPane from './queue/playlist-pane';
-    import tracksPane from './queue/tracks-pane';
-    import searchPane from './source/search-pane';
+    const scale = scaleLinear()
+            .domain([0, .4, 1])
+            .range([0, .3, 1]);
 
     export default {
         props: {
             type: String
+        },
+        components: {
+            vueSlider
         },
         data: () => {
             return {
@@ -39,6 +58,7 @@
                 attachedToHorizontal2: null,
                 attachedToVertical2: null,
 
+                opacity: .4,
                 interactables: []
             }
         },
@@ -50,14 +70,22 @@
                 set(panelType) {
                     this[UPDATE_ACTIVE_PANEL_INDEX](panelType);
                 }
+            },
+            frameBackgroundColor() {
+                const scaledOpacity = scale(this.opacity),
+                        colorComponent = Math.round(10 / scaledOpacity);
+
+                return 'rgba(' + colorComponent + ',' + colorComponent + ',' + colorComponent + ',' +  scaledOpacity + ')';
+            },
+            contentBackgroundColor() {
+                const scaledOpacity = scale(this.opacity),
+                        colorComponent = Math.round(20 / scaledOpacity);
+
+                return 'rgba(' + colorComponent + ',' + colorComponent + ',' + colorComponent + ',' +  scaledOpacity + ')';
+            },
+            ratioY() {
+                return this.bottomY / window.innerHeight;
             }
-        },
-        components: {
-            sourcePane,
-            listPane,
-            playlistPane,
-            tracksPane,
-            searchPane
         },
         methods: {
             onWindowResize() {
@@ -89,22 +117,6 @@
                 panel.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
                 panel.setAttribute('data-x', x);
                 panel.setAttribute('data-y', y);
-            },
-            mapComponent(type) {
-                switch (type) {
-                    case 'source':
-                        return 'source-pane';
-                    case 'list':
-                        return 'list-pane';
-                    case 'playlist':
-                        return 'playlist-pane';
-                    case 'tracks':
-                        return 'tracks-pane';
-                    case 'search':
-                        return 'search-pane';
-                    default:
-                        return null;
-                }
             },
             activate() {
                 const activate = () => {
@@ -265,7 +277,7 @@
                     this.activate();
                 })
                 .draggable({
-                    ignoreFrom: '.panel-body__wrap',
+                    ignoreFrom: '.panel-body__wrap, .vue-slider-component',
                     restrict: {
                         restriction: 'parent',
                         endOnly: true
@@ -363,17 +375,35 @@
         left: 0;
         top: 0;
         opacity: .9;
+        background-image: url(../assets/highlight.svg),
+            linear-gradient(110deg, rgba(255, 255, 255, .2) 0%, rgba(255, 255, 255, 0) 10%),
+            linear-gradient(110deg, rgba(255, 255, 255, 0) 95%, rgba(255, 255, 255, .1) 100%);
+        background-repeat: no-repeat;
         z-index: 1;
         touch-action: none;
 
         &.active {
-            box-shadow: 0 0 60px 8px rgba(255, 255, 255, 0.15),
+            box-shadow: 0 0 60px 8px rgba(255, 255, 255, 0.1),
                 0 0 25px rgba(0, 0, 0, 0.1),
-                inset 0 0 1px rgba(255, 255, 255, 0.6);
+                inset 0 0 20px rgba(255, 255, 255, 0.1);
 
             opacity: 1;
             z-index: 2;
         }
+
+         .panel-heading {
+             display: flex;
+             justify-content: space-between;
+             background: linear-gradient(110deg, rgba(255, 255, 255, 0) 95%, rgba(255, 255, 255, .08) 100%);
+             transition: background .2s;
+
+            .vue-slider-component {
+                 flex-grow: 1;
+                 max-width: 50%;
+                opacity: .6;
+                cursor: default;
+             }
+         }
 
         .panel-body__wrap {
             position: absolute;
@@ -381,9 +411,10 @@
             top: 0;
             right: 0;
             bottom: 0;
-            margin: 50px 8px 8px;
             width: auto;
             height: auto;
+            margin: 50px 8px 8px;
+            background-color: rgba(255, 255, 255, .15);
         }
     }
 </style>

@@ -194,7 +194,6 @@
 <style lang="scss" scoped>
     .tracks-pane {
         height: 100%;
-        background-color: rgba(255, 255, 255, .15);
 
         .toolbar {
             display: flex;

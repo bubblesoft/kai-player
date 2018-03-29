@@ -41,7 +41,7 @@
 
     import { formatDuration } from '../../scripts/utils';
 
-    import { UPDATE_PLAYING_QUEUE_INDEX } from '../../scripts/mutation-types';
+    import { UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK } from '../../scripts/mutation-types';
 
     import Track from '../Track';
     import Artist from '../Artist';
@@ -104,7 +104,7 @@
                 });
             },
             async addToPlayback(track) {
-                this.queue.active = this.queue.add(track);
+                this[ADD_TRACK](track);
 
                 const url = await track.getStreamUrl();
 
@@ -115,7 +115,10 @@
                 this.visualizer.start();
                 track.duration = this.player.duration * 1000;
             },
-            ...mapMutations([UPDATE_PLAYING_QUEUE_INDEX])
+            ...mapMutations([
+                    UPDATE_PLAYING_QUEUE_INDEX,
+                    ADD_TRACK
+            ])
         },
         filters: {
             formatDuration
@@ -129,15 +132,7 @@
 
 <style lang="scss" scoped>
     .search-pane {
-        position: absolute;
-        left: 0;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        width: auto;
-        height: auto;
-        background-color: rgba(255, 255, 255, .15);
-        overflow: auto;
+        height: 100%;
 
         .tool-bar {
             box-shadow: inset 0 -2px 1px -1.5px rgba(0, 0, 0, 0.2);

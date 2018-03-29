@@ -45,7 +45,7 @@ module.exports = {
                 loader: "pug-loader"
             },
             {
-                test: /\.(?:mp3)$/,
+                test: /\.(?:mp3|svg)$/,
                 loader: "url-loader?limit=8192"
             },
             {

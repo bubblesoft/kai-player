@@ -136,8 +136,6 @@
 <style lang="scss" scoped>
     .list-pane {
         height: 100%;
-        background-color: rgba(255, 255, 255, .15);
-        overflow: auto;
 
         .toolbar {
             display: flex;

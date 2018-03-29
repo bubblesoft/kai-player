@@ -32,7 +32,6 @@
 <style lang="scss" scoped>
     .source-pane {
         height: 100%;
-        background-color: rgba(255, 255, 255, .15);
         overflow: auto;
 
         tr {
