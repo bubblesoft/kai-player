@@ -51,7 +51,8 @@ const getRecommendedTrack = async (track, sources) => {
         id: recommendedTrack.source + '_' + recommendedTrack.id,
         name: recommendedTrack.name,
         duration: recommendedTrack.duration || null,
-        artists: recommendedTrack.artists.map(artist => new Artist({ name: artist.name }))
+        artists: recommendedTrack.artists.map(artist => new Artist({ name: artist.name })),
+        picture: recommendedTrack.picture
     });
 };
 
@@ -77,21 +78,20 @@ const formatDuration = (val, formatStr) => {
     return formatStr;
 };
 
-const mapPanelHeading = type => {
-    switch (type) {
-        case 'list':
-            return 'Chart';
-        case 'source':
-            return 'Media Source';
-        case 'playlist':
-            return 'Playlist';
-        case 'tracks':
-            return 'Tracks';
-        case 'search':
-            return 'Search';
-        default:
-            return 'Panel';
-    }
+const loadImage = (url) => {
+    return new Promise((resolve, reject) => {
+        try {
+            const image = new Image();
+
+            image.onload = function() {
+                resolve(image);
+            };
+
+            image.src = url;
+        } catch (e) {
+            reject(e);
+        }
+    });
 };
 
-export { initHowlOnProgress, getRecommendedTrack, formatDuration, mapPanelHeading };
+export { initHowlOnProgress, getRecommendedTrack, formatDuration, loadImage };

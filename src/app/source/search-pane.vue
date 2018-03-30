@@ -99,7 +99,8 @@
                         id: trackData.source + '_' + trackData.id,
                         name: trackData.name,
                         duration: trackData.duration || null,
-                        artists: trackData.artists.map(artist => new Artist({ name: artist.name }))
+                        artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
+                        picture: trackData.picture
                     });
                 });
             },

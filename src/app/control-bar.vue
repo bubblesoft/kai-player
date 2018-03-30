@@ -1,80 +1,81 @@
 <template lang="pug">
-    div#control-bar
+    #control-bar(:style="{ backgroundImage: 'url(' + require('../assets/highlight.svg') + '),linear-gradient(rgba(255,255,255,.15) 15%,rgba(255,255,255,0) 95%),url(' + pic + ')' }")
         .tool-bar
+            .options
+                select.form-control(v-model="activeBackgroundType")
+                    option(
+                        value=""
+                        disabled
+                    ) {{ $t('Select a background') }}
+                    option(
+                        v-for="tpe in background.types"
+                        :value="tpe.value"
+                    ) {{ $t(tpe.name) }}
+                select.form-control(v-model="activeVisualizerType")
+                    option(
+                        value=""
+                        disabled
+                    ) {{ $t('Select a visualizer') }}
+                    option(
+                        v-for="type in visualizer.types"
+                        :value="type.value"
+                    ) {{ $t(type.name) }}
+                .btn-group.btn-group-xs
+                    checkbox(
+                        v-model="sourceOpen"
+                        :button="true"
+                    )
+                        svg(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z")
+                    checkbox(
+                        v-model="listOpen"
+                        :button="true"
+                    )
+                        svg(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z")
+                    checkbox(
+                        v-model="searchOpen"
+                        :button="true"
+                    )
+                        svg(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z")
+                    checkbox(
+                        v-model="playlistOpen"
+                        :button="true"
+                    )
+                        svg(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M4 14h4v-4H4v4zm0 5h4v-4H4v4zM4 9h4V5H4v4zm5 5h12v-4H9v4zm0 5h12v-4H9v4zM9 5v4h12V5H9z")
+                    checkbox(
+                        v-model="tracksOpen"
+                        :button="true"
+                    )
+                        svg(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z")
             .track-name(v-if="track")
                 yoyoMarquee(:title="track.name + '-' + (track.artists && track.artists.map(artist => artist.name).join(', '))")
                     span(style="color: #fff;") {{ track.name }} - {{ track.artists && track.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist') }}
-            select.form-control(v-model="activeBackgroundType")
-                option(
-                    value=""
-                    disabled
-                ) {{ $t('Select a background') }}
-                option(
-                    v-for="tpe in background.types"
-                    :value="tpe.value"
-                ) {{ $t(tpe.name) }}
-            select.form-control(v-model="activeVisualizerType")
-                option(
-                    value=""
-                    disabled
-                ) {{ $t('Select a visualizer') }}
-                option(
-                    v-for="type in visualizer.types"
-                    :value="type.value"
-                ) {{ $t(type.name) }}
-            .btn-group.btn-group-xs
-                checkbox(
-                    v-model="sourceOpen"
-                    :button="true"
-                )
-                    svg(
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                    )
-                        path(d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z")
-                checkbox(
-                    v-model="listOpen"
-                    :button="true"
-                )
-                    svg(
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                    )
-                        path(d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z")
-                checkbox(
-                    v-model="searchOpen"
-                    :button="true"
-                )
-                    svg(
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                    )
-                        path(d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z")
-                checkbox(
-                    v-model="playlistOpen"
-                    :button="true"
-                )
-                    svg(
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                    )
-                        path(d="M4 14h4v-4H4v4zm0 5h4v-4H4v4zM4 9h4V5H4v4zm5 5h12v-4H9v4zm0 5h12v-4H9v4zM9 5v4h12V5H9z")
-                checkbox(
-                    v-model="tracksOpen"
-                    :button="true"
-                )
-                    svg(
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                    )
-                        path(d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z")
         .audio-control
-            div.control-button.control-button_small(@click="previous()")
+            div.control-button.control-button_small(v-interact:tap="previous")
                 svg(
                     width="24"
                     height="24"
@@ -83,7 +84,9 @@
                     path(d="M6 6h2v12H6zm3.5 6l8.5 6V6z")
             div.control-button.control-button_big(
                 v-if="!playing"
-                @click="play(queue.get(queue.active)); SWITCH_TO_VISUALIZER(player._sound._sounds[0]._node);"
+                v-interact:tap="() => { play(queue.get(queue.active)); SWITCH_TO_VISUALIZER(player._sound._sounds[0]._node); }"
+                :class="{ loading: loading || player.state === 'loading' }"
+                key="play"
             )
                 svg(
                     width="24"
@@ -93,7 +96,9 @@
                     path(d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z")
             div.control-button.control-button_big(
                 v-else
-                @click="pause()"
+                v-interact:tap="pause"
+                :class="{ loading: loading || player.state === 'loading' }"
+                key="pause"
             )
                 svg(
                     width="24"
@@ -101,14 +106,14 @@
                     viewBox="0 0 24 24"
                 )
                     path(d="M9 16h2V8H9v8zm3-14C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm1-4h2V8h-2v8z")
-            div.control-button.control-button_small(@click="next()")
+            div.control-button.control-button_small(v-interact:tap="next")
                 svg(
                     width="24"
                     height="24"
                     viewBox="0 0 24 24"
                 )
                     path(d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z")
-            div.control-button.control-button_small(@click="stop()")
+            div.control-button.control-button_small(v-interact:tap="stop")
                 svg(
                     width="24"
                     height="24"
@@ -148,6 +153,9 @@
 <script>
     import { mapState, mapMutations } from 'vuex';
 
+    import scale from '../scripts/scale';
+    import applyCanvasMask from '../scripts/canvasMask';
+
     import RandomQueue from './queue/RandomQueue';
 
     import { ADD_TRACK, UPDATE_PANEL, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
@@ -157,7 +165,7 @@
 
     import yoyoMarquee from './yoyo-marquee';
 
-    import { getRecommendedTrack, formatDuration } from '../scripts/utils';
+    import { getRecommendedTrack, formatDuration, loadImage } from '../scripts/utils';
 
     export default {
         components: {
@@ -169,7 +177,9 @@
         data: () => {
             return {
                 progress: 0,
-                volume: .5
+                volume: .5,
+                pic: '',
+                loading: false
             }
         },
 
@@ -286,6 +296,14 @@
         watch: {
             volume(to) {
                 this.player.volume = to;
+            },
+
+            async track(to) {
+                if (to.picture) {
+                    this.pic = applyCanvasMask(scale({ width: 200, height: 200 }, await loadImage(to.picture)), await loadImage(require('../assets/mask.png')), 200, 200, true);
+                } else {
+                    this.pic = '';
+                }
             }
         },
 
@@ -310,6 +328,7 @@
             },
 
             pause() {
+                console.log('pause');
                 this.player.pause();
                 this.visualizer.stop();
                 this[SWITCH_TO_BACKGROUND]();
@@ -334,7 +353,9 @@
                 this.player.stop();
 
                 if (this.queue.constructor === RandomQueue) {
+                    this.loading = true;
                     this[ADD_TRACK](await getRecommendedTrack(this.queue.get(this.queue.active), this.sources));
+                    this.loading = false;
                 }
 
                 await this.play(this.queue.get(this.queue.next()));
@@ -372,37 +393,94 @@
         width: 100%;
         min-height: 12vh;
         padding: 4px;
-        background-color: rgba(255, 255, 255, 0.2);
-        box-shadow: 0 0 25px rgba(0, 0, 0, 0.1), inset 0 0 1px rgba(255, 255, 255, 0.6);
+        background-color: rgba(32, 32, 32, 0.30);
+        background-image: url(../assets/highlight.svg),
+            linear-gradient(rgba(255, 255, 255, .15) 15%, rgba(255, 255, 255, 0) 95%);
+        background-position: 30% 0, center, 98% center;
+        background-size: auto 100%, auto, 200px auto;
+        background-repeat: no-repeat;
+        box-shadow: 0 0 25px rgba(0, 0, 0, 0.1),
+            inset 0 0 1px rgba(255, 255, 255, 0.6),
+            inset 0 0 20px rgba(255, 255, 255, 0.1);
         z-index: 1;
+
+        @media (max-width: 768px) {
+            background-position: 30% 0, center, 100% center;
+        }
+    
+        @media (min-width: 1280px) {
+            background-position: 30% 0, center, 5% center;
+        }
 
         .tool-bar {
             display: flex;
+            flex-direction: row-reverse;
             align-items: center;
-            justify-content: space-around;
+            justify-content: space-between;
+
+            @media (max-width: 602px) {
+                display: block;
+            }
 
             .track-name {
                 width: 50%;
-            }
+                margin-left: calc(30% - 9vh - 55px);
+            
+                @media (max-width: 960px) {
+                    width: 40%;
+                }
 
-            select {
-                height: 24px;
-                width: 80px;
-                padding: 0;
-                max-width: 20%;
-                margin: 0 10px;
+                @media (max-width: 768px) {
+                    margin-left: calc(30% - 9vh - 72px);
+                }
+    
+                @media (max-width: 680px) {
+                    width: 30%;
+                }
 
-                option {
-                    color: #000;
+                @media (max-width: 602px) {
+                    width: auto;
+                    margin: 0 calc(30% - 9vh - 72px);
+                }
+
+                @media (max-width: 425px) {
+                    margin: 0 calc(30% - 9vh - 16px);
+                }
+
+                @media (max-width: 350px) {
+                    margin: 8px;
                 }
             }
 
-            .btn-group {
-                margin: 0 10px;
+            .options {
+                display: flex;
+                justify-content: flex-end;
+                margin-right: 8px;
 
-                svg {
-                    fill: #666;
-                    vertical-align: middle;
+                @media (max-width: 602px) {
+                    margin-bottom: 10px;
+                }
+
+                select {
+                    height: 24px;
+                    width: 80px;
+                    padding: 0;
+                    max-width: 20%;
+                    margin: 0 8px;
+
+                    option {
+                        color: #000;
+                    }
+                }
+
+                .btn-group {
+                    width: 136px;
+                    margin: 0 8px;
+
+                    svg {
+                        fill: #666;
+                        vertical-align: middle;
+                    }
                 }
             }
         }
@@ -496,6 +574,20 @@
                     display: none;
                 }
             }
+        }
+
+        @keyframes loading {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: .5;
+            }
+        }
+
+        .loading {
+            animation: loading .5s cubic-bezier(.5, .1, .5,.9) infinite alternate;
         }
     }
 </style>

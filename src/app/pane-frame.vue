@@ -4,7 +4,7 @@
         :style="{ backgroundPosition: (2 - ratioX - ratioY) * 50 + 10 + '% ' + '0' }"
     )
         .panel-heading
-            div {{ panelHeading }}
+            div {{ $t(heading) }}
             vueSlider(
                 v-if="activePanelIndex === type"
                 v-model="opacity"
@@ -31,8 +31,6 @@
 
     import vueSlider from 'vue-slider-component';
 
-    import { mapPanelHeading } from '../scripts/utils';
-
     import { UPDATE_ACTIVE_PANEL_INDEX, SET_ACTIVE_PANEL_INDEX_LOCK } from '../scripts/mutation-types';
 
     const scale = scaleLinear()
@@ -41,14 +39,17 @@
 
     export default {
         props: {
-            type: String
+            type: String,
+            heading: {
+                type: String,
+                default: 'Panel'
+            }
         },
         components: {
             vueSlider
         },
         data: () => {
             return {
-                panelHeading: 'Panel',
                 ratioX: 0,
                 bottomY: 0,
 
@@ -128,14 +129,10 @@
                 document.addEventListener('click', activate);
                 this[SET_ACTIVE_PANEL_INDEX_LOCK](true);
             },
-            mapPanelHeading,
             ...mapMutations([
                 UPDATE_ACTIVE_PANEL_INDEX,
                 SET_ACTIVE_PANEL_INDEX_LOCK
             ])
-        },
-        created() {
-            this.panelHeading = this.$t(mapPanelHeading(this.type));
         },
         mounted() {
             const viewportWidth = window.innerWidth,

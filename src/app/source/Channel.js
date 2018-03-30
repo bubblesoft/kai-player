@@ -54,7 +54,8 @@ export default class Channel {
                     id: 'netease_' + trackData.id,
                     name: trackData.name,
                     duration: trackData.dt,
-                    artists: trackData.artists.map(artist => new Artist({ name: artist.name }))
+                    artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
+                    picture: trackData.picture
                 })
             });
         })();

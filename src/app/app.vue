@@ -5,30 +5,35 @@
             pane-frame(
                 v-if="panels.source.open"
                 type="source"
+                heading="Media Source"
             )
                 sourcePane
         transition(name="fade")
             pane-frame(
                 v-if="panels.list.open"
                 type="list"
+                heading="Chart"
             )
                 listPane
         transition(name="fade")
             pane-frame(
                 v-if="panels.playlist.open"
                 type="playlist"
+                heading="Playlist"
             )
                 playlistPane
         transition(name="fade")
             pane-frame(
                 v-if="panels.tracks.open"
                 type="tracks"
+                heading="Playlist"
             )
                 tracksPane
         transition(name="fade")
             pane-frame(
                 v-if="panels.search.open"
                 type="search"
+                heading="Search"
             )
                 searchPane
 </template>

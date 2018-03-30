@@ -10,6 +10,7 @@ export default class Track {
     _name;
     _artists;
     _getStreamUrl;
+    _picture;
 
     get id() {
         return this._id;
@@ -23,12 +24,17 @@ export default class Track {
         return this._artists;
     }
 
-    constructor({id, name, duration, artists, getStreamUrl }) {
+    get picture() {
+        return this._picture;
+    }
+
+    constructor({id, name, duration, artists, getStreamUrl, picture }) {
         this._id = id;
         this._name = name;
         this.duration = duration;
         this._artists = artists;
         this._getStreamUrl = getStreamUrl;
+        this._picture = picture;
     }
 
     // Return a promise
