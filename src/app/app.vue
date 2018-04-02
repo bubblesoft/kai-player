@@ -194,6 +194,24 @@
         width: 100%;
         height: 100%;
         z-index: 1;
+        user-select: none;
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-button {
+            display: none;
+        }
+
+        ::-webkit-scrollbar-track {
+            display: none;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            border-radius: 2px;
+            background-color: #3e3e3e;
+        }
     }
 
 

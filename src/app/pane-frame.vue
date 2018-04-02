@@ -1,10 +1,12 @@
 <template lang="pug">
-    .panel-frame.panel.panel-default(
-        :class="{ active: activePanelIndex === type }"
-        :style="{ backgroundPosition: (2 - ratioX - ratioY) * 50 + 10 + '% ' + '0' }"
-    )
+    .panel-frame(:class="{ active: activePanelIndex === type }")
+        .panel.panel-default(
+            :style="{ backgroundPosition: (1 - ratioX + ratioY) * 50 + 10 + '% ' + '0', backgroundColor: frameBackgroundColor }"
+            :class="{ hide: type === 'picture' }"
+        )
         .panel-heading
             div {{ $t(heading) }}
+        .opacity-control
             vueSlider(
                 v-if="activePanelIndex === type"
                 v-model="opacity"
@@ -13,14 +15,13 @@
                 tooltip="hover"
                 :stop-propagation="true"
                 :real-time="true"
-                :bg-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)' }"
-                :slider-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)' }"
-                :process-style="{ 'background-color': 'rgba(255, 255, 255, 0.9)', filter: 'drop-shadow(2px 2px 10px rgba(150, 150, 150, 1))' }"
-                :tooltip-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)', 'border-color': 'rgba(255, 255, 255, 0.6)', 'border-style': 'none' }"
+                :bg-style="{ backgroundColor: 'rgba(255, 255, 255, 0.6)' }"
+                :slider-style="{ backgroundColor: 'rgba(255, 255, 255, 0.6)' }"
+                :process-style="{ backgroundColor: 'rgba(255, 255, 255, 0.9)', filter: 'drop-shadow(2px 2px 10px rgba(150, 150, 150, 1))' }"
+                :tooltip-style="{ backgroundColor: 'rgba(255, 255, 255, 0.6)', 'border-color': 'rgba(255, 255, 255, 0.6)', 'border-style': 'none' }"
             )
-        .panel-body(:style="{ backgroundColor: frameBackgroundColor }")
-            .panel-body__wrap(:style="{ backgroundColor: contentBackgroundColor }")
-                slot
+        .panel-body(:style="{ backgroundColor: contentBackgroundColor }")
+            slot
 </template>
 
 <script>
@@ -247,40 +248,38 @@
 
             window.addEventListener('resize', this.onWindowResize);
 
-            const dragMoveListener =  e => {
-                const viewportWidth = window.innerWidth,
-                    viewportHeight = window.innerHeight,
-                    controlBarHeight = document.querySelector('#control-bar').offsetHeight,
-                    panel = e.target,
-                    height = panel.offsetHeight,
-
-                    // keep the dragged position in the data-x/data-y attributes
-                    x = (parseFloat(panel.getAttribute('data-x')) || 0) + e.dx,
-                    y = (parseFloat(panel.getAttribute('data-y')) || 0) + e.dy;
-
-                    panel.style.transform = 'translate(' + x + 'px, ' + y + 'px)'; // translate the element
-
-                // update the posiion attributes
-                panel.setAttribute('data-x', x);
-                panel.setAttribute('data-y', y);
-
-                this.ratioX = (x + width / 2) / viewportWidth;
-                this.bottomY = viewportHeight - controlBarHeight - y - height;
-            };
-
             const interactable = interact(this.$el)
                 .on('tap', e => {
                     e.preventDefault();
                     this.activate();
                 })
                 .draggable({
-                    ignoreFrom: '.panel-body__wrap, .vue-slider-component',
+                    ignoreFrom: '.panel-body, .opacity-control',
                     restrict: {
                         restriction: 'parent',
                         endOnly: true
                     },
                     inertia: true,
-                    onmove: dragMoveListener,
+                    onmove: e => {
+                        const viewportWidth = window.innerWidth,
+                                viewportHeight = window.innerHeight,
+                                controlBarHeight = document.querySelector('#control-bar').offsetHeight,
+                                panel = e.target,
+                                height = panel.offsetHeight,
+
+                                // keep the dragged position in the data-x/data-y attributes
+                                x = (parseFloat(panel.getAttribute('data-x')) || 0) + e.dx,
+                                y = (parseFloat(panel.getAttribute('data-y')) || 0) + e.dy;
+
+                        panel.style.transform = 'translate(' + x + 'px, ' + y + 'px)'; // translate the element
+
+                        // update the posiion attributes
+                        panel.setAttribute('data-x', x);
+                        panel.setAttribute('data-y', y);
+
+                        this.ratioX = (x + width / 2) / viewportWidth;
+                        this.bottomY = viewportHeight - controlBarHeight - y - height;
+                    },
                     snap: {
                         targets: [
                             (x, y, test) => {
@@ -325,15 +324,15 @@
                     }
                 })
                 .resizable({
-                    ignoreFrom: '.panel-body__wrap',
+                    ignoreFrom: '.panel-body, .panel-heading, .opacity-control',
                     edges: { left: true, right: true, bottom: true, top: true },
                     restrictEdges: {
                         outer: 'parent',
                         endOnly: true
                     },
-//                    restrictSize: {
-//                        min: { width: 150, height: 300 }
-//                    },
+                    restrictSize: {
+                        min: { width: 150, height: 150 }
+                    },
                     inertia: true
                 })
                 .on('resizemove', e => {
@@ -372,47 +371,77 @@
         left: 0;
         top: 0;
         opacity: .9;
-        background-image: url(../assets/highlight.svg),
-            linear-gradient(110deg, rgba(255, 255, 255, .2) 0%, rgba(255, 255, 255, 0) 10%),
-            linear-gradient(110deg, rgba(255, 255, 255, 0) 95%, rgba(255, 255, 255, .1) 100%);
-        background-repeat: no-repeat;
         z-index: 1;
         touch-action: none;
 
-        &.active {
-            box-shadow: 0 0 60px 8px rgba(255, 255, 255, 0.1),
-                0 0 25px rgba(0, 0, 0, 0.1),
-                inset 0 0 20px rgba(255, 255, 255, 0.1);
+            .panel {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-image: url(../assets/highlight.svg),
+                linear-gradient(110deg, rgba(255, 255, 255, .2) 0%, rgba(255, 255, 255, 0) 8%),
+                linear-gradient(110deg, rgba(255, 255, 255, 0) 95%, rgba(255, 255, 255, .1) 100%);
+                background-repeat: no-repeat;
+                z-index: -1;
 
-            opacity: 1;
-            z-index: 2;
-        }
+                &.hide {
+                    opacity: 0;
+                }
+            }
 
-         .panel-heading {
-             display: flex;
-             justify-content: space-between;
-             background: linear-gradient(110deg, rgba(255, 255, 255, 0) 95%, rgba(255, 255, 255, .08) 100%);
-             transition: background .2s;
+            &:hover .hide {
+                opacity: 1;
+            }
 
-            .vue-slider-component {
-                 flex-grow: 1;
-                 max-width: 50%;
-                opacity: .6;
-                cursor: default;
-             }
-         }
+            &.active {
+                 z-index: 2;
+                 opacity: 1;
 
-        .panel-body__wrap {
-            position: absolute;
-            left: 0;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            width: auto;
-            height: auto;
-            margin: 50px 8px 8px;
-            background-color: rgba(255, 255, 255, .15);
-        }
+                .panel {
+                    box-shadow: 0 0 60px 8px rgba(255, 255, 255, 0.1),
+                    0 0 25px rgba(0, 0, 0, 0.1),
+                    inset 0 0 20px rgba(255, 255, 255, 0.1);
+                }
+            }
+
+            .panel-heading {
+                display: flex;
+                justify-content: space-between;
+                margin: 8px 8px 0;
+                padding: 2px 7px 10px;
+                background: linear-gradient(110deg, rgba(255, 255, 255, 0) 95%, rgba(255, 255, 255, .08) 100%);
+                transition: background .2s;
+            }
+
+            .opacity-control {
+                position: absolute;
+                top: 2px;
+                right: 2px;
+                width: 50%;
+                max-width: 200px;
+                height: 37px;
+
+                .vue-slider-component {
+                    margin: 6px;
+                    opacity: .6;
+                    cursor: default;
+                }
+            }
+
+            .panel-body {
+                position: absolute;
+                left: 0;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: auto;
+                height: auto;
+                margin: 50px 8px 8px;
+                padding: 0;
+                background-color: rgba(255, 255, 255, .15);
+            }
     }
 </style>
 

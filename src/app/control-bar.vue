@@ -1,5 +1,5 @@
 <template lang="pug">
-    #control-bar(:style="{ backgroundImage: 'url(' + require('../assets/highlight.svg') + '),linear-gradient(rgba(255,255,255,.15) 15%,rgba(255,255,255,0) 95%),url(' + pic + ')' }")
+    #control-bar(:style="{ backgroundImage: 'url(' + require('../assets/highlight.svg') + '),linear-gradient(rgba(255,255,255,.15) 10%,rgba(255,255,255,0) 90%),url(' + pic + ')' }")
         .tool-bar
             .options
                 select.form-control(v-model="activeBackgroundType")
@@ -395,7 +395,7 @@
         padding: 4px;
         background-color: rgba(32, 32, 32, 0.30);
         background-image: url(../assets/highlight.svg),
-            linear-gradient(rgba(255, 255, 255, .15) 15%, rgba(255, 255, 255, 0) 95%);
+            linear-gradient(rgba(255, 255, 255, .15) 10%, rgba(255, 255, 255, 0) 90%);
         background-position: 30% 0, center, 98% center;
         background-size: auto 100%, auto, 200px auto;
         background-repeat: no-repeat;
@@ -408,8 +408,12 @@
             background-position: 30% 0, center, 100% center;
         }
     
+        @media (min-width: 992px) {
+            background-position: 30% 0, center, 2% center;
+        }
+
         @media (min-width: 1280px) {
-            background-position: 30% 0, center, 5% center;
+            background-size: auto 100%, auto, 300px auto;
         }
 
         .tool-bar {
