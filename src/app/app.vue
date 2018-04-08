@@ -1,58 +1,57 @@
 <template lang="pug">
-    .app()
+    .app
         control-bar
-        transition(name="fade")
-            pane-frame(
-                v-if="panels.source.open"
-                type="source"
-                heading="Media Source"
-            )
-                sourcePane
-        transition(name="fade")
-            pane-frame(
-                v-if="panels.list.open"
-                type="list"
-                heading="Chart"
-            )
-                listPane
-        transition(name="fade")
-            pane-frame(
-                v-if="panels.playlist.open"
-                type="playlist"
-                heading="Playlist"
-            )
-                playlistPane
-        transition(name="fade")
-            pane-frame(
-                v-if="panels.tracks.open"
-                type="tracks"
-                heading="Playlist"
-            )
-                tracksPane
-        transition(name="fade")
-            pane-frame(
-                v-if="panels.search.open"
-                type="search"
-                heading="Search"
-            )
-                searchPane
+        template(v-if="layout")
+            transition(name="fade")
+                pane-frame(
+                    v-if="layout.source.visible"
+                    v-model="sourceLayout"
+                    heading="Media Source"
+                )
+                    sourcePane
+            transition(name="fade")
+                pane-frame(
+                    v-if="layout.list.visible"
+                    v-model="listLayout"
+                    heading="Chart"
+                )
+                    listPane
+            transition(name="fade")
+                pane-frame(
+                    v-if="layout.search.visible"
+                    v-model="searchLayout"
+                    heading="Search"
+                )
+                    searchPane
+            transition(name="fade")
+                pane-frame(
+                    v-if="layout.playlist.visible"
+                    v-model="playlistLayout"
+                    heading="Playlist"
+                )
+                    playlistPane
+            transition(name="fade")
+                pane-frame(
+                    v-if="layout.tracks.visible"
+                    v-model="tracksLayout"
+                    heading="Tracks"
+                )
+                    tracksPane
 </template>
 
 <script>
     import { mapState, mapMutations, mapActions } from 'vuex';
 
-    import interact from 'interactjs';
-
     import config from '../config';
 
-    import { ADD_SOURCES, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX, SWITCH_TO_BACKGROUND } from '../scripts/mutation-types';
+    import { ADD_SOURCES, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SWITCH_TO_BACKGROUND } from '../scripts/mutation-types';
 
     import Source from './source/Source';
     import Channel from './source/Channel';
     import Queue from './queue/Queue';
     import RandomQueue from './queue/RandomQueue';
 
-    import { getRecommendedTrack } from '../scripts/utils';
+    import { getRecommendedTrack, generateLayout } from '../scripts/utils';
 
     import controlBar from './control-bar';
     import listPane from './source/list-pane';
@@ -72,28 +71,86 @@
             tracksPane,
             searchPane
         },
-        data() {
-            return {
-                interactable: null
-            }
-        },
         computed: {
+            sourceLayout: {
+                get() {
+                    return this.layout.source;
+                },
+                set(layout) {
+                    this[SAVE_LAYOUT]({
+                        index: 'source',
+                        layout
+                    });
+                }
+            },
+            listLayout: {
+                get() {
+                    return this.layout.list;
+                },
+                set(layout) {
+                    this[SAVE_LAYOUT]({
+                        index: 'list',
+                        layout
+                    });
+                }
+            },
+            searchLayout: {
+                get() {
+                    return this.layout.search
+                },
+                set(layout) {
+                    this[SAVE_LAYOUT]({
+                        index: 'search',
+                        layout
+                    });
+                }
+            },
+            playlistLayout: {
+                get() {
+                    return this.layout.playlist;
+                },
+                set(layout) {
+                    this[SAVE_LAYOUT]({
+                        index: 'playlist',
+                        layout
+                    });
+                }
+            },
+            tracksLayout: {
+                get() {
+                    return this.layout.tracks;
+                },
+                set(layout) {
+                    this[SAVE_LAYOUT]({
+                        index: 'tracks',
+                        layout
+                    });
+                }
+            },
             ...mapState({
-                panels: state => state.generalModule.panels,
                 lockActivePanelIndex: state => state.generalModule.activePanel.lock,
                 player: state => state.playerModule.player,
                 background: state => state.visualizationModule.background,
-                visualizer: state => state.visualizationModule.visualizer
+                visualizer: state => state.visualizationModule.visualizer,
+                mode: state => state.generalModule.mode,
+                layout: state => state.generalModule.layout
             })
         },
         methods: {
+            blur() {
+                if (!this.lockActivePanelIndex) {
+                    this[UPDATE_ACTIVE_PANEL_INDEX](null);
+                }
+            },
             ...mapMutations([
                 ADD_SOURCES,
                 INSERT_QUEUE,
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
-                UPDATE_PANEL,
                 UPDATE_ACTIVE_PANEL_INDEX,
+                SET_MODE,
+                LOAD_LAYOUT,
+                SAVE_LAYOUT,
                 SWITCH_TO_BACKGROUND
             ]),
             ...mapActions([
@@ -134,7 +191,7 @@
                             source: source.id,
                             type: channel.type,
                             name: channel.name
-                        }))
+                        }));
                     });
 
                     _source.active = true;
@@ -145,28 +202,23 @@
                 this[ADD_SOURCES](sources);
                 this[ADD_TRACK](await getRecommendedTrack(null, sources));
             })();
-
-            if (window.innerWidth < 600) {
-                this[UPDATE_PANEL]({
-                    index: 'source',
-                    open: false
-                });
-
-                this[UPDATE_PANEL]({
-                    index: 'search',
-                    open: false
-                });
-            }
         },
-        mounted() {
-            this.interactable = interact(document.body)
-                .on('tap', e => {
-                    if (!this.lockActivePanelIndex) {
-                        this[UPDATE_ACTIVE_PANEL_INDEX](null);
-                    }
 
-                    e.preventDefault();
-                });
+        mounted() {
+            this[SET_MODE](window.innerWidth < 600 ? 'mobile' : 'desktop');
+
+            const layoutData = localStorage.getItem('kaiplayerlayout' + this.mode);
+
+            if (layoutData) {
+                this[LOAD_LAYOUT](JSON.parse(layoutData));
+            } else {
+                const viewportWidth = window.innerWidth,
+                    viewportHeight = window.innerHeight - document.querySelector('#control-bar').offsetHeight;
+
+                this[LOAD_LAYOUT](generateLayout(this.mode, viewportWidth, viewportHeight));
+            }
+
+            document.body.addEventListener('click', this.blur);
 
             this.initVisualization(this.$el);
             this.background.activeRenderer.start();
@@ -179,9 +231,7 @@
             });
         },
         destroyed() {
-            if (this.interactable) {
-                this.interactable.unset();
-            }
+            document.body.removeEventListener('click', this.blur);
         }
     }
 </script>

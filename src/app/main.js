@@ -10,7 +10,7 @@ import VueI18n from 'vue-i18n';
 
 import interact from 'interactjs';
 
-import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_PANEL, UPDATE_ACTIVE_PANEL_INDEX, SET_ACTIVE_PANEL_INDEX_LOCK, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
+import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
@@ -139,39 +139,29 @@ const i18n = new VueI18n({
 
 const generalModule = {
     state: {
-        panels: {
-            source: {
-                open: true
-            },
-            list: {
-                open: true
-            },
-            playlist: {
-                open: true
-            },
-            tracks: {
-                open: true
-            },
-            search: {
-                open: true
-            }
-        },
         activePanel: {
             index: null,
             lock: false
-        }
+        },
+        mode: null,
+        layout: null
     },
     mutations: {
-        [UPDATE_PANEL] (state, { index, open }) {
-            if (typeof open === 'boolean') {
-                state.panels[index].open = open;
-            }
-        },
         [UPDATE_ACTIVE_PANEL_INDEX] (state, index) {
             state.activePanel.index = index;
         },
         [SET_ACTIVE_PANEL_INDEX_LOCK] (state, boolean) {
             state.activePanel.lock = boolean;
+        },
+        [SET_MODE] (state, mode) {
+            state.mode = mode;
+        },
+        [LOAD_LAYOUT] (state, layout) {
+            state.layout = layout;
+        },
+        [SAVE_LAYOUT] (state, { index, layout }) {
+            state.layout[index] = layout;
+            localStorage.setItem('kaiplayerlayout' + state.mode, JSON.stringify(state.layout));
         }
     }
 };

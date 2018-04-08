@@ -20,7 +20,7 @@
                         v-for="type in visualizer.types"
                         :value="type.value"
                     ) {{ $t(type.name) }}
-                .btn-group.btn-group-xs
+                .btn-group.btn-group-xs(v-if="layout")
                     checkbox(
                         v-model="sourceOpen"
                         :button="true"
@@ -158,7 +158,7 @@
 
     import RandomQueue from './queue/RandomQueue';
 
-    import { ADD_TRACK, UPDATE_PANEL, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
+    import { ADD_TRACK, SAVE_LAYOUT, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
 
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
@@ -216,65 +216,85 @@
 
             sourceOpen: {
                 get() {
-                    return this.$store.state.generalModule.panels.source.open;
+                    return this.$store.state.generalModule.layout.source.visible;
                 },
 
-                set(open) {
-                    this[UPDATE_PANEL]({
+                set(visible) {
+                    const layout = this.layout.source;
+
+                    layout.visible = visible;
+
+                    this[SAVE_LAYOUT]({
                         index: 'source',
-                        open
+                        layout
                     });
                 }
             },
 
             listOpen: {
                 get() {
-                    return this.$store.state.generalModule.panels.list.open;
+                    return this.$store.state.generalModule.layout.list.visible;
                 },
 
-                set(open) {
-                    this[UPDATE_PANEL]({
+                set(visible) {
+                    const layout = this.layout.list;
+
+                    layout.visible = visible;
+
+                    this[SAVE_LAYOUT]({
                         index: 'list',
-                        open
+                        layout
                     });
                 }
             },
 
             searchOpen: {
                 get() {
-                    return this.$store.state.generalModule.panels.search.open;
+                    return this.$store.state.generalModule.layout.search.visible;
                 },
 
-                set(open) {
-                    this[UPDATE_PANEL]({
+                set(visible) {
+                    const layout = this.layout.search;
+
+                    layout.visible = visible;
+
+                    this[SAVE_LAYOUT]({
                         index: 'search',
-                        open
+                        layout
                     });
                 }
             },
 
             playlistOpen: {
                 get() {
-                    return this.$store.state.generalModule.panels.playlist.open;
+                    return this.$store.state.generalModule.layout.playlist.visible;
                 },
 
-                set(open) {
-                    this[UPDATE_PANEL]({
+                set(visible) {
+                    const layout = this.layout.playlist;
+
+                    layout.visible = visible;
+
+                    this[SAVE_LAYOUT]({
                         index: 'playlist',
-                        open
+                        layout
                     });
                 }
             },
 
             tracksOpen: {
                 get() {
-                    return this.$store.state.generalModule.panels.tracks.open;
+                    return this.$store.state.generalModule.layout.tracks.visible;
                 },
 
-                set(open) {
-                    this[UPDATE_PANEL] ({
+                set(visible) {
+                    const layout = this.layout.tracks;
+
+                    layout.visible = visible;
+
+                    this[SAVE_LAYOUT] ({
                         index: 'tracks',
-                        open
+                        layout
                     });
                 }
             },
@@ -289,6 +309,7 @@
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 background: state => state.visualizationModule.background,
                 visualizer: state => state.visualizationModule.visualizer,
+                layout: state => state.generalModule.layout,
                 i18next: state => state.generalModule.i18next
             })
         },
@@ -328,7 +349,6 @@
             },
 
             pause() {
-                console.log('pause');
                 this.player.pause();
                 this.visualizer.stop();
                 this[SWITCH_TO_BACKGROUND]();
@@ -363,7 +383,7 @@
 
             ...mapMutations([
                 ADD_TRACK,
-                UPDATE_PANEL,
+                SAVE_LAYOUT,
                 UPDATE_ACTIVE_BACKGROUND_TYPE,
                 UPDATE_ACTIVE_VISUALIZER_TYPE,
                 SWITCH_TO_VISUALIZER,

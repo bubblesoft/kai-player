@@ -78,7 +78,34 @@ const formatDuration = (val, formatStr) => {
     return formatStr;
 };
 
-const loadImage = (url) => {
+const generateLayout = (type, viewportWidth, viewportHeight) => {
+    if (type === 'desktop') {
+        let width = viewportWidth * .3;
+
+        (width < 300) && (width = 300);
+        (width > 500) && (width = 500);
+
+        return {
+            picture: { mode: 'leftTop', visible: true, x: viewportWidth * .2, y: viewportHeight * .2, width: viewportWidth * .2, height: viewportHeight * .2, opacity: .4, autoHide: true },
+            source: { mode: 'bottom', visible: true, attach: 'left', bottomY: viewportHeight * .7, width, height: viewportHeight * .25, opacity: .4 },
+            list: { mode: 'bottom', visible: true, attach: 'left', bottomY: viewportHeight * .35, width, height: viewportHeight * .35, opacity: .4 },
+            search: { mode: 'bottom', visible: true, attach: 'left', bottomY: 0, width, height: viewportHeight * .35, opacity: .4 },
+            playlist: { mode: 'bottom', visible: true, attach: 'right', bottomY: viewportHeight * .4, width, height: viewportHeight * .35, opacity: .4 },
+            tracks: { mode: 'bottom', visible: true, attach: 'right', bottomY: 0, width, height: viewportHeight * .4, opacity: .4 }
+        };
+    } else if (type === 'mobile') {
+        return {
+            picture: { mode: 'leftTop', visible: true, x: .1, y: .1, width: .3, height: .3, opacity: .4, autoHide: true },
+            source: { mode: 'ratio', visible: false, attach: 'left', y: .1, width: 1, height: .3, opacity: .4 },
+            list: { mode: 'ratio', visible: true, attach: 'left', y: 0, width: 1, height: .4, opacity: .4 },
+            search: { mode: 'ratio', visible: false, attach: 'left', y: 0, width: 1, height: .4, opacity: .4 },
+            playlist: { mode: 'ratio', visible: true, attach: 'left', y: .4, width: 1, height: .3, opacity: .4 },
+            tracks: { mode: 'ratio', visible: true, attach: 'left', y: .7, width: 1, height: .3, opacity: .4 }
+        };
+    }
+}
+
+const loadImage = url => {
     return new Promise((resolve, reject) => {
         try {
             const image = new Image();
@@ -94,4 +121,4 @@ const loadImage = (url) => {
     });
 };
 
-export { initHowlOnProgress, getRecommendedTrack, formatDuration, loadImage };
+export { initHowlOnProgress, getRecommendedTrack, formatDuration, generateLayout, loadImage };
