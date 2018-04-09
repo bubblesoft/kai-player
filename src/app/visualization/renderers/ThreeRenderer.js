@@ -11,7 +11,7 @@ export default class ThreeRenderer extends Renderer {
 
     constructor() {
         super();
-        this.bandWidth = 16;
+        this.bandWidth = 128;
         this.threeAudioVisualization = new ThreeAudioVisualization;
         this.mode = 'basic';
     }
@@ -37,12 +37,12 @@ export default class ThreeRenderer extends Renderer {
 
         let data = [];
 
-        bands.filter((band, index) => index > 2 && index < bands.length - 2).forEach((band, index) => {
+        bands.forEach((band, index) => {
             data[index] = new Array(5);
             band(data[index]);
         });
 
-        this.threeAudioVisualization.applyForces(...data.map(band => Math.sqrt(band[3] * 300000000000)));
+        this.threeAudioVisualization.applyForces(...data.map(band => Math.sqrt(band[3] * 800000000000)));
     }
 
     show() {

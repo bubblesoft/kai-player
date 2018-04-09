@@ -37,12 +37,15 @@ export default class Visualizer extends VisualController{
             const rendererTypes = Object.keys(this._renderers);
 
             super.activeType = rendererTypes[Math.floor(rendererTypes.length * Math.random())];
-
-            return;
+        } else {
+            this._random = false;
+            super.activeType = type;
         }
 
-        this._random = false;
-        super.activeType = type;
+        if (this._active) {
+            this.stop();
+            this.start();
+        }
     }
 
     constructor(type) {
