@@ -4,9 +4,15 @@
             :style="{ backgroundColor }"
             :class="{ hide: autoHide }"
         )
-        .panel-heading(:style="{ backgroundPosition: (1 - ratioX + ratioY) * 50 + 10 + '% ' + '0' }")
+        .panel-heading(
+            :class="{ hide: autoHide }"
+            :style="{ backgroundPosition: (1 - ratioX + ratioY) * 50 + 10 + '% ' + '0' }"
+        )
             div {{ $t(heading) }}
-        .opacity-control(v-if="activePanelIndex === value")
+        .opacity-control(
+            v-if="activePanelIndex === value"
+            :class="{ hide: autoHide }"
+        )
             vueSlider(
                 v-model="opacity"
                 :max="1"
@@ -410,10 +416,10 @@
                 background-repeat: no-repeat;
                 box-shadow: inset 0 0 1px rgba(255, 255, 255, 0.5);
                 z-index: -1;
+            }
 
-                &.hide {
-                    opacity: 0;
-                }
+            & .hide {
+                opacity: 0;
             }
 
             &:hover .hide {
@@ -435,6 +441,7 @@
             .panel-heading {
                 display: flex;
                 justify-content: space-between;
+                background-color: transparent;
                 background-image: url(../assets/highlight.svg);
                 background-size: auto 100%;
                 background-repeat: no-repeat;

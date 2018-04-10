@@ -54,6 +54,7 @@ Vue.directive('interact', {
 const messages = {
     'en-US': {
         'Chart': 'Chart',
+        'Artwork': 'Artwork',
         'Media Source': 'Media Source',
         'Playlist': 'Playlist',
         'Tracks': 'Tracks',
@@ -73,6 +74,7 @@ const messages = {
     },
     'zh-CN': {
         'Chart': '排行榜',
+        'Artwork': '图片',
         'Media Source': '媒体源',
         'Playlist': '播放列表',
         'Tracks': '播放音频',
@@ -92,6 +94,7 @@ const messages = {
     },
     'ja-JP': {
         'Chart': 'Chart',
+        'Artwork': 'Artwork',
         'Media Source': 'Media Source',
         'Playlist': 'プレーリスト',
         'Tracks': 'Tracks',
@@ -111,6 +114,7 @@ const messages = {
     },
     'ko-KR': {
         'Chart': 'Chart',
+        'Artwork': 'Artwork',
         'Media Source': 'Media Source',
         'Playlist': '재생 목록',
         'Tracks': 'Tracks',

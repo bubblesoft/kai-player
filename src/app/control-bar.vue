@@ -22,7 +22,7 @@
                     ) {{ $t(type.name) }}
                 .btn-group.btn-group-xs(v-if="layout")
                     checkbox(
-                        v-model="sourceOpen"
+                        v-model="pictureOpen"
                         :button="true"
                     )
                         svg(
@@ -30,7 +30,7 @@
                             height="16"
                             viewBox="0 0 24 24"
                         )
-                            path(d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z")
+                            path(d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z")
                     checkbox(
                         v-model="listOpen"
                         :button="true"
@@ -41,6 +41,16 @@
                             viewBox="0 0 24 24"
                         )
                             path(d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z")
+                    checkbox(
+                        v-model="sourceOpen"
+                        :button="true"
+                    )
+                        svg(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z")
                     checkbox(
                         v-model="searchOpen"
                         :button="true"
@@ -214,6 +224,23 @@
                 }
             },
 
+            pictureOpen: {
+                get() {
+                    return this.$store.state.generalModule.layout.picture.visible;
+                },
+
+                set(visible) {
+                    const layout = this.layout.picture;
+
+                    layout.visible = visible;
+
+                    this[SAVE_LAYOUT]({
+                        index: 'picture',
+                        layout
+                    });
+                }
+            },
+
             sourceOpen: {
                 get() {
                     return this.$store.state.generalModule.layout.source.visible;
@@ -309,8 +336,7 @@
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 background: state => state.visualizationModule.background,
                 visualizer: state => state.visualizationModule.visualizer,
-                layout: state => state.generalModule.layout,
-                i18next: state => state.generalModule.i18next
+                layout: state => state.generalModule.layout
             })
         },
 
@@ -442,7 +468,7 @@
             align-items: center;
             justify-content: space-between;
 
-            @media (max-width: 602px) {
+            @media (max-width: 629px) {
                 display: block;
             }
 
@@ -450,28 +476,28 @@
                 width: 50%;
                 margin-left: calc(30% - 9vh - 55px);
             
-                @media (max-width: 960px) {
+                @media (max-width: 987px) {
                     width: 40%;
                 }
 
-                @media (max-width: 768px) {
+                @media (max-width: 795px) {
                     margin-left: calc(30% - 9vh - 72px);
                 }
     
-                @media (max-width: 680px) {
+                @media (max-width: 707px) {
                     width: 30%;
                 }
 
-                @media (max-width: 602px) {
+                @media (max-width: 629px) {
                     width: auto;
                     margin: 0 calc(30% - 9vh - 72px);
                 }
 
-                @media (max-width: 425px) {
+                @media (max-width: 452px) {
                     margin: 0 calc(30% - 9vh - 16px);
                 }
 
-                @media (max-width: 350px) {
+                @media (max-width: 377px) {
                     margin: 8px;
                 }
             }
@@ -481,7 +507,7 @@
                 justify-content: flex-end;
                 margin-right: 8px;
 
-                @media (max-width: 602px) {
+                @media (max-width: 630px) {
                     margin-bottom: 10px;
                 }
 
@@ -498,7 +524,7 @@
                 }
 
                 .btn-group {
-                    width: 136px;
+                    width: 163px;
                     margin: 0 8px;
 
                     svg {

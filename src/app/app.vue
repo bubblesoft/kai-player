@@ -4,35 +4,42 @@
         template(v-if="layout")
             transition(name="fade")
                 pane-frame(
-                    v-if="layout.source.visible"
+                    v-if="pictureLayout.visible"
+                    v-model="pictureLayout"
+                    heading="Artwork"
+                )
+                    picturePane
+            transition(name="fade")
+                pane-frame(
+                    v-if="sourceLayout.visible"
                     v-model="sourceLayout"
                     heading="Media Source"
                 )
                     sourcePane
             transition(name="fade")
                 pane-frame(
-                    v-if="layout.list.visible"
+                    v-if="listLayout.visible"
                     v-model="listLayout"
                     heading="Chart"
                 )
                     listPane
             transition(name="fade")
                 pane-frame(
-                    v-if="layout.search.visible"
+                    v-if="searchLayout.visible"
                     v-model="searchLayout"
                     heading="Search"
                 )
                     searchPane
             transition(name="fade")
                 pane-frame(
-                    v-if="layout.playlist.visible"
+                    v-if="playlistLayout.visible"
                     v-model="playlistLayout"
                     heading="Playlist"
                 )
                     playlistPane
             transition(name="fade")
                 pane-frame(
-                    v-if="layout.tracks.visible"
+                    v-if="tracksLayout.visible"
                     v-model="tracksLayout"
                     heading="Tracks"
                 )
@@ -54,17 +61,19 @@
     import { getRecommendedTrack, generateLayout } from '../scripts/utils';
 
     import controlBar from './control-bar';
-    import listPane from './source/list-pane';
     import paneFrame from './pane-frame';
+    import picturePane from './queue/picture-pane';
     import sourcePane from './source/source-pane';
+    import searchPane from './source/search-pane';
+    import listPane from './source/list-pane';
     import playlistPane from './queue/playlist-pane';
     import tracksPane from './queue/tracks-pane';
-    import searchPane from './source/search-pane';
 
     export default {
         components: {
             controlBar,
             paneFrame,
+            picturePane,
             listPane,
             sourcePane,
             playlistPane,
@@ -72,6 +81,17 @@
             searchPane
         },
         computed: {
+            pictureLayout: {
+                get() {
+                    return this.layout.picture;
+                },
+                set(layout) {
+                    this[SAVE_LAYOUT]({
+                        index: 'picture',
+                        layout
+                    });
+                }
+            },
             sourceLayout: {
                 get() {
                     return this.layout.source;
