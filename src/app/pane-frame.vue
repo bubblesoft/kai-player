@@ -1,5 +1,5 @@
 <template lang="pug">
-    .panel-frame(:class="{ active: activePanelIndex === value }")
+    .panel-frame(:class="{ active: activePanelIndex === $el }")
         .panel.panel-default(
             :style="{ backgroundColor }"
             :class="{ hide: autoHide }"
@@ -10,7 +10,7 @@
         )
             div {{ $t(heading) }}
         .opacity-control(
-            v-if="activePanelIndex === value"
+            v-if="activePanelIndex === $el"
             :class="{ hide: autoHide }"
         )
             vueSlider(
@@ -88,6 +88,12 @@
 
             ratioY() {
                 return this.bottomY / window.innerHeight;
+            }
+        },
+
+        watch: {
+            opacity() {
+                this.saveLayout();
             }
         },
 
@@ -172,7 +178,7 @@
                 const activate = () => {
                     document.removeEventListener('click', activate);
                     this[SET_ACTIVE_PANEL_INDEX_LOCK](false);
-                    this.activePanelIndex = this.value;
+                    this.activePanelIndex = this.$el;
                 };
 
                 document.addEventListener('click', activate);
@@ -356,7 +362,8 @@
                     restrictSize: {
                         min: { width: 150, height: 150 }
                     },
-                    inertia: true
+                    inertia: true,
+                    margin: 6
                 })
                 .on('resizemove', e => {
                     const width = panel.offsetWidth,

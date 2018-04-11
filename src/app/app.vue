@@ -1,5 +1,6 @@
 <template lang="pug">
     .app
+        banner
         control-bar
         template(v-if="layout")
             transition(name="fade")
@@ -60,6 +61,7 @@
 
     import { getRecommendedTrack, generateLayout } from '../scripts/utils';
 
+    import banner from './banner';
     import controlBar from './control-bar';
     import paneFrame from './pane-frame';
     import picturePane from './queue/picture-pane';
@@ -71,6 +73,7 @@
 
     export default {
         components: {
+            banner,
             controlBar,
             paneFrame,
             picturePane,

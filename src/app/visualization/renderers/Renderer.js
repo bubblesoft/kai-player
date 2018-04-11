@@ -13,7 +13,7 @@ export default class Renderer {
 
     init(mountPoint) {
         this.root = document.createElement('div');
-        this.root.style.cssText = 'position: absolute; left: 0; top: 0; width: 100%; height: 100%;';
+        this.root.style.cssText = 'position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;';
         mountPoint.appendChild(this.root);
     }
 
