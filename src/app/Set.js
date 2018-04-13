@@ -29,6 +29,10 @@ export default class Set {
      * @returns {number}
      */
     add(...item) {
+        if ([...arguments].filter(argument => argument === undefined).length) {
+            throw 'No item passed.';
+        }
+
         this._items.push(...arguments);
 
         if (this._items.length === 1) {
