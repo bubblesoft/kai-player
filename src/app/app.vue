@@ -262,16 +262,22 @@
 
                     layout.visible = visible;
 
-                    this[SAVE_LAYOUT] ({
+                    this[SAVE_LAYOUT]({
                         index: 'tracks',
                         layout
                     });
                 }
             },
 
+            queue() {
+                return this.queueGroup.get(this.queueGroup.active);
+            },
+
             ...mapState({
+                panels: state => state.generalModule.panels,
                 lockActivePanelIndex: state => state.generalModule.activePanel.lock,
                 player: state => state.playerModule.playerController.player,
+                queueGroup: state => state.queueModule.queueGroup,
                 background: state => state.visualizationModule.background,
                 visualizer: state => state.visualizationModule.visualizer,
                 mode: state => state.generalModule.mode,
@@ -304,21 +310,23 @@
         },
 
         created() {
-            this[INSERT_QUEUE]({
-                index: 0,
-                queue: new Queue({
-                    name: this.$t('Temp')
-                })
-            });
+            if (!this.queueGroup.length) {
+                this[INSERT_QUEUE]({
+                    index: 0,
+                    queue: new Queue({
+                        name: this.$t('Temp')
+                    })
+                });
 
-            this[INSERT_QUEUE]({
-                index: 0,
-                queue: new RandomQueue({
-                    name: this.$t('Listen Randomly')
-                })
-            });
+                this[INSERT_QUEUE]({
+                    index: 0,
+                    queue: new RandomQueue({
+                        name: this.$t('Listen Randomly')
+                    })
+                });
 
-            this[UPDATE_PLAYING_QUEUE_INDEX](0);
+                this[UPDATE_PLAYING_QUEUE_INDEX](0);
+            }
 
             (async () => {
                 const sources = (await (await fetch(config.urlBase + '/audio/sources', {
@@ -346,7 +354,10 @@
                 });
 
                 this[ADD_SOURCES](sources);
-                this[ADD_TRACK](await getRecommendedTrack(null, sources));
+
+                if (this.queue.constructor === RandomQueue) {
+                    this[ADD_TRACK](await getRecommendedTrack(null, sources));
+                }
             })();
         },
 

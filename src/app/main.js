@@ -22,12 +22,17 @@ import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLA
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
 import PlayerController from './PlayerController';
+import Queue from './queue/Queue';
+import RandomQueue from './queue/RandomQueue';
+import Track from './Track';
+import Artist from './Artist';
 import Player from './Player';
 import { threeRenderer, histogramRenderer } from './visualization/renderers/renderers';
 import Background from './visualization/visual_controllers/Background';
 import Visualizer from './visualization/visual_controllers/Visualizer';
 
-import app from './app';
+
+import App from './app';
 
 if (!window["Promise"]) {
     window["Promise"] = require("promise-polyfill");
@@ -80,7 +85,6 @@ const messages = {
         'Close': 'Close',
         'Settings': 'Settings',
         'Chart': 'Chart',
-        'Artwork': 'Artwork',
         'Media Source': 'Media Source',
         'Playlist': 'Playlist',
         'Tracks': 'Tracks',
@@ -90,8 +94,14 @@ const messages = {
         'Temp': 'Temp',
         'New Playlist': 'New Playlist',
         'Listen Randomly': 'Listen Randomly',
-        'Drag a track here and start random listening': 'Drag a track here and start random listening',
+        'Drag a track here to start random listening': 'Drag a track here to start random listening',
         'Unknown Artist': 'Unknown Artist',
+        'Enter edit mode': 'Enter edit mode',
+        'Exit edit mode': 'Exit edit mode',
+        'Drag a track here to remove it': 'Drag a track here to remove it',
+        'Drag a playlist here to remove it': 'Drag a playlist here to remove it',
+        'Remove duplicated tracks': 'Remove duplicated tracks',
+        'Remove duplicated tracks?': 'Remove duplicated tracks？',
         'Select a background': 'Select a background',
         'Select a visualizer': 'Select a visualizer',
         'Histogram': 'Histogram',
@@ -106,19 +116,14 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language',
-        'Enter edit mode': 'Enter edit mode',
-        'Exit edit mode': 'Exit edit mode',
-        'Drag a track here to remove it': 'Drag a track here to remove it',
-        'Drag a playlist here to remove it': 'Drag a playlist here to remove it'
+        'Select a language': 'Select a language'
     },
     'zh-CN': {
-        'Confirm': '确定',
+        'Confirm': '确认',
         'Cancel': '取消',
         'Close': '关闭',
         'Settings': '设置',
         'Chart': '排行榜',
-        'Artwork': '图片',
         'Media Source': '媒体源',
         'Playlist': '播放列表',
         'Tracks': '播放音频',
@@ -128,8 +133,14 @@ const messages = {
         'Temp': '临时播放列表',
         'New Playlist': '新建播放列表',
         'Listen Randomly': '随便听听',
-        'Drag a track here and start random listening': '拖动一个音频到这里开始收听',
+        'Drag a track here to start random listening': '拖动一个音频到这里开始收听',
         'Unknown Artist': '未知艺术家',
+        'Enter edit mode': '进入编辑模式',
+        'Exit edit mode': '退出编辑模式',
+        'Drag a track here to remove it': '拖动一个音频到这里删除',
+        'Drag a playlist here to remove it': '拖动一个播放列表到这里删除',
+        'Remove duplicated tracks': '删除重复项',
+        'Remove duplicated tracks?': '确定删除重复项目？',
         'Select a background': '选择背景',
         'Select a visualizer': '选择可视化',
         'Histogram': '直方图',
@@ -145,10 +156,6 @@ const messages = {
         'Language': '语言',
         'Drag & Drop you files or Browse': '拖动文件到这里或者点击浏览文件',
         'Select a language': '选择语言',
-        'Enter edit mode': '进入编辑模式',
-        'Exit edit mode': '退出编辑模式',
-        'Drag a track here to remove it': '拖动一个音频到这里删除',
-        'Drag a playlist here to remove it': '拖动一个播放列表到这里删除'
     },
     'ja-JP': {
         'Confirm': 'はい',
@@ -166,8 +173,13 @@ const messages = {
         'Temp': '臨時プレーリスト',
         'New Playlist': '新規プレーリスト',
         'Listen Randomly': 'Listen Randomly',
-        'Drag a track here and start random listening': 'Drag a track here and start random listening',
+        'Drag a track here to start random listening': 'Drag a track here to start random listening',
         'Unknown Artist': 'Unknown Artist',
+        'Enter edit mode': 'Enter edit mode',
+        'Exit edit mode': 'Exit edit mode',
+        'Drag a track here to remove it': 'Drag a track here to remove it',
+        'Drag a playlist here to remove it': 'Drag a playlist here to remove it',
+        'Remove duplicated tracks': 'Remove duplicated tracks',
         'Select a background': 'Select a background',
         'Select a visualizer': 'Select a visualizer',
         'Histogram': 'Histogram',
@@ -182,11 +194,7 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language',
-        'Enter edit mode': 'Enter edit mode',
-        'Exit edit mode': 'Exit edit mode',
-        'Drag a track here to remove it': 'Drag a track here to remove it',
-        'Drag a playlist here to remove it': 'Drag a playlist here to remove it'
+        'Select a language': 'Select a language'
     },
     'ko-KR': {
         'Confirm': 'Confirm',
@@ -194,7 +202,6 @@ const messages = {
         'Close': 'Close',
         'Settings': 'Settings',
         'Chart': 'Chart',
-        'Artwork': 'Artwork',
         'Media Source': 'Media Source',
         'Playlist': '재생목록 일람',
         'Tracks': '재생목록',
@@ -204,8 +211,13 @@ const messages = {
         'Temp': 'Temp',
         'New Playlist': 'New Playlist',
         'Listen Randomly': 'Listen Randomly',
-        'Drag a track here and start random listening': 'Drag a track here and start random listening',
+        'Drag a track here to start random listening': 'Drag a track here to start random listening',
         'Unknown Artist': 'Unknown Artist',
+        'Enter edit mode': 'Enter edit mode',
+        'Exit edit mode': 'Exit edit mode',
+        'Drag a track here to remove it': 'Drag a track here to remove it',
+        'Drag a playlist here to remove it': 'Drag a playlist here to remove it',
+        'Remove duplicated tracks': 'Remove duplicated tracks',
         'Select a background': 'Select a background',
         'Select a visualizer': 'Select a visualizer',
         'Histogram': 'Histogram',
@@ -221,10 +233,6 @@ const messages = {
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
         'Select a language': 'Select a language',
-        'Enter edit mode': 'Enter edit mode',
-        'Exit edit mode': 'Exit edit mode',
-        'Drag a track here to remove it': 'Drag a track here to remove it',
-        'Drag a playlist here to remove it': 'Drag a playlist here to remove it'
     }
 };
 
@@ -298,12 +306,97 @@ const sourceModule = {
     }
 };
 
-const queueGroup = new QueueGroup({ name: 'Global' });
+const saveQueueData = (queueGroup, playingQueueIndex) => {
+        localStorage.setItem('kaiplayerplayingqueues', JSON.stringify({
+            queues: queueGroup.get().map(queue => {
+                return {
+                    type: (() => {
+                        switch (queue.constructor) {
+                            case RandomQueue:
+                                return 'random';
+
+                            case Queue:
+                            default:
+                                return 'basic';
+                        }
+                    })(),
+                    name: queue.name,
+                    tracks: queue.get().map(track => {
+                        return {
+                            id: track.id,
+                            name: track.name,
+                            duration: track.duration,
+                            artists: track.artists.map(artist => {
+                                return {
+                                    name: artist.name
+                                }
+                            })
+                        }
+                    }),
+                    active: queue.active
+                }
+            }),
+            active: queueGroup.active,
+            playing: playingQueueIndex
+        }));
+    },
+
+    restoreQueueData = () => {
+        const queueGroup = new QueueGroup({ name: 'Global' });
+
+        let playingQueueIndex = null;
+
+        const queueGroupData = JSON.parse(localStorage.getItem('kaiplayerplayingqueues'));
+
+        if (queueGroupData && queueGroupData.queues.length) {
+            queueGroup.add(...queueGroupData.queues.map(queueData => {
+                const queue = (() => {
+                    switch (queueData.type) {
+                        case 'random':
+                            return new RandomQueue({ name: queueData.name });
+
+                        case 'basic':
+                        default:
+                            return new Queue({ name: queueData.name });
+                    }
+                })();
+
+                queue.active = queueData.active;
+
+                if (queueData.tracks.length) {
+                    queue.add(...queueData.tracks.map(trackData => {
+                        return new Track({
+                            id: trackData.id,
+                            name: trackData.name,
+                            duration: trackData.duration,
+                            artists: trackData.artists.map(artistData => {
+                                return new Artist({
+                                    name: artistData.name
+                                })
+                            })
+                        });
+                    }));
+                }
+
+                return queue;
+            }));
+
+            queueGroup.active = queueGroupData.active;
+            playingQueueIndex = queueGroupData.playing;
+        }
+
+        return {
+            queueGroup,
+            playingQueueIndex
+        }
+    };
+
+const queueData = restoreQueueData();
 
 const queueModule = {
     state: {
-        queueGroup,
-        playingQueueIndex: null
+        queueGroup: queueData.queueGroup,
+        playingQueueIndex: queueData.playingQueueIndex
     },
     mutations: {
         [UPDATE_QUEUE_GROUP](state, { queues, active }) {
@@ -312,10 +405,13 @@ const queueModule = {
             if (typeof active === 'number') {
                 state.queueGroup.active = active;
             }
+
+            saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
         [INSERT_QUEUE](state, { index, queue }) {
             state.queueGroup.insert(index, queue);
+            saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
         [UPDATE_QUEUE](state, { index, name, tracks, active }) {
@@ -324,13 +420,16 @@ const queueModule = {
             name && (queue.name = name);
             tracks && queue.update(tracks);
 
-            if (typeof active === 'number') {
+            if (typeof active === 'number' || active === null) {
                 queue.active = active;
             }
+
+            saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
         [UPDATE_PLAYING_QUEUE_INDEX](state, index) {
             state.playingQueueIndex = index;
+            saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
         [ADD_TRACK](state, track) {
@@ -339,8 +438,10 @@ const queueModule = {
             queue.active = queue.add(track);
 
             const active = state.queueGroup.active;
+
             state.queueGroup.active = null;
             state.queueGroup.active = active;
+            saveQueueData(state.queueGroup, state.playingQueueIndex);
         }
     }
 };
@@ -462,5 +563,5 @@ new Vue({
     el: 'app',
     store,
     i18n,
-    render: createElement => createElement(app)
+    render: createElement => createElement(App)
 });

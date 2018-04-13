@@ -112,7 +112,9 @@ export default class Player {
     }
 
     unload() {
-        this._sound.unload();
+        if (this._sound) {
+            this._sound.unload();
+        }
     }
 
     play() {

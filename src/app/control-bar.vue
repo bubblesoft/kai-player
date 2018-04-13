@@ -204,7 +204,7 @@
 
         computed: {
             track() {
-                return this.queue.get(this.queue.active);
+                return this.queue ? this.queue.get(this.queue.active) : [];
             },
 
             player() {
@@ -359,7 +359,7 @@
             },
 
             async track(to) {
-                if (to.picture) {
+                if (to && to.picture) {
                     this.pic = applyCanvasMask(scale({ width: 200, height: 200 }, await loadImage(to.picture)), await loadImage(require('../assets/mask.png')), 200, 200, true);
                 } else {
                     this.pic = '';

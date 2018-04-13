@@ -1,14 +1,15 @@
 <template lang="pug">
     .playlist-pane
         .toolbar
-            .tool-button(@click="insert(typeof selectedIndex === 'number' ? selectedIndex + 1 : queueGroup.length)")
+            .tool-button(v-interact:tap="() => { insert(typeof selectedIndex === 'number' ? selectedIndex + 1 : queueGroup.length); }")
                 svg(
-                    width="24"
-                    height="24"
+                    width="20"
+                    height="20"
                     viewBox="0 0 24 24"
                 )
                     path(d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z")
             tooltip(
+                v-if="editMode"
                 effect="fadein"
                 placement="top"
                 :content="$t('Drag a playlist here to remove it')"
@@ -21,11 +22,11 @@
                     :class="{ active: dragging && trashCan.hover }"
                 )
                     svg(
-                        width="24"
-                        height="24"
+                        width="20"
+                        height="20"
                         viewBox="0 0 24 24"
                     )
-                        path(d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z")
+                        path(d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z")
             tooltip(
                 effect="fadein"
                 placement="top"
@@ -34,16 +35,16 @@
                 .tool-button(v-interact:tap="() => { editMode = !editMode; }")
                     svg(
                         v-if="editMode"
-                        width="24"
-                        height="24"
-                        viewBox="-2 -2 28 28"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
                     )
                         path(d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z")
                     svg(
                         v-else
-                        width="24"
-                        height="24"
-                        viewBox="-2 -2 28 28"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
                     )
                         path(d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z")
         .list-wrap
@@ -65,8 +66,8 @@
                         td(style="width:18px")
                             svg(
                                 v-if="index === playingIndex"
-                                width="24"
-                                height="24"
+                                width="20"
+                                height="20"
                                 viewBox="0 0 24 24"
                             )
                                 path(d="M8 5v14l11-7z")
@@ -80,8 +81,8 @@
                         td(v-else) {{ queue.length }}
                         td.drag-handle(v-if="editMode")
                             svg(
-                                width="24"
-                                height="24"
+                                width="20"
+                                height="20"
                                 viewBox="0 0 24 24"
                             )
                                 path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
@@ -188,16 +189,26 @@
                         this.playingIndex--;
                     }
                 } else if (e.from !== e.to) {
-                    if (this.queueGroup.length === 0) {
-                        return this.queueGroup.add(this.trashCan.data[e.newIndex]);
-                    }
+//                    if (this.queueGroup.length === 0) {
+//                        this.queueGroup.add(this.trashCan.data.splice(e.newIndex, 1)[0]);
+//                    } else {
+                        if (e.oldIndex < this.activeIndex || e.oldIndex === this.activeIndex && this.activeIndex === this.queues.length) {
+                            this.activeIndex--;
+                        }
 
-                    if (e.oldIndex === this.playingIndex) {
-                        this.player.unload();
-                        this.playingIndex = null;
-                    } else if (e.oldIndex < this.playingIndex) {
-                        this.playingIndex--;
-                    }
+                        if (e.oldIndex === this.playingIndex) {
+                            this.player.unload();
+                            this.playingIndex = null;
+                        } else if (e.oldIndex < this.playingIndex) {
+                            this.playingIndex--;
+                        }
+//                    }
+
+                    this.trashCan.data.forEach((queue, index) => {
+                        if (queue.constructor === RandomQueue) {
+                            this.queueGroup.add(this.trashCan.data.splice(index, 1)[0]);
+                        }
+                    });
                 }
             },
 
@@ -234,7 +245,8 @@
             box-shadow: inset 0 -2px 1px -1.5px rgba(0, 0, 0, 0.2);
 
             .tool-button {
-                margin: 0 2px;
+                margin: 2px;
+                line-height: 0;
                 cursor: pointer;
 
                 svg {
@@ -265,16 +277,12 @@
             top: 0;
             width: 100%;
             height: calc(100% - 30px);
-            margin-top: 29px;
+            margin-top: 25px;
             box-shadow: inset 0 2px 1px -1.5px rgba(255, 255, 255, 0.2);
             overflow: auto;
 
             tr {
                 cursor: default;
-
-                &.active {
-                    cursor: move;
-                }
 
                 &.active-queue {
                     background-color: rgba(0, 0, 0, .3);

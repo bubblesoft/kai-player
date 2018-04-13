@@ -1,47 +1,61 @@
 <template lang="pug">
     .tracks-pane
         .toolbar
-            template(v-if="queue.constructor === RandomQueue")
-            template(v-else)
-                tooltip(
-                    effect="fadein"
-                    placement="top"
-                    :content="$t('Drag a track here to remove it')"
-                )
-                    draggable.tool-button(
-                        v-model="trashCan.data"
-                        :options="{ group: 'tracks', draggable: '' }"
-                        @dragover.native="trashCan.hover = true"
-                        @dragleave.native="trashCan.hover = false"
-                        :class="{ active: dragging && trashCan.hover }"
+            template(v-if="queue")
+                template(v-if="queue.constructor === RandomQueue")
+                template(v-else)
+                    tooltip(
+                        effect="fadein"
+                        placement="top"
+                        :content="$t('Remove duplicated tracks')"
                     )
-                        svg(
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
+                        .tool-button(v-interact:tap="() => { removeDuplicated(); }")
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z")
+                    tooltip(
+                        v-if="editMode"
+                        effect="fadein"
+                        placement="top"
+                        :content="$t('Drag a track here to remove it')"
+                    )
+                        draggable.tool-button(
+                            v-model="trashCan.data"
+                            :options="{ group: 'tracks', draggable: '' }"
+                            @pointerover.native="trashCan.hover = true"
+                            @pointerleave.native="trashCan.hover = false"
+                            :class="{ active: dragging && trashCan.hover }"
                         )
-                            path(d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z")
-                tooltip(
-                    effect="fadein"
-                    placement="top"
-                    :content="editMode ? $t('Exit edit mode') : $t('Enter edit mode')"
-                )
-                    .tool-button(v-interact:tap="() => { editMode = !editMode; }")
-                        svg(
-                            v-if="editMode"
-                            width="24"
-                            height="24"
-                            viewBox="-2 -2 28 28"
-                        )
-                            path(d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z")
-                        svg(
-                            v-else
-                            width="24"
-                            height="24"
-                            viewBox="-2 -2 28 28"
-                        )
-                            path(d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z")
-        .list-wrap
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z")
+                    tooltip(
+                        effect="fadein"
+                        placement="top"
+                        :content="editMode ? $t('Exit edit mode') : $t('Enter edit mode')"
+                    )
+                        .tool-button(v-interact:tap="() => { editMode = !editMode; }")
+                            svg(
+                                v-if="editMode"
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z")
+                            svg(
+                                v-else
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z")
+        .list-wrap(v-if="queue")
             .random-queue-box(v-if="queue.constructor === RandomQueue")
                 yoyoMarquee(
                     v-if="activeTrack"
@@ -63,20 +77,21 @@
                         v-for="(track, index) in tracks"
                         v-interact:doubletap="() => { playTrack(index); }"
                         v-interact:tap="() => { select(index); }"
+                        ref="tracks"
                     )
                         td(style="width: 18px;")
                             template(v-if="queueGroup.active === playingQueueIndex && index === activeIndex")
                                 svg(
                                     v-if="playing"
-                                    width="24"
-                                    height="24"
+                                    width="20"
+                                    height="20"
                                     viewBox="0 0 24 24"
                                 )
                                     path(d="M8 5v14l11-7z")
                                 svg(
                                     v-else
-                                    width="24"
-                                    height="24"
+                                    width="20"
+                                    height="20"
                                     viewBox="0 0 24 24"
                                 )
                                     path(d="M6 19h4V5H6v14zm8-14v14h4V5h-4z")
@@ -94,15 +109,15 @@
                         td(v-else)
                         td.drag-handle(v-if="editMode")
                             svg(
-                                width="24"
-                                height="24"
+                                width="20"
+                                height="20"
                                 viewBox="0 0 24 24"
                             )
                                 path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
 
                     tr(
                         slot="footer"
-                        v-if="!tracks.length"
+                        v-if="tracks.length < 2"
                         style="display: block; height: 80px; opacity: 0;"
                     )
 </template>
@@ -118,6 +133,7 @@
 
     import draggable from 'vuedraggable';
     import tooltip from 'vue-strap/src/tooltip';
+    import modal from 'vue-strap/src/modal';
 
     import yoyoMarquee from '../yoyo-marquee';
     import editableBox from '../editable-box';
@@ -126,6 +142,7 @@
         components: {
             draggable,
             tooltip,
+            modal,
             yoyoMarquee,
             editableBox
         },
@@ -140,7 +157,7 @@
               },
               dragging: false,
               RandomQueue
-          }
+          };
         },
 
         computed: {
@@ -167,7 +184,7 @@
 
             activeIndex: {
                 get() {
-                    return this.queue.active;
+                    return this.queue ? this.queue.active : null;
                 },
 
                 set(active) {
@@ -204,9 +221,21 @@
         },
 
         watch: {
-//            queue(to) {
-//                this.playTrack(to.active);
-//            }
+            activeIndex(to) {
+                if (!this.$refs.tracks) {
+                    return;
+                }
+
+                const trackDomEl = this.$refs.tracks[to];
+
+                if (trackDomEl) {
+                    trackDomEl.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                }
+            }
         },
 
         methods: {
@@ -219,6 +248,49 @@
                 this.visualizer.start();
                 this.tracks[index].duration = this.player.duration * 1000;
             },
+
+            async removeDuplicated() {
+                try {
+                    await this.$confirm({
+                        title: this.$t('Confirm'),
+                        bodyText: this.$t('Remove duplicated tracks?'),
+                        confirmText: this.$t('Confirm'),
+                        cancelText: this.$t('Cancel')
+                    });
+
+                    const checkSame = (track1, track2) => {
+                        if (track1.name.replace(/\s/g, '') !== track2.name.replace(/\s/g, '')) {
+                            return false;
+                        }
+
+                        const track1UniqueArtists = track1.artists.filter(artist => {
+                            return !(track2.artists.find(anotherArtist => {
+                                return artist.name.replace(/\s/g, '') === anotherArtist.name.replace(/\s/g, '');
+                            }) + 1);
+                        });
+
+                        const track2UniqueArtists = track1.artists.filter(artist => {
+                            return !(track1.artists.find(anotherArtist => {
+                                return artist.name.replace(/\s/g, '') === anotherArtist.name.replace(/\s/g, '');
+                            }) + 1);
+                        });
+
+                        return !track1UniqueArtists.length && !track2UniqueArtists.length;
+                    };
+
+                    this.tracks = this.tracks.filter((track, index) => {
+                        return !this.tracks.find((anotherTrack, anotherIndex) => {
+                            // Avoid comparing a track with itself or compare two same tracks multiple times
+                            if (index >= anotherIndex) {
+                                return false;
+                            }
+
+                            return checkSame(track, anotherTrack);
+                        });
+                    });
+                } catch (e) { }
+            },
+
             select(index) {
                 const select = () => {
                     document.removeEventListener('click', select);
@@ -227,6 +299,7 @@
 
                 document.addEventListener('click', select);
             },
+
             onSort(e) {
                 if (this.activeIndex !== null) {
                     if (e.from === e.to) {
@@ -240,7 +313,7 @@
                     } else if (e.from !== e.to) {
                         if (e.oldIndex === this.activeIndex) {
                             this.player.unload();
-                            this.activeIndex = null;
+                            e.oldIndex > 0 && this.activeIndex--;
                         } else if (e.oldIndex < this.activeIndex) {
                             this.activeIndex--;
                         }
@@ -270,7 +343,8 @@
             box-shadow: inset 0 -2px 1px -1.5px rgba(0, 0, 0, 0.2);
 
             .tool-button {
-                margin: 0 2px;
+                margin: 2px;
+                line-height: 0;
                 cursor: pointer;
 
                 svg {
@@ -301,7 +375,7 @@
             top: 0;
             width: 100%;
             height: calc(100% - 30px);
-            margin-top: 29px;
+            margin-top: 25px;
             box-shadow: inset 0 2px 1px -1.5px rgba(255, 255, 255, 0.2);
             overflow: auto;
 
