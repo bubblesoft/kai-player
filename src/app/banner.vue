@@ -5,7 +5,8 @@
             target="_blank"
         )
             img(
-                src="https://a-v2.sndcdn.com/assets/images/sc-icons/favicon-2cadd14b.ico"
+                src="../assets/soundcloud.ico"
+                data-src="https://a-v2.sndcdn.com/assets/images/sc-icons/favicon-2cadd14b.ico"
                 alt="SoundCloud"
                 title="SoundCloud"
             )
@@ -14,7 +15,8 @@
             target="_blank"
         )
             img(
-                src="https://hearthis.at/favicon.ico"
+                src="../assets/hearthisat.ico"
+                data-src="https://hearthis.at/favicon.ico"
                 alt="hearthis.at"
                 title="hearthis.at"
             )
@@ -41,7 +43,7 @@
             target="_blank"
         )
             img(
-                src="http://music.baidu.com/favicon.ico"
+                src="http://music.baidu.com/static/images/favicon.ico"
                 alt="百度音乐"
                 title="百度音乐"
             )
@@ -59,6 +61,11 @@
 
         a {
             margin: 0 10px;
+
+            img {
+                width: 32px;
+                height: 32px;
+            }
         }
     }
 </style>

@@ -8,6 +8,8 @@ import Vue from 'vue';
 import Vuex from 'vuex';
 import VueI18n from 'vue-i18n';
 
+import VueConfirm from '../scripts/vue-confirm';
+
 import interact from 'interactjs';
 
 import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
@@ -27,6 +29,7 @@ if (!window["Promise"]) {
 
 Vue.use(Vuex);
 Vue.use(VueI18n);
+Vue.use(VueConfirm);
 
 const interactables = [];
 

@@ -1,0 +1,18 @@
+
+.modal {
+  transition: all 0.3s ease;
+}
+.modal.in {
+  background-color: rgba(0,0,0,0.5);
+  perspective: 2000px;
+}
+.modal .modal-dialog {
+  transform: scale(0.1);
+  top: 300px;
+  opacity: 0;
+  transition: all 0.3s;
+}
+.modal.in .modal-dialog {
+  transform: scale(1), translate3d(0, -300px, 0);
+  opacity: 1;
+}
