@@ -515,7 +515,7 @@
                     height: 24px;
                     width: 80px;
                     padding: 0;
-                    max-width: 20%;
+                    max-width: calc((100% - 179px) / 2 - 16px);
                     margin: 0 8px;
 
                     option {

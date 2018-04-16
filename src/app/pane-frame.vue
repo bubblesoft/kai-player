@@ -175,14 +175,7 @@
             },
 
             activate() {
-                const activate = () => {
-                    document.removeEventListener('click', activate);
-                    this[SET_ACTIVE_PANEL_INDEX_LOCK](false);
-                    this.activePanelIndex = this.$el;
-                };
-
-                document.addEventListener('click', activate);
-                this[SET_ACTIVE_PANEL_INDEX_LOCK](true);
+                this.activePanelIndex = this.$el;
             },
 
             ...mapMutations([
@@ -363,7 +356,7 @@
                         min: { width: 150, height: 150 }
                     },
                     inertia: true,
-                    margin: 6
+                    margin: 9
                 })
                 .on('resizemove', e => {
                     const width = panel.offsetWidth,
@@ -392,6 +385,18 @@
                 });
 
             this.interactables.push(interactable);
+
+            const activate = () => {
+                document.removeEventListener('click', activate);
+                this[SET_ACTIVE_PANEL_INDEX_LOCK](false);
+            };
+
+            // Block panel blur on root element when activating a panel.
+            this.$el.addEventListener('click', () => {
+                document.addEventListener('click', activate);
+                this[SET_ACTIVE_PANEL_INDEX_LOCK](true);
+            });
+
         },
         destroyed() {
             this.interactables.forEach(interactable => interactable.unset());

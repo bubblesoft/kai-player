@@ -59,12 +59,25 @@
         align-items: center;
         padding: 20px;
 
+        @media (max-width: 768px) {
+            padding: 16px;
+        }
+
         a {
             margin: 0 10px;
+
+            @media (max-width: 768px) {
+                margin: 0 8px;
+            }
 
             img {
                 width: 32px;
                 height: 32px;
+                
+                @media (max-width: 768px) {
+                    width: 28px;
+                    height: 28px;
+                }
             }
         }
     }

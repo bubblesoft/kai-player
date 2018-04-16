@@ -97,9 +97,9 @@ const generateLayout = (type, viewportWidth, viewportHeight) => {
         return {
             picture: { mode: 'ratio', visible: false, x: .03, y: .03, width: .5, height: .3, opacity: .4, autoHide: true },
             source: { mode: 'ratio', visible: false, attach: 'left', y: .1, width: 1, height: .3, opacity: .4 },
-            list: { mode: 'ratio', visible: true, attach: 'left', y: 0, width: 1, height: .4, opacity: .4 },
+            list: { mode: 'ratio', visible: true, attach: 'left', y: .05, width: 1, height: .37, opacity: .4 },
             search: { mode: 'ratio', visible: false, attach: 'left', y: 0, width: 1, height: .4, opacity: .4 },
-            playlist: { mode: 'ratio', visible: true, attach: 'left', y: .4, width: 1, height: .3, opacity: .4 },
+            playlist: { mode: 'ratio', visible: true, attach: 'left', y: .42, width: 1, height: .28, opacity: .4 },
             tracks: { mode: 'ratio', visible: true, attach: 'left', y: .7, width: 1, height: .3, opacity: .4 }
         };
     }
