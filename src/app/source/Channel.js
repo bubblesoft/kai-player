@@ -34,30 +34,28 @@ export default class Channel {
         this._get = get;
     }
 
-    get() {
+    async get() {
         if (this._get) {
             return this._get();
         }
 
-        return (async() => {
-            return (await (await fetch(require('../../config').urlBase + '/audio/list', {
-                method: 'POST',
-                body: JSON.stringify({
-                    source: this.source,
-                    channel: this.type
-                }),
-                headers: new Headers({
-                    'Content-Type': 'application/json'
-                })
-            })).json()).data.map(trackData => {
-                return new Track({
-                    id: 'netease_' + trackData.id,
-                    name: trackData.name,
-                    duration: trackData.dt,
-                    artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
-                    picture: trackData.picture
-                })
-            });
-        })();
+        return (await (await fetch(require('../../config').urlBase + '/audio/list', {
+            method: 'POST',
+            body: JSON.stringify({
+                source: this.source,
+                channel: this.type
+            }),
+            headers: new Headers({
+                'Content-Type': 'application/json'
+            })
+        })).json()).data.map(trackData => {
+            return new Track({
+                id: this.source + '_' + trackData.id,
+                name: trackData.name,
+                duration: trackData.dt,
+                artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
+                picture: trackData.picture
+            })
+        });
     }
 }
