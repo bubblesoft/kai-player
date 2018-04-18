@@ -3,9 +3,11 @@
  */
 
 import ThreeRenderer from './ThreeRenderer';
-import HistogramRenderer from '../renderers/HistogramRenderer';
+import HistogramRenderer from './HistogramRenderer';
+import ElectricArcRenderer from './ElectricArcRenderer';
 
 const threeRenderer = new ThreeRenderer,
-    histogramRenderer = new HistogramRenderer;
+    histogramRenderer = new HistogramRenderer,
+    electricArcRenderer = new ElectricArcRenderer;
 
-export { threeRenderer, histogramRenderer };
+export { threeRenderer, histogramRenderer, electricArcRenderer };

@@ -5,7 +5,7 @@
 import Clubber from 'clubber';
 
 import VisualController from './VisualController';
-import { threeRenderer, histogramRenderer } from '../renderers/renderers';
+import { threeRenderer, histogramRenderer, electricArcRenderer } from '../renderers/renderers';
 
 import '../../../styles/histogram';
 
@@ -51,7 +51,8 @@ export default class Visualizer extends VisualController{
     constructor(type) {
         const renderers = {
             three: threeRenderer,
-            histogram: histogramRenderer
+            histogram: histogramRenderer,
+            electricArc: electricArcRenderer
         };
 
         if (type === 'random') {

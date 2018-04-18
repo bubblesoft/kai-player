@@ -2,7 +2,7 @@
  * Created by qhyang on 2017/12/15.
  */
 
-import * as d3 from 'd3';
+import { select, scaleLinear, easeQuadOut, easeQuadInOut, axisBottom, axisRight } from 'd3';
 
 export default class Histogram {
     _svg;
@@ -21,7 +21,7 @@ export default class Histogram {
             width = root.offsetWidth || window.innerWidth,
             height = root.offsetHeight || window.innerHeight;
 
-        this._svg = d3.select(root).append('svg')
+        this._svg = select(root).append('svg')
             .attr('width', width - margins.right / 2)
             .attr('height', height - margins.bottom / 2)
             .style('opacity', 0);
@@ -55,11 +55,11 @@ export default class Histogram {
 
         // Axises
 
-        const scaleX = d3.scaleLinear()
+        const scaleX = scaleLinear()
             .domain([20, 20000])
             .range([0, this._width]);
 
-        const axisX = d3.axisBottom(scaleX);
+        const axisX = axisBottom(scaleX);
 
         axisX.ticks(barNum / 2);
 
@@ -68,11 +68,11 @@ export default class Histogram {
             .attr('transform', 'translate(' + margins.left + ', ' + (margins.top + this._height) + ')')
             .call(axisX);
 
-        const scaleY = d3.scaleLinear()
+        const scaleY = scaleLinear()
             .domain([0, -60])
             .range([0, this._height]);
 
-        const axisY = d3.axisRight(scaleY);
+        const axisY = axisRight(scaleY);
 
         axisY.ticks(Math.ceil(this._height / 100));
 
@@ -97,8 +97,8 @@ export default class Histogram {
     reset() {
         this._svg.selectAll('.bar').transition()
             .duration(200)
-            .attrTween('y', d3.easeQuadOut)
-            .attrTween('height', d3.easeQuadOut)
+            .attrTween('y', easeQuadOut)
+            .attrTween('height', easeQuadOut)
             .attr('y', this._height)
             .attr('height', 0);
     }
@@ -106,14 +106,14 @@ export default class Histogram {
     show() {
         this._svg.transition()
             .duration(600)
-            .styleTween('opacity', d3.easeQuadInOut)
+            .styleTween('opacity', easeQuadInOut)
             .style('opacity', 1);
     }
 
     hide() {
         this._svg.transition()
             .duration(600)
-            .styleTween('opacity', d3.easeQuadInOut)
+            .styleTween('opacity', easeQuadInOut)
             .style('opacity', 0);
     }
 }

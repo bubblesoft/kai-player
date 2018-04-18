@@ -48,4 +48,4 @@ export default class HistogramRenderer extends Renderer {
         histogram.reset();
         histogram.hide();
     }
-}
+};

@@ -23,7 +23,7 @@ import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
 import PlayerController from './PlayerController';
 import Player from './Player';
-import { threeRenderer, histogramRenderer } from './visualization/renderers/renderers';
+import { threeRenderer, histogramRenderer, electricArcRenderer } from './visualization/renderers/renderers';
 import Background from './visualization/visual_controllers/Background';
 import Visualizer from './visualization/visual_controllers/Visualizer';
 
@@ -93,7 +93,8 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language'
+        'Select a language': 'Select a language',
+        'Electric Arc': 'Electric Arc'
     },
     'zh-CN': {
         'Confirm': '确定',
@@ -127,7 +128,8 @@ const messages = {
         'Upload': '上传图片',
         'Language': '语言',
         'Drag & Drop you files or Browse': '拖动文件到这里或者点击浏览文件',
-        'Select a language': '选择语言'
+        'Select a language': '选择语言',
+        'Electric Arc': '电弧'
     },
     'ja-JP': {
         'Confirm': 'はい',
@@ -161,7 +163,8 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language'
+        'Select a language': 'Select a language',
+        'Electric Arc': 'Electric Arc'
     },
     'ko-KR': {
         'Confirm': 'Confirm',
@@ -195,7 +198,8 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language'
+        'Select a language': 'Select a language',
+        'Electric Arc': 'Electric Arc'
     }
 };
 
@@ -415,6 +419,7 @@ const visualizationModule = {
         initVisualization(context, mountPoint) {
             threeRenderer.init(mountPoint);
             histogramRenderer.init(mountPoint);
+            electricArcRenderer.init(mountPoint);
         }
     }
 };

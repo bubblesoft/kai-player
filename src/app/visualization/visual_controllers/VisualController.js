@@ -2,7 +2,7 @@
  * Created by qhyang on 2018/3/1.
  */
 
-import threeRenderer from '../renderers/renderers';
+import { threeRenderer, histogramRenderer, electricArcRenderer } from '../renderers/renderers';
 
 const mapTypeName = type => {
     switch (type) {
@@ -10,12 +10,16 @@ const mapTypeName = type => {
             return 'Tiles';
         case 'histogram':
             return 'Histogram';
+        case 'electricArc':
+            return 'Electric Arc';
     }
 };
 
 export default class VisualController {
     _renderers = {
-        three: threeRenderer
+        three: threeRenderer,
+        histogram: histogramRenderer,
+        electricArc: electricArcRenderer
     };
     _activeType;
     _mountPoint;

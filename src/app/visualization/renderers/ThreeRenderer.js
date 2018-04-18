@@ -45,14 +45,6 @@ export default class ThreeRenderer extends Renderer {
         this.threeAudioVisualization.applyForces(...data.map(band => Math.sqrt(band[3] * 800000000000)));
     }
 
-    show() {
-        this.threeAudioVisualization.show();
-    }
-
-    hide() {
-        this.threeAudioVisualization.hide();
-    }
-
     start() {
         if (this.active) {
             return;
@@ -70,6 +62,14 @@ export default class ThreeRenderer extends Renderer {
         this.threeAudioVisualization.pause();
 
         super.pause();
+    }
+
+    show() {
+        this.threeAudioVisualization.show();
+    }
+
+    hide() {
+        this.threeAudioVisualization.hide();
     }
 
     animate() {
