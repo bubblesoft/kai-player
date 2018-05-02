@@ -3,6 +3,7 @@
  */
 
 import 'whatwg-fetch';
+import 'url-polyfill';
 
 import Vue from 'vue';
 import Vuex from 'vuex';
