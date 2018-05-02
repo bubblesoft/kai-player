@@ -91,6 +91,7 @@
                     this[UPDATE_QUEUE_GROUP]({ queues });
                 }
             },
+
             activeIndex: {
                 get() {
                     return this.queueGroup.active;
@@ -99,6 +100,7 @@
                     this[UPDATE_QUEUE_GROUP]({ active });
                 }
             },
+
             playingIndex: {
                 get() {
                     return this.$store.state.queueModule.playingQueueIndex;
@@ -107,9 +109,10 @@
                     this[UPDATE_PLAYING_QUEUE_INDEX](index);
                 }
             },
+
             ...mapState({
                 queueGroup: state => state.queueModule.queueGroup,
-                player: state => state.playerModule.player
+                player: state => state.playerModule.playerController.player
             })
         },
         methods: {

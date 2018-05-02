@@ -152,7 +152,7 @@
             },
             ...mapState({
                 lockActivePanelIndex: state => state.generalModule.activePanel.lock,
-                player: state => state.playerModule.player,
+                player: state => state.playerModule.playerController.player,
                 background: state => state.visualizationModule.background,
                 visualizer: state => state.visualizationModule.visualizer,
                 mode: state => state.generalModule.mode,

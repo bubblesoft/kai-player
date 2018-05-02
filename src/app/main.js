@@ -3,6 +3,7 @@
  */
 
 import 'whatwg-fetch';
+import 'url-polyfill';
 
 import Vue from 'vue';
 import Vuex from 'vuex';
@@ -16,6 +17,7 @@ import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLA
 
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
+import PlayerController from './PlayerController';
 import Player from './Player';
 import { threeRenderer, histogramRenderer } from './visualization/renderers/renderers';
 import Background from './visualization/visual_controllers/Background';
@@ -233,9 +235,13 @@ const queueModule = {
     }
 };
 
+const playerController = new PlayerController;
+
+playerController.connect(new Player);
+
 const playerModule = {
     state: {
-        player: new Player
+        playerController
     }
 };
 
@@ -266,7 +272,7 @@ const visualizationModule = {
 
         [UPDATE_ACTIVE_VISUALIZER_TYPE](state, type) {
             const previousRenderer = state.visualizer.activeRenderer,
-                playing = playerModule.state.player.playing;
+                playing = playerModule.state.playerController.player.playing;
 
             state.visualizer.activeType = type;
 

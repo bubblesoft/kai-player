@@ -94,7 +94,7 @@
                     path(d="M6 6h2v12H6zm3.5 6l8.5 6V6z")
             div.control-button.control-button_big(
                 v-if="!playing"
-                v-interact:tap="() => { play(queue.get(queue.active)); SWITCH_TO_VISUALIZER(player._sound._sounds[0]._node); }"
+                v-interact:tap="async () => { play(queue.get(queue.active)); }"
                 :class="{ loading: loading || player.state === 'loading' }"
                 key="play"
             )
@@ -196,6 +196,10 @@
         computed: {
             track() {
                 return this.queue.get(this.queue.active);
+            },
+
+            player() {
+                return this.playerController.player;
             },
 
             playing() {
@@ -332,7 +336,7 @@
 
             ...mapState({
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex),
-                player: state => state.playerModule.player,
+                playerController: state => state.playerModule.playerController,
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 background: state => state.visualizationModule.background,
                 visualizer: state => state.visualizationModule.visualizer,
@@ -362,16 +366,14 @@
             },
 
             async play(track) {
-                const url = await track.getStreamUrl();
-
-                await this.player.load(url);
-                this.player.play();
+                await this.playerController.playTrack(track);
 
                 if (this.activeVisualizerType === 'random') {
                     this.activeVisualizerType = 'random';
                 }
 
                 this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
+                this[SWITCH_TO_VISUALIZER](this.player._sound._sounds[0]._node);
             },
 
             pause() {
