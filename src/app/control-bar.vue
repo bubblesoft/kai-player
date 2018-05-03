@@ -81,18 +81,27 @@
                             viewBox="0 0 24 24"
                         )
                             path(d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z")
+                .control-button(
+                    v-interact:tap="() => { toggleSettingsModal(); }"
+                )
+                    svg(
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                    )
+                        path(d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65A.488.488 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z")
             .track-name(v-if="track")
                 yoyoMarquee(:title="track.name + '-' + (track.artists && track.artists.map(artist => artist.name).join(', '))")
                     span(style="color: #fff;") {{ track.name }} - {{ track.artists && track.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist') }}
         .audio-control
-            div.control-button.control-button_small(v-interact:tap="previous")
+            .control-button.control-button_small(v-interact:tap="previous")
                 svg(
                     width="24"
                     height="24"
                     viewBox="0 0 24 24"
                 )
                     path(d="M6 6h2v12H6zm3.5 6l8.5 6V6z")
-            div.control-button.control-button_big(
+            .control-button.control-button_big(
                 v-if="!playing"
                 v-interact:tap="async () => { play(queue.get(queue.active)); }"
                 :class="{ loading: loading || player.state === 'loading' }"
@@ -103,8 +112,8 @@
                     height="24"
                     viewBox="0 0 24 24"
                 )
-                    path(d="M10 16.5l6-4.5-6-4.5v9zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z")
-            div.control-button.control-button_big(
+                    path(d="M8 5v14l11-7z")
+            .control-button.control-button_big(
                 v-else
                 v-interact:tap="pause"
                 :class="{ loading: loading || player.state === 'loading' }"
@@ -115,15 +124,15 @@
                     height="24"
                     viewBox="0 0 24 24"
                 )
-                    path(d="M9 16h2V8H9v8zm3-14C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm1-4h2V8h-2v8z")
-            div.control-button.control-button_small(v-interact:tap="next")
+                    path(d="M6 19h4V5H6v14zm8-14v14h4V5h-4z")
+            .control-button.control-button_small(v-interact:tap="next")
                 svg(
                     width="24"
                     height="24"
                     viewBox="0 0 24 24"
                 )
                     path(d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z")
-            div.control-button.control-button_small(v-interact:tap="stop")
+            .control-button.control-button_small(v-interact:tap="stop")
                 svg(
                     width="24"
                     height="24"
@@ -409,6 +418,10 @@
                 await this.play(this.queue.get(this.queue.next()));
             },
 
+            toggleSettingsModal() {
+                setTimeout(() => { this.$emit('toggleSettingsModal'); }, 350);
+            },
+
             ...mapMutations([
                 ADD_TRACK,
                 SAVE_LAYOUT,
@@ -495,7 +508,11 @@
                     margin: 0 calc(30% - 9vh - 72px);
                 }
 
-                @media (max-width: 452px) {
+                @media (max-width: 516px) {
+                    margin: 0 6px;
+                }
+
+                @media (max-width: 425px) {
                     margin: 0 calc(30% - 9vh - 16px);
                 }
 
@@ -517,7 +534,7 @@
                     height: 24px;
                     width: 80px;
                     padding: 0;
-                    max-width: calc((100% - 179px) / 2 - 16px);
+                    max-width: calc((100% - 195px) / 2 - 16px);
                     margin: 0 8px;
 
                     option {
@@ -541,56 +558,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-
-            .control-button {
-                margin: 5px;
-                line-height: 0;
-                cursor: pointer;
-
-                @media (max-width: 425px) {
-                    margin: 1px;
-                }
-
-                svg {
-                    width: 5vh;
-                    height: 5vh;
-                    fill: rgba(255, 255, 255, 0.6);
-                }
-
-                &:hover svg {
-                    fill: rgba(255, 255, 255, 0.9);
-                    -webkit-filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
-                    filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
-                    -ms-filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
-                    filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
-                }
-            }
-
-            .control-button_big {
-                margin: 6px;
-
-                @media (max-width: 425px) {
-                    margin: 2px;
-                }
-
-                svg {
-                    width: 6vh;
-                    height: 6vh;
-                }
-            }
-
-            .control-button_small {
-                margin: 4px;
-
-                @media (max-width: 425px) {
-                    margin: 1px;
-                }
-
-                svg {
-                    width: 4vh;
-                    height: 4vh;
-                }
-            }
 
             .vue-slider-component {
                 margin: 6px;
@@ -625,6 +592,65 @@
                 @media (max-width: 425px) {
                     display: none;
                 }
+            }
+        }
+
+        .control-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            line-height: 0;
+            cursor: pointer;
+
+            svg {
+                fill: rgba(255, 255, 255, 0.6);
+            }
+
+            &:hover svg {
+                fill: rgba(255, 255, 255, 0.9);
+                -webkit-filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
+                filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
+                -ms-filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
+                filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
+            }
+        }
+
+        .control-button_big {
+            margin: 6px;
+
+            @media (max-width: 425px) {
+                margin: 2px;
+            }
+
+            svg {
+                width: 6vh;
+                height: 6vh;
+            }
+        }
+
+            /*.control-button_medium {*/
+            /*margin: 5px;*/
+
+            /*@media (max-width: 425px) {*/
+            /*margin: 1px;*/
+            /*}*/
+
+            /*svg {*/
+            /*width: 5vh;*/
+            /*height: 5vh;*/
+            /*}*/
+            /*}*/
+
+        .control-button_small {
+            margin: 4px;
+
+            @media (max-width: 425px) {
+                margin: 1px;
+            }
+
+            svg {
+                width: 4vh;
+                height: 4vh;
             }
         }
 

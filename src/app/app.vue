@@ -1,7 +1,7 @@
 <template lang="pug">
-    .app
+    .app(:style="{ backgroundImage: `url(${backgroundImage})` }")
         banner
-        control-bar
+        control-bar(@toggleSettingsModal="showSettings = !showSettings;")
         template(v-if="layout")
             transition(name="fade")
                 pane-frame(
@@ -45,6 +45,7 @@
                     heading="Tracks"
                 )
                     tracksPane
+        settings(v-model="showSettings")
 </template>
 
 <script>
@@ -70,6 +71,7 @@
     import listPane from './source/list-pane';
     import playlistPane from './queue/playlist-pane';
     import tracksPane from './queue/tracks-pane';
+    import settings from './settings';
 
     export default {
         components: {
@@ -77,12 +79,20 @@
             controlBar,
             paneFrame,
             picturePane,
-            listPane,
             sourcePane,
+            searchPane,
+            listPane,
             playlistPane,
             tracksPane,
-            searchPane
+            settings
         },
+
+        data() {
+            return {
+                showSettings: false
+            }
+        },
+
         computed: {
             pictureLayout: {
                 get() {
@@ -156,15 +166,18 @@
                 background: state => state.visualizationModule.background,
                 visualizer: state => state.visualizationModule.visualizer,
                 mode: state => state.generalModule.mode,
-                layout: state => state.generalModule.layout
+                layout: state => state.generalModule.layout,
+                backgroundImage: state => state.generalModule.backgroundImage
             })
         },
+
         methods: {
             blur() {
                 if (!this.lockActivePanelIndex) {
                     this[UPDATE_ACTIVE_PANEL_INDEX](null);
                 }
             },
+
             ...mapMutations([
                 ADD_SOURCES,
                 INSERT_QUEUE,
@@ -180,6 +193,7 @@
                 'initVisualization'
             ])
         },
+
         created() {
             this[INSERT_QUEUE]({
                 index: 0,
@@ -266,6 +280,8 @@
         top: 0;
         width: 100%;
         height: 100%;
+        background-size: cover;
+        background-position: center;
         z-index: 1;
         user-select: none;
 

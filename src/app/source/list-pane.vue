@@ -100,13 +100,14 @@
 
                 track.duration = this.player.duration * 1000;
             },
+
             ...mapMutations([
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
                 SWITCH_TO_VISUALIZER,
                 TRIGGER_BACKGROUND_EVENT,
                 VISUALIZER_LISTEN_TO
-            ]),
+            ])
         },
         filters: {
             formatDuration

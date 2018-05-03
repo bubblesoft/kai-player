@@ -13,7 +13,11 @@ import VueConfirm from '../scripts/vue-confirm';
 
 import interact from 'interactjs';
 
-import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
+import '../styles/bootstrap';
+import '../styles/base';
+import '../styles/pretty-checkbox';
+
+import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, SET_BACKGROUND_IMAGE, SET_LOCALE, SET_SHOW_SOURCE_ICON, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
@@ -58,6 +62,10 @@ Vue.directive('interact', {
 
 const messages = {
     'en-US': {
+        'Confirm': 'Confirm',
+        'Cancel': 'Cancel',
+        'Close': 'Close',
+        'Settings': 'Settings',
         'Chart': 'Chart',
         'Artwork': 'Artwork',
         'Media Source': 'Media Source',
@@ -75,9 +83,23 @@ const messages = {
         'Select a visualizer': 'Select a visualizer',
         'Histogram': 'Histogram',
         'Tiles': 'Tiles',
-        'Random': 'Random'
+        'Random': 'Random',
+        'Source icon': 'Source icon',
+        'Reset application': 'Reset application',
+        'Reset': 'Reset',
+        'Confirm application reset': 'Confirm application reset',
+        'Are you sure to reset the entire application?': 'Are you sure to reset the entire application?',
+        'Background': 'Background',
+        'Upload': 'Upload',
+        'Language': 'Language',
+        'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
+        'Select a language': 'Select a language'
     },
     'zh-CN': {
+        'Confirm': '确 定',
+        'Cancel': '取 消',
+        'Close': '关 闭',
+        'Settings': '设置',
         'Chart': '排行榜',
         'Artwork': '图片',
         'Media Source': '媒体源',
@@ -95,12 +117,26 @@ const messages = {
         'Select a visualizer': '选择可视化',
         'Histogram': '直方图',
         'Tiles': '方块',
-        'Random': '随机'
+        'Random': '随机',
+        'Source icon': '显示音频源图标',
+        'Reset application': '重置应用',
+        'Reset': '重置',
+        'Confirm application reset': '确定重置应用',
+        'Are you sure to reset the entire application?': '确定要重置整个应用?',
+        'Background': '背景',
+        'Upload': '上传图片',
+        'Language': '语言',
+        'Drag & Drop you files or Browse': '拖动文件到这里或者浏览文件',
+        'Select a language': '选择语言'
     },
     'ja-JP': {
-        'Chart': 'Chart',
-        'Artwork': 'Artwork',
-        'Media Source': 'Media Source',
+        'Confirm': 'はい',
+        'Cancel': 'いええ',
+        'Close': '閉じる',
+        'Settings': 'セッティング',
+        'Chart': 'ランキング',
+        'Artwork': 'アートワーク',
+        'Media Source': '媒体源',
         'Playlist': 'プレーリスト',
         'Tracks': 'Tracks',
         'Panel': 'パネル',
@@ -115,9 +151,23 @@ const messages = {
         'Select a visualizer': 'Select a visualizer',
         'Histogram': 'Histogram',
         'Tiles': 'Tiles',
-        'Random': 'Random'
+        'Random': 'Random',
+        'Source icon': 'Source icon',
+        'Reset application': 'Reset application',
+        'Reset': 'Reset',
+        'Confirm application reset': 'Confirm application reset',
+        'Are you sure to reset the entire application?': 'Are you sure to reset the entire application?',
+        'Background': 'Background',
+        'Upload': 'Upload',
+        'Language': 'Language',
+        'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
+        'Select a language': 'Select a language'
     },
     'ko-KR': {
+        'Confirm': 'Confirm',
+        'Cancel': 'Cancel',
+        'Close': 'Close',
+        'Settings': 'Settings',
         'Chart': 'Chart',
         'Artwork': 'Artwork',
         'Media Source': 'Media Source',
@@ -135,14 +185,24 @@ const messages = {
         'Select a visualizer': 'Select a visualizer',
         'Histogram': 'Histogram',
         'Tiles': 'Tiles',
-        'Random': 'Random'
+        'Random': 'Random',
+        'Source icon': 'Source icon',
+        'Reset application': 'Reset application',
+        'Reset': 'Reset',
+        'Confirm application reset': 'Confirm application reset',
+        'Are you sure to reset the entire application?': 'Are you sure to reset the entire application?',
+        'Background': 'Background',
+        'Upload': 'Upload',
+        'Language': 'Language',
+        'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
+        'Select a language': 'Select a language'
     }
 };
 
-const lang = sessionStorage.getItem("locale") || window.navigator.language || "en-US";
+const locale = localStorage.getItem('kaiplayerlocale') || window.navigator.language || 'en-US';
 
 const i18n = new VueI18n({
-    locale: lang,
+    locale,
     messages
 });
 
@@ -153,8 +213,16 @@ const generalModule = {
             lock: false
         },
         mode: null,
-        layout: null
+        layout: null,
+        backgroundImage: localStorage.getItem('kaiplayerbackgroundimage') || 'http://bubblesoft.oss-ap-southeast-1.aliyuncs.com/1d69083104fb0c7d0e3a568d72f3eff8_numendil-333089-unsplash.jpg',
+        showSourceIcon: (() => {
+            const showSourceIcon = localStorage.getItem('kaiplayershowsouceicon');
+
+            return showSourceIcon ? Boolean(+showSourceIcon) : true;
+        })(),
+        locale
     },
+
     mutations: {
         [UPDATE_ACTIVE_PANEL_INDEX] (state, index) {
             state.activePanel.index = index;
@@ -171,6 +239,19 @@ const generalModule = {
         [SAVE_LAYOUT] (state, { index, layout }) {
             state.layout[index] = layout;
             localStorage.setItem('kaiplayerlayout' + state.mode, JSON.stringify(state.layout));
+        },
+        [SET_BACKGROUND_IMAGE] (state, url) {
+            state.backgroundImage = url;
+            localStorage.setItem('kaiplayerbackgroundimage', url);
+        },
+        [SET_LOCALE] (state, locale) {
+            i18n.locale = locale;
+            state.locale = locale;
+            localStorage.setItem('kaiplayerlocale', locale);
+        },
+        [SET_SHOW_SOURCE_ICON] (state, showSourceIcon) {
+            state.showSourceIcon = showSourceIcon;
+            localStorage.setItem('kaiplayershowsouceicon', Number(showSourceIcon));
         }
     }
 };
@@ -354,6 +435,3 @@ new Vue({
     i18n,
     render: createElement => createElement(app)
 });
-
-import '../styles/bootstrap';
-import '../styles/base';
