@@ -7,36 +7,41 @@
         .modal-body(slot="modal-body")
             section
                 div {{ $t('Source icon') }}
-                prettyCheckbox.p-switch.p-slim(v-model="showSourceIcon")
+                div
+                    prettyCheckbox.p-switch.p-slim(v-model="showSourceIcon")
             section
                 div {{ $t('Background') }}
-                button.btn.btn-default.btn-xs(
-                    v-interact:tap="() => { showUploader = true; }"
-                ) {{ $t('Upload') }}
-            filePond(
-                :style="{ display: showUploader ? 'block' : 'none' }"
-                ref="pond"
-                :label-idle="this.$t('Drag & Drop you files or Browse')"
-                accepted-file-types="image/jpeg, image/png"
-                :server="pondServer"
-                @processfile="handleFileUploaded"
-            )
+                div
+                    button.btn.btn-default.btn-xs(
+                        v-interact:tap="() => { showUploader = true; }"
+                    ) {{ $t('Upload') }}
+            section(:style="{ display: showUploader ? 'flex' : 'none' }")
+                div
+                filePond(
+                    ref="pond"
+                    :label-idle="this.$t('Drag & Drop you files or Browse')"
+                    accepted-file-types="image/jpeg, image/png"
+                    :server="pondServer"
+                    @processfile="handleFileUploaded"
+                )
             section
                 div {{ $t('Language') }}
-                select.form-control(v-model="locale")
-                    option(
-                        value=""
-                        disabled
-                    ) {{ $t('Select a language') }}
-                    option(value="en-US") English
-                    option(value="zh-CN") 简体中文
-                    option(value="ja-JP") 日本語
-                    option(value="ko-KR") 한국어
+                div
+                    select.form-control(v-model="locale")
+                        option(
+                            value=""
+                            disabled
+                        ) {{ $t('Select a language') }}
+                        option(value="en-US") English
+                        option(value="zh-CN") 简体中文
+                        option(value="ja-JP") 日本語
+                        option(value="ko-KR") 한국어
             section
-                .text-danger {{ $t('Reset application') }}
-                button.btn.btn-danger.btn-xs(
-                    v-interact:tap="() => { resetApplication(); }"
-                ) {{ $t('Reset') }}
+                .text-danger {{ $t('Reset settings') }}
+                div
+                    button.btn.btn-danger.btn-xs(
+                        v-interact:tap="() => { resetSettings(); }"
+                    ) {{ $t('Reset') }}
         .modal-footer(slot="modal-footer")
             button.btn.btn-default.btn-sm(
                 v-interact:tap="() => { $emit('input', false); showUploader = false; $refs.pond.removeFiles(); }"
@@ -122,17 +127,20 @@
         },
 
         methods: {
-            async resetApplication() {
+            async resetSettings() {
                 try {
                     await this.$confirm({
-                        title: this.$t('Confirm application reset'),
-                        bodyText: this.$t('Are you sure to reset the entire application?'),
+                        title: this.$t('Confirm settings reset'),
+                        bodyText: this.$t('Are you sure to reset all settings?'),
                         confirmText: this.$t('Confirm'),
                         cancelText: this.$t('Cancel')
                     });
 
                     localStorage.removeItem('kaiplayerlayoutdesktop');
                     localStorage.removeItem('kaiplayerlayoutmobile');
+                    localStorage.removeItem('kaiplayerlocale');
+                    localStorage.removeItem('kaiplayerbackgroundimage');
+                    localStorage.removeItem('kaiplayershowsouceicon');
                     location.reload();
                 } catch (e) { }
             },
@@ -159,9 +167,13 @@
 <style lang="scss" scoped>
     section {
         display: flex;
-        justify-content: space-around;
+        justify-content: space-between;
         align-items: center;
         margin: 20px 0;
+
+        .filepond--wrapper {
+            width: 50%;
+        }
 
         select {
             height: 24px;

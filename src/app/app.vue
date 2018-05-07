@@ -5,44 +5,50 @@
         template(v-if="layout")
             transition(name="fade")
                 pane-frame(
-                    v-if="pictureLayout.visible"
+                    v-if="pictureOpen"
                     v-model="pictureLayout"
                     heading="Artwork"
+                    @close="pictureOpen = false;"
                 )
                     picturePane
             transition(name="fade")
                 pane-frame(
-                    v-if="sourceLayout.visible"
+                    v-if="sourceOpen"
                     v-model="sourceLayout"
                     heading="Media Source"
+                    @close="sourceOpen = false;"
                 )
                     sourcePane
             transition(name="fade")
                 pane-frame(
-                    v-if="listLayout.visible"
+                    v-if="listOpen"
                     v-model="listLayout"
                     heading="Chart"
+                    @close="listOpen = false;"
                 )
                     listPane
             transition(name="fade")
                 pane-frame(
-                    v-if="searchLayout.visible"
+                    v-if="searchOpen"
                     v-model="searchLayout"
                     heading="Search"
+                    @close="searchOpen = false;"
                 )
                     searchPane
             transition(name="fade")
                 pane-frame(
-                    v-if="playlistLayout.visible"
+                    v-if="playlistOpen"
                     v-model="playlistLayout"
                     heading="Playlist"
+                    @close="playlistOpen = false;"
                 )
                     playlistPane
             transition(name="fade")
                 pane-frame(
-                    v-if="tracksLayout.visible"
+                    v-if="tracksOpen"
                     v-model="tracksLayout"
                     heading="Tracks"
+                    @close="tracksOpen = false;"
                 )
                     tracksPane
         settings(v-model="showSettings")
@@ -160,6 +166,109 @@
                     });
                 }
             },
+
+            pictureOpen: {
+                get() {
+                    return this.$store.state.generalModule.layout.picture.visible;
+                },
+
+                set(visible) {
+                    const layout = this.layout.picture;
+
+                    layout.visible = visible;
+
+                    this[SAVE_LAYOUT]({
+                        index: 'picture',
+                        layout
+                    });
+                }
+            },
+
+            sourceOpen: {
+                get() {
+                    return this.$store.state.generalModule.layout.source.visible;
+                },
+
+                set(visible) {
+                    const layout = this.layout.source;
+
+                    layout.visible = visible;
+
+                    this[SAVE_LAYOUT]({
+                        index: 'source',
+                        layout
+                    });
+                }
+            },
+
+            listOpen: {
+                get() {
+                    return this.$store.state.generalModule.layout.list.visible;
+                },
+
+                set(visible) {
+                    const layout = this.layout.list;
+
+                    layout.visible = visible;
+
+                    this[SAVE_LAYOUT]({
+                        index: 'list',
+                        layout
+                    });
+                }
+            },
+
+            searchOpen: {
+                get() {
+                    return this.$store.state.generalModule.layout.search.visible;
+                },
+
+                set(visible) {
+                    const layout = this.layout.search;
+
+                    layout.visible = visible;
+
+                    this[SAVE_LAYOUT]({
+                        index: 'search',
+                        layout
+                    });
+                }
+            },
+
+            playlistOpen: {
+                get() {
+                    return this.$store.state.generalModule.layout.playlist.visible;
+                },
+
+                set(visible) {
+                    const layout = this.layout.playlist;
+
+                    layout.visible = visible;
+
+                    this[SAVE_LAYOUT]({
+                        index: 'playlist',
+                        layout
+                    });
+                }
+            },
+
+            tracksOpen: {
+                get() {
+                    return this.$store.state.generalModule.layout.tracks.visible;
+                },
+
+                set(visible) {
+                    const layout = this.layout.tracks;
+
+                    layout.visible = visible;
+
+                    this[SAVE_LAYOUT] ({
+                        index: 'tracks',
+                        layout
+                    });
+                }
+            },
+
             ...mapState({
                 lockActivePanelIndex: state => state.generalModule.activePanel.lock,
                 player: state => state.playerModule.playerController.player,

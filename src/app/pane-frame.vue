@@ -9,22 +9,30 @@
             :style="{ backgroundPosition: (1 - ratioX + ratioY) * 50 + 10 + '% ' + '0' }"
         )
             div {{ $t(heading) }}
-        .opacity-control(
+        .control(
             v-if="activePanelIndex === $el"
             :class="{ hide: autoHide }"
         )
-            vueSlider(
-                v-model="opacity"
-                :max="1"
-                :interval=".01"
-                tooltip="hover"
-                :stop-propagation="true"
-                :real-time="true"
-                :bg-style="{ backgroundColor: 'rgba(255, 255, 255, 0.6)' }"
-                :slider-style="{ backgroundColor: 'rgba(255, 255, 255, 0.6)' }"
-                :process-style="{ backgroundColor: 'rgba(255, 255, 255, 0.9)', filter: 'drop-shadow(2px 2px 10px rgba(150, 150, 150, 1))' }"
-                :tooltip-style="{ backgroundColor: 'rgba(255, 255, 255, 0.6)', 'border-color': 'rgba(255, 255, 255, 0.6)', 'border-style': 'none' }"
+            .opacity-control
+                vueSlider(
+                    v-model="opacity"
+                    :max="1"
+                    :interval=".01"
+                    tooltip="hover"
+                    :stop-propagation="true"
+                    :real-time="true"
+                    :bg-style="{ backgroundColor: 'rgba(255, 255, 255, 0.6)' }"
+                    :slider-style="{ backgroundColor: 'rgba(255, 255, 255, 0.6)' }"
+                    :process-style="{ backgroundColor: 'rgba(255, 255, 255, 0.9)', filter: 'drop-shadow(2px 2px 10px rgba(150, 150, 150, 1))' }"
+                    :tooltip-style="{ backgroundColor: 'rgba(255, 255, 255, 0.6)', 'border-color': 'rgba(255, 255, 255, 0.6)', 'border-style': 'none' }"
+                )
+            svg(
+                v-interact:tap="() => { $emit('close'); }"
+                width="21"
+                height="21"
+                viewBox="0 0 24 24"
             )
+                path(d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z")
         .panel-body
             slot
 </template>
@@ -264,7 +272,7 @@
                 })
 
                 .draggable({
-                    ignoreFrom: '.panel-body, .opacity-control',
+                    ignoreFrom: '.panel-body, .control',
                     restrict: {
                         restriction: 'parent',
                         endOnly: true
@@ -346,7 +354,7 @@
                 })
 
                 .resizable({
-                    ignoreFrom: '.panel-body, .opacity-control',
+                    ignoreFrom: '.panel-body, .control',
                     edges: { left: true, right: true, bottom: true, top: true },
                     restrictEdges: {
                         outer: 'parent',
@@ -460,7 +468,9 @@
                 transition: background-position .1s;
             }
 
-            .opacity-control {
+            .control {
+                display: flex;
+                align-items: center;
                 position: absolute;
                 top: 2px;
                 right: 2px;
@@ -468,11 +478,28 @@
                 max-width: 200px;
                 height: 37px;
 
-                .vue-slider-component {
-                    margin: 6px;
-                    opacity: .6;
-                    cursor: default;
+                .opacity-control {
+                    flex-grow: 1;
+
+                    .vue-slider-component {
+                        margin: 6px 0;
+                        opacity: .6;
+                    }
                 }
+
+
+                svg {
+                    margin: 6px 6px 6px 0;
+                    fill: rgba(255, 255, 255, 0.3);
+                }
+
+                svg:hover  {
+                     fill: rgba(255, 255, 255, 0.6);
+                     -webkit-filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
+                     filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
+                     -ms-filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
+                     filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
+                 }
             }
 
             .panel-body {
