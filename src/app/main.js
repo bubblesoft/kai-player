@@ -52,7 +52,20 @@ Vue.directive('interact', {
             case 'tap':
             default:
                 interactable.on('tap', bindings.value);
+        }
+    },
+    update(el, bindings) {
+        const interactable = interactables[+el.dataset.interactable];
+
+        switch (bindings.arg) {
+            case 'doubletap':
+                interactable.off('doubletap');
+                interactable.on('doubletap', bindings.value);
                 break;
+            case 'tap':
+            default:
+                interactable.off('tap');
+                interactable.on('tap', bindings.value);
         }
     },
     unbind(el) {

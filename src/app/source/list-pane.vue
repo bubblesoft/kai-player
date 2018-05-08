@@ -14,7 +14,7 @@
                     v-for="channel in sourceSelected.get()"
                     :value="channel"
                 ) {{ channel.name }}
-        .list-wrap
+        .list-wrap(ref="list")
             table.table-condensed.table.table-hover
                 draggable(
                     v-model="tracks"
@@ -48,13 +48,15 @@
         components: {
             draggable
         },
+
         data() {
-          return {
+            return {
               sourceSelected: null,
               channelSelected: null,
               tracks: []
-          }
+            }
         },
+
         computed: {
             sources() {
               return this.sourceGroup.get();
@@ -84,6 +86,25 @@
                 playerController: state => state.playerModule.playerController
             })
         },
+
+        watch: {
+            channelSelected(channel) {
+                channel
+                    .get()
+                    .then(tracks => {
+                        this.tracks = tracks;
+                        this.$refs.list.scrollTop = 0;
+                    });
+            },
+            sources(sources) {
+                this.sourceSelected = sources[0];
+                this.channelSelected = this.sourceSelected.get(0);
+            },
+            sourceSelected(source) {
+                this.channelSelected = source.get(0);
+            }
+        },
+
         methods: {
             async addToPlayback(track) {
                 this[ADD_TRACK](track);
@@ -109,32 +130,18 @@
                 VISUALIZER_LISTEN_TO
             ])
         },
+
         filters: {
             formatDuration
         },
+
         created() {
             (async () => {
                 if (this.sources.length) {
-                    this.sourceSelected = sources[0];
+                    this.sourceSelected = this.sources[0];
                     this.channelSelected = this.sourceSelected.get(0);
                 }
             })();
-        },
-        watch: {
-            channelSelected(channel) {
-                channel
-                    .get()
-                    .then(tracks => {
-                        this.tracks = tracks;
-                    });
-            },
-            sources(sources) {
-                this.sourceSelected = sources[0];
-                this.channelSelected = this.sourceSelected.get(0);
-            },
-            sourceSelected(source) {
-                this.channelSelected = source.get(0);
-            }
         }
     }
 </script>
