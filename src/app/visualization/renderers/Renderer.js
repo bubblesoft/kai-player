@@ -3,10 +3,6 @@
  */
 
 export default class Renderer {
-    root;
-    bandWidth;
-    active;
-
     constructor() {
         this.active = false;
     }
@@ -18,6 +14,8 @@ export default class Renderer {
     }
 
     renderAudio() { }
+
+    renderPicture() { }
 
     show() {
         this.root.style.display = 'block';
@@ -33,7 +31,15 @@ export default class Renderer {
         this.stopAnimate();
     }
 
-    animate() { }
+    animate() {
+        this.animating = true;
+    }
 
-    stopAnimate() { }
+    stopAnimate() {
+        this.animating = false;
+    }
+
+    event() {
+        return Promise.resolve();
+    }
 }

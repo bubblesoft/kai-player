@@ -41,11 +41,13 @@ export default class HistogramRenderer extends Renderer {
     }
 
     show() {
+        super.show();
         histogram.show();
     }
 
-    hide() {
+    async hide() {
         histogram.reset();
-        histogram.hide();
+        await histogram.hide();
+        super.hide();
     }
 };

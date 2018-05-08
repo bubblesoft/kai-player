@@ -145,16 +145,22 @@ export default class ElectricArc {
     }
 
     show() {
-        this._svg.transition()
-            .duration(600)
-            .styleTween('opacity', easeQuadInOut)
-            .style('opacity', 1);
+        return new Promise(resolve => {
+            this._svg.transition()
+                .duration(600)
+                .styleTween('opacity', easeQuadInOut)
+                .style('opacity', 1)
+                .on('end', resolve);
+        });
     }
 
     hide() {
-        this._svg.transition()
-            .duration(600)
-            .styleTween('opacity', easeQuadInOut)
-            .style('opacity', 0);
+        return new Promise(resolve => {
+            this._svg.transition()
+                .duration(600)
+                .styleTween('opacity', easeQuadInOut)
+                .style('opacity', 0)
+                .on('end', resolve);
+        });
     }
 }

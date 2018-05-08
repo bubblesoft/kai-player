@@ -16,7 +16,7 @@ const color = (() => {
     let i = 0;
 
     return () => {
-        if (i > 4) {
+        if (i > 5) {
             i = 0;
         }
 
@@ -93,10 +93,12 @@ export default class ElectricArcRenderer extends Renderer {
     }
 
     show() {
+        super.show();
         electricArc.show();
     }
 
     hide() {
         electricArc.hide();
+        super.hide();
     }
 };

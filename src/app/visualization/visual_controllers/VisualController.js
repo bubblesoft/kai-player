@@ -12,6 +12,8 @@ const mapTypeName = type => {
             return 'Histogram';
         case 'electricArc':
             return 'Electric Arc';
+        case 'artwork':
+            return 'Artwork';
     }
 };
 
@@ -24,6 +26,8 @@ export default class VisualController {
     _activeType;
     _mountPoint;
     _root;
+    _active;
+    _picture;
 
     get types() {
         return Object.keys(this._renderers).map(type => {
@@ -57,7 +61,15 @@ export default class VisualController {
 
     hide() { }
 
-    start() { }
+    start() {
+        this._active = true;
+    }
 
-    stop() { }
+    stop() {
+        this._active = false;
+    }
+
+    loadResource({ picture } = {}) {
+        this._picture = picture;
+    }
 };

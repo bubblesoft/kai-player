@@ -59,7 +59,7 @@
 
     import config from '../config';
 
-    import { ADD_SOURCES, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SWITCH_TO_BACKGROUND } from '../scripts/mutation-types';
+    import { ADD_SOURCES, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SWITCH_TO_BACKGROUND, BACKGROUND_LOAD_RESOURCE } from '../scripts/mutation-types';
 
     import Source from './source/Source';
     import Channel from './source/Channel';
@@ -296,7 +296,8 @@
                 SET_MODE,
                 LOAD_LAYOUT,
                 SAVE_LAYOUT,
-                SWITCH_TO_BACKGROUND
+                SWITCH_TO_BACKGROUND,
+                BACKGROUND_LOAD_RESOURCE
             ]),
             ...mapActions([
                 'initVisualization'
@@ -346,7 +347,11 @@
                 });
 
                 this[ADD_SOURCES](sources);
-                this[ADD_TRACK](await getRecommendedTrack(null, sources));
+
+                const track = await getRecommendedTrack(null, sources);
+
+                this[ADD_TRACK](track);
+                this[BACKGROUND_LOAD_RESOURCE]({ picture: track.picture });
             })();
         },
 
@@ -371,6 +376,7 @@
             this.background.start();
             this.background.activeRenderer.show();
 
+            //TODO: remove later
             this.player.on('end', () => {
                 this.visualizer.stop();
                 this[SWITCH_TO_BACKGROUND]();
