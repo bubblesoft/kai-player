@@ -24,8 +24,8 @@ export default {
                     </slot>
                     <div class="modal-body"></div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-default"></button>
-                        <button type="button" class="btn btn-primary"></button>
+                        <button type="button" class="btn btn-default btn-sm"></button>
+                        <button type="button" class="btn btn-primary btn-sm"></button>
                     </div>
                   </div>
             </div>

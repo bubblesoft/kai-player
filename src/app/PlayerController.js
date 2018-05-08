@@ -15,11 +15,7 @@ export default class PlayerController {
         try {
             await this.player.load(url.href);
         } catch (e) {
-            try {
-                await this.player.load(`${url.protocol}//${this.id.split('_')[0]}/${url.hostname}/${url.pathname}`);
-            } catch(e) {
-
-            }
+            await this.player.load(`/${track.id.split('_')[0]}/${url.hostname}/${url.pathname}`);
         }
 
         this.player.play();

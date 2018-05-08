@@ -59,9 +59,15 @@
             sources() {
               return this.sourceGroup.get();
             },
+
             queue() {
                 return this.queueGroup.get(this.queueGroup.active);
             },
+
+            player() {
+                return this.playerController.player;
+            },
+
             playingQueueIndex: {
                 get() {
                     return this.$store.state.queueModule.playingQueueIndex;
@@ -70,22 +76,21 @@
                     this[UPDATE_PLAYING_QUEUE_INDEX](index);
                 }
             },
+
             ...mapState({
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 queueGroup: state => state.queueModule.queueGroup,
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.queueGroup.active),
-                player: state => state.playerModule.player
+                playerController: state => state.playerModule.playerController
             })
         },
         methods: {
             async addToPlayback(track) {
                 this[ADD_TRACK](track);
 
-                const url = await track.getStreamUrl(),
-                        playing = this.player.playing;
+                const playing = this.player.playing;
 
-                await this.player.load([url]);
-                this.player.play();
+                await this.playerController.playTrack(track);
                 this.playingQueueIndex = this.queueGroup.active;
                 this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
 
@@ -95,13 +100,14 @@
 
                 track.duration = this.player.duration * 1000;
             },
+
             ...mapMutations([
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
                 SWITCH_TO_VISUALIZER,
                 TRIGGER_BACKGROUND_EVENT,
                 VISUALIZER_LISTEN_TO
-            ]),
+            ])
         },
         filters: {
             formatDuration

@@ -86,20 +86,20 @@ const generateLayout = (type, viewportWidth, viewportHeight) => {
         (width > 500) && (width = 500);
 
         return {
-            picture: { mode: 'leftTop', visible: true, x: viewportWidth * .03, y: viewportWidth * .03 - 40, width: viewportWidth * .25, height: viewportWidth * .25, opacity: .4, autoHide: true },
+            picture: { mode: 'leftTop', visible: true, x: viewportWidth * .03, y: viewportWidth * .03 - 40, width: Math.min(viewportWidth * .25, 400), height: Math.min(viewportWidth * .25, 400), opacity: .4, autoHide: true },
             source: { mode: 'bottom', visible: true, attach: 'left', bottomY: viewportHeight * .4, width: 258, height: 173, opacity: .4 },
-            list: { mode: 'bottom', visible: true, attach: 'right', bottomY: viewportHeight * .35, width, height: viewportHeight * .35, opacity: .4 },
+            list: { mode: 'bottom', visible: true, attach: 'right', bottomY: viewportHeight * .35, width, height: viewportHeight * .45, opacity: .4 },
             search: { mode: 'bottom', visible: true, attach: 'left', bottomY: viewportHeight * .03, width, height: viewportHeight * .35, opacity: .4 },
             playlist: { mode: 'bottom', visible: true, attach: 'right', bottomY: 0, width, height: viewportHeight * .35, opacity: .4 },
-            tracks: { mode: 'bottom', visible: true, attach: false, ratioX: .5, bottomY: viewportHeight * .1, width, height: viewportHeight * .4, opacity: .4 }
+            tracks: { mode: 'bottom', visible: true, attach: false, ratioX: .5, bottomY: viewportHeight * .08, width: width * 1.1, height: viewportHeight * .45, opacity: .4 }
         };
     } else if (type === 'mobile') {
         return {
             picture: { mode: 'ratio', visible: false, x: .03, y: .03, width: .5, height: .3, opacity: .4, autoHide: true },
             source: { mode: 'ratio', visible: false, attach: 'left', y: .1, width: 1, height: .3, opacity: .4 },
-            list: { mode: 'ratio', visible: true, attach: 'left', y: 0, width: 1, height: .4, opacity: .4 },
+            list: { mode: 'ratio', visible: true, attach: 'left', y: .05, width: 1, height: .37, opacity: .4 },
             search: { mode: 'ratio', visible: false, attach: 'left', y: 0, width: 1, height: .4, opacity: .4 },
-            playlist: { mode: 'ratio', visible: true, attach: 'left', y: .4, width: 1, height: .3, opacity: .4 },
+            playlist: { mode: 'ratio', visible: true, attach: 'left', y: .42, width: 1, height: .28, opacity: .4 },
             tracks: { mode: 'ratio', visible: true, attach: 'left', y: .7, width: 1, height: .3, opacity: .4 }
         };
     }

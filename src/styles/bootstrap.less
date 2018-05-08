@@ -7,6 +7,11 @@
 
 @gray-light: lighten(@gray-base, 69.5%); // #777
 
+@text-color: #fff;
+
+@modal-content-bg: rgba(255, 255, 255, 0.15);
+@modal-header-border-color: @gray;
+
 @panel-default-text: #fff;
 @panel-bg: transparent;
 @panel-default-border: transparent;
@@ -58,10 +63,10 @@
 @import "@{path}/panels.less";
 //@import "responsive-embed.less";
 //@import "wells.less";
-//@import "close.less";
+@import "@{path}/close.less";
 
 // Components w/ JavaScript
-//@import "modals.less";
+@import "@{path}/modals.less";
 //@import "tooltip.less";
 //@import "popovers.less";
 //@import "carousel.less";

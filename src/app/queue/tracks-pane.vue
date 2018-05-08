@@ -97,6 +97,7 @@
             queue() {
                 return this.queueGroup.get(this.queueGroup.active);
             },
+
             tracks: {
                 get() {
                     return this.queue ? this.queue.get() : [];
@@ -108,6 +109,11 @@
                     });
                 }
             },
+
+            player() {
+                return this.playerController.player;
+            },
+
             activeIndex: {
                 get() {
                     return this.queue.active;
@@ -119,9 +125,11 @@
                     });
                 }
             },
+
             playing() {
                 return this.player.playing
             },
+
             playingQueueIndex: {
                 get() {
                     return this.$store.state.queueModule.playingQueueIndex;
@@ -130,9 +138,10 @@
                     this[UPDATE_PLAYING_QUEUE_INDEX](index);
                 }
             },
+
             ...mapState({
                 queueGroup: state => state.queueModule.queueGroup,
-                player: state => state.playerModule.player,
+                playerController: state => state.playerModule.playerController,
                 visualizer: state => state.visualizationModule.visualizer
             })
         },
@@ -143,10 +152,9 @@
         },
         methods: {
             async playTrack(index) {
-                const url = await this.queue.get(this.queue.goTo(index)).getStreamUrl();
+                const track = await this.queue.get(this.queue.goTo(index));
 
-                await this.player.load(url);
-                this.player.play();
+                await this.playerController.playTrack(track);
                 this.playingQueueIndex = this.queueGroup.active;
                 this.visualizer.listen(this.player._sound._sounds[0]._node);
                 this.visualizer.start();
