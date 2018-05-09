@@ -105,7 +105,7 @@
                 });
             },
             async addToPlayback(track) {
-                this[ADD_TRACK](track);
+                this[ADD_TRACK]({ track });
 
                 const url = await track.getStreamUrl();
 

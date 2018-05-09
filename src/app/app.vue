@@ -42,7 +42,7 @@
                     heading="Playlist"
                     @close="playlistOpen = false;"
                 )
-                    playlistPane
+                    playlistPane(@contextMenu="playlistContextMenuCallback = $event; $refs.playlistContextMenu.open();")
             transition(name="fade")
                 pane-frame(
                     v-if="tracksOpen"
@@ -50,8 +50,23 @@
                     heading="Tracks"
                     @close="tracksOpen = false;"
                 )
-                    tracksPane
+                    tracksPane(
+                        @openQueueModal="selectQueueModalCallback = $event; showSelectQueueModal = true;"
+                        @contextMenu="trackContextMenuCallback = $event; $refs.trackContextMenu.open();"
+                    )
         settings(v-model="showSettings")
+        selectQueueModal(
+            v-model="showSelectQueueModal"
+            :callback="selectQueueModalCallback"
+        )
+        contextMenu(ref="trackContextMenu")
+            li(v-interact:tap="() => { trackContextMenuCallback('play'); }") {{ $t('Play') }}
+            li(v-interact:tap="() => { trackContextMenuCallback('move'); }") {{ $t('Move to...') }}
+            li(v-interact:tap="() => { trackContextMenuCallback('remove'); }") {{ $t('Remove') }}
+        contextMenu(ref="playlistContextMenu")
+            li(v-interact:tap="() => { playlistContextMenuCallback('open'); }") {{ $t('Select') }}
+            li(v-interact:tap="() => { playlistContextMenuCallback('create'); }") {{ $t('New') }}
+            li(v-interact:tap="() => { playlistContextMenuCallback('remove'); }") {{ $t('Remove') }}
 </template>
 
 <script>
@@ -59,7 +74,7 @@
 
     import config from '../config';
 
-    import { ADD_SOURCES, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SWITCH_TO_BACKGROUND } from '../scripts/mutation-types';
+    import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SWITCH_TO_BACKGROUND } from '../scripts/mutation-types';
 
     import Source from './source/Source';
     import Channel from './source/Channel';
@@ -67,6 +82,8 @@
     import RandomQueue from './queue/RandomQueue';
 
     import { getRecommendedTrack, generateLayout } from '../scripts/utils';
+
+    import contextMenu from 'vue-context-menu';
 
     import banner from './banner';
     import controlBar from './control-bar';
@@ -78,9 +95,11 @@
     import playlistPane from './queue/playlist-pane';
     import tracksPane from './queue/tracks-pane';
     import settings from './settings';
+    import selectQueueModal from './select-queue-modal';
 
     export default {
         components: {
+            contextMenu,
             banner,
             controlBar,
             paneFrame,
@@ -90,12 +109,17 @@
             listPane,
             playlistPane,
             tracksPane,
-            settings
+            settings,
+            selectQueueModal
         },
 
         data() {
             return {
-                showSettings: false
+                showSettings: false,
+                showSelectQueueModal: false,
+                selectQueueModalCallback: () => {},
+                trackContextMenuCallback: () => {},
+                playlistContextMenuCallback: () => {}
             }
         },
 
@@ -295,6 +319,7 @@
 
             ...mapMutations([
                 ADD_SOURCES,
+                UPDATE_QUEUE_GROUP,
                 INSERT_QUEUE,
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
@@ -325,7 +350,8 @@
                     })
                 });
 
-                this[UPDATE_PLAYING_QUEUE_INDEX](0);
+                this[UPDATE_QUEUE_GROUP]({ active: 1 });
+                this[UPDATE_PLAYING_QUEUE_INDEX](1);
             }
 
             (async () => {
@@ -355,8 +381,8 @@
 
                 this[ADD_SOURCES](sources);
 
-                if (this.queue.constructor === RandomQueue) {
-                    this[ADD_TRACK](await getRecommendedTrack(null, sources));
+                if (this.queue.constructor === RandomQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
+                    this[ADD_TRACK]({ track: await getRecommendedTrack(null, sources) });
                 }
             })();
         },
@@ -420,6 +446,15 @@
         ::-webkit-scrollbar-thumb {
             border-radius: 2px;
             background-color: #3e3e3e;
+        }
+
+        .ctx-menu-container li {
+            padding: 5px 10px;
+            font-size: 14px;
+
+            &:hover {
+                background-color: #eee;
+            }
         }
     }
 

@@ -60,7 +60,8 @@
                     tr(
                         v-for="(queue, index) in queues"
                         v-interact:doubletap="() => activeIndex = index"
-                        @click="select(index)"
+                        v-interact:tap="() => { select(index); }"
+                        @contextmenu.prevent="handleContextMenu(queue, index);"
                         :class="{ active: selectedIndex === index, 'active-queue': activeIndex === index }"
                     )
                         td(style="width:18px")
@@ -210,6 +211,29 @@
                         }
                     });
                 }
+            },
+
+            handleContextMenu(queue, index) {
+                this.$emit('contextMenu', async type => {
+                    if (type === 'open') {
+                        this.activeIndex = index;
+                    } else if (type === 'create') {
+                        this.insert(typeof this.selectedIndex === 'number' ? this.selectedIndex + 1 : this.queueGroup.length);
+                    } else if (type === 'remove') {
+                        try {
+                            await this.$confirm({
+                                title: this.$t('Confirm'),
+                                bodyText: this.$t('Remove the playlist?'),
+                                confirmText: this.$t('Confirm'),
+                                cancelText: this.$t('Cancel')
+                            });
+
+
+                            this.queues = this.queues.slice(0, index).concat(this.queues.slice(index + 1));
+                            trashCan.data.push(queue);
+                        } catch (e) { }
+                    }
+                });
             },
 
             unSelect() {

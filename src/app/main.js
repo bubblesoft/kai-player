@@ -83,8 +83,13 @@ const messages = {
         'Confirm': 'Confirm',
         'Cancel': 'Cancel',
         'Close': 'Close',
+        'Play': 'Play',
+        'Select': 'Select',
+        'Remove': 'Remove',
+        'New': 'New',
         'Settings': 'Settings',
         'Chart': 'Chart',
+        'Artwork': 'Artwork',
         'Media Source': 'Media Source',
         'Playlist': 'Playlist',
         'Tracks': 'Tracks',
@@ -94,7 +99,9 @@ const messages = {
         'Temp': 'Temp',
         'New Playlist': 'New Playlist',
         'Listen Randomly': 'Listen Randomly',
-        'Drag a track here to start random listening': 'Drag a track here to start random listening',
+        'Drag a track here and start random listening': 'Drag a track here and start random listening',
+        'Add to a playlist': 'Add to a playlist',
+        'Move to...': 'Move to...',
         'Unknown Artist': 'Unknown Artist',
         'Enter edit mode': 'Enter edit mode',
         'Exit edit mode': 'Exit edit mode',
@@ -102,6 +109,8 @@ const messages = {
         'Drag a playlist here to remove it': 'Drag a playlist here to remove it',
         'Remove duplicated tracks': 'Remove duplicated tracks',
         'Remove duplicated tracks?': 'Remove duplicated tracks？',
+        'Select a playlist': 'Select a playlist',
+        'Remove the playlist?': 'Remove the playlist?',
         'Select a background': 'Select a background',
         'Select a visualizer': 'Select a visualizer',
         'Histogram': 'Histogram',
@@ -122,8 +131,13 @@ const messages = {
         'Confirm': '确认',
         'Cancel': '取消',
         'Close': '关闭',
+        'Play': '播放',
+        'Select': '选择',
+        'Remove': '删除',
+        'New': '新建',
         'Settings': '设置',
         'Chart': '排行榜',
+        'Artwork': '图片',
         'Media Source': '媒体源',
         'Playlist': '播放列表',
         'Tracks': '播放音频',
@@ -133,7 +147,9 @@ const messages = {
         'Temp': '临时播放列表',
         'New Playlist': '新建播放列表',
         'Listen Randomly': '随便听听',
-        'Drag a track here to start random listening': '拖动一个音频到这里开始收听',
+        'Drag a track here and start random listening': '拖动一个音频到这里开始收听',
+        'Add to a playlist': '添加到播放列表',
+        'Move to...': '移动到...',
         'Unknown Artist': '未知艺术家',
         'Enter edit mode': '进入编辑模式',
         'Exit edit mode': '退出编辑模式',
@@ -141,6 +157,8 @@ const messages = {
         'Drag a playlist here to remove it': '拖动一个播放列表到这里删除',
         'Remove duplicated tracks': '删除重复项',
         'Remove duplicated tracks?': '确定删除重复项目？',
+        'Select a playlist': '选择播放列表',
+        'Remove the playlist?': '确定删除播放列表?',
         'Select a background': '选择背景',
         'Select a visualizer': '选择可视化',
         'Histogram': '直方图',
@@ -161,6 +179,10 @@ const messages = {
         'Confirm': 'はい',
         'Cancel': 'いええ',
         'Close': '閉じる',
+        'Play': '再生',
+        'Select': 'Select',
+        'Remove': '削除',
+        'New': '新規作成',
         'Settings': '设置',
         'Chart': 'ランキング',
         'Artwork': 'アートワーク',
@@ -173,13 +195,18 @@ const messages = {
         'Temp': '臨時プレーリスト',
         'New Playlist': '新規プレーリスト',
         'Listen Randomly': 'Listen Randomly',
-        'Drag a track here to start random listening': 'Drag a track here to start random listening',
+        'Drag a track here and start random listening': 'Drag a track here to start random listening',
+        'Add to a playlist': 'Add to a playlist',
+        'Move to...': 'Move to...',
         'Unknown Artist': 'Unknown Artist',
         'Enter edit mode': 'Enter edit mode',
         'Exit edit mode': 'Exit edit mode',
         'Drag a track here to remove it': 'Drag a track here to remove it',
         'Drag a playlist here to remove it': 'Drag a playlist here to remove it',
         'Remove duplicated tracks': 'Remove duplicated tracks',
+        'Remove duplicated tracks?': 'Remove duplicated tracks？',
+        'Select a playlist': 'プレーリスト選択',
+        'Remove the playlist?': 'Remove the playlist?',
         'Select a background': 'Select a background',
         'Select a visualizer': 'Select a visualizer',
         'Histogram': 'Histogram',
@@ -200,8 +227,13 @@ const messages = {
         'Confirm': 'Confirm',
         'Cancel': 'Cancel',
         'Close': 'Close',
+        'Play': 'Play',
+        'Select': 'Select',
+        'Remove': 'Remove',
+        'New': 'New',
         'Settings': 'Settings',
         'Chart': 'Chart',
+        'Artwork': 'Artwork',
         'Media Source': 'Media Source',
         'Playlist': '재생목록 일람',
         'Tracks': '재생목록',
@@ -211,13 +243,18 @@ const messages = {
         'Temp': 'Temp',
         'New Playlist': 'New Playlist',
         'Listen Randomly': 'Listen Randomly',
-        'Drag a track here to start random listening': 'Drag a track here to start random listening',
+        'Drag a track here and start random listening': 'Drag a track here to start random listening',
+        'Add to a playlist': 'Add to a playlist',
+        'Move to...': 'Move to...',
         'Unknown Artist': 'Unknown Artist',
         'Enter edit mode': 'Enter edit mode',
         'Exit edit mode': 'Exit edit mode',
         'Drag a track here to remove it': 'Drag a track here to remove it',
         'Drag a playlist here to remove it': 'Drag a playlist here to remove it',
         'Remove duplicated tracks': 'Remove duplicated tracks',
+        'Remove duplicated tracks?': 'Remove duplicated tracks？',
+        'Select a playlist': 'Select a playlist',
+        'Remove the playlist?': 'Remove the playlist?',
         'Select a background': 'Select a background',
         'Select a visualizer': 'Select a visualizer',
         'Histogram': 'Histogram',
@@ -330,7 +367,8 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                                 return {
                                     name: artist.name
                                 }
-                            })
+                            }),
+                            picture: track.picture
                         }
                     }),
                     active: queue.active
@@ -373,7 +411,8 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                                 return new Artist({
                                     name: artistData.name
                                 })
-                            })
+                            }),
+                            picture: trackData.picture
                         });
                     }));
                 }
@@ -432,9 +471,7 @@ const queueModule = {
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
-        [ADD_TRACK](state, track) {
-            const queue = state.queueGroup.get(state.queueGroup.active);
-
+        [ADD_TRACK](state, { track, queue = state.queueGroup.get(state.queueGroup.active) }) {
             queue.active = queue.add(track);
 
             const active = state.queueGroup.active;

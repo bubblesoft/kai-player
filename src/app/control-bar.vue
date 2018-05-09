@@ -411,7 +411,7 @@
 
                 if (this.queue.constructor === RandomQueue) {
                     this.loading = true;
-                    this[ADD_TRACK](await getRecommendedTrack(this.track, this.sources.filter(source => source.active)));
+                    this[ADD_TRACK]({ track: await getRecommendedTrack(this.track, this.sources.filter(source => source.active)) });
                     this.loading = false;
                 }
 

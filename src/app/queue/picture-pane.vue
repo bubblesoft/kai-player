@@ -1,5 +1,5 @@
 <template lang="pug">
-    .picture-pane(:style="{ backgroundImage: `url(${track.picture || ''})` }")
+    .picture-pane(:style="{ backgroundImage: `url(${track ? track.picture || '' : ''})` }")
 </template>
 
 <script>

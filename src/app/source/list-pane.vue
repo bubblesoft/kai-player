@@ -107,7 +107,7 @@
 
         methods: {
             async addToPlayback(track) {
-                this[ADD_TRACK](track);
+                this[ADD_TRACK]({ track });
 
                 const playing = this.player.playing;
 

@@ -3,6 +3,18 @@
         .toolbar
             template(v-if="queue")
                 template(v-if="queue.constructor === RandomQueue")
+                    tooltip(
+                        effect="fadein"
+                        placement="top"
+                        :content="$t('Add to a playlist')"
+                    )
+                        .tool-button(@click="copyToQueue(activeTrack)")
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5a2 2 0 0 0-2 2v4h2V5h14v14H5v-4H3v4a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z")
                 template(v-else)
                     tooltip(
                         effect="fadein"
@@ -56,7 +68,10 @@
                             )
                                 path(d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z")
         .list-wrap(v-if="queue")
-            .random-queue-box(v-if="queue.constructor === RandomQueue")
+            draggable.random-queue-box(
+                v-if="queue.constructor === RandomQueue"
+                :options="{ group: 'tracks' }"
+            )
                 yoyoMarquee(
                     v-if="activeTrack"
                     style="width: 90%;"
@@ -77,6 +92,8 @@
                         v-for="(track, index) in tracks"
                         v-interact:doubletap="() => { playTrack(index); }"
                         v-interact:tap="() => { select(index); }"
+                        @contextmenu.prevent="handleContextMenu(track, index);"
+                        :class="{ active: selectedIndex === index }"
                         ref="tracks"
                     )
                         td(style="width: 18px;")
@@ -107,6 +124,12 @@
                             style="width:46px"
                         ) {{ track.duration | formatDuration('mm:ss') }}
                         td(v-else)
+                        td(v-if="showSourceIcon")
+                            img(
+                                :src="mapMediaSourceIcon(track.id.split('_')[0])"
+                                :alt="mapMediaSourceName(track.id.split('_')[0])"
+                                :title="mapMediaSourceName(track.id.split('_')[0])"
+                            )
                         td.drag-handle(v-if="editMode")
                             svg(
                                 width="20"
@@ -125,11 +148,11 @@
 <script>
     import { mapState, mapMutations } from 'vuex';
 
-    import { formatDuration } from '../../scripts/utils';
+    import { formatDuration, mapMediaSourceIcon, mapMediaSourceName } from '../../scripts/utils';
 
     import RandomQueue from './RandomQueue';
 
-    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX } from '../../scripts/mutation-types';
+    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK } from '../../scripts/mutation-types';
 
     import draggable from 'vuedraggable';
     import tooltip from 'vue-strap/src/tooltip';
@@ -216,7 +239,8 @@
             ...mapState({
                 queueGroup: state => state.queueModule.queueGroup,
                 playerController: state => state.playerModule.playerController,
-                visualizer: state => state.visualizationModule.visualizer
+                visualizer: state => state.visualizationModule.visualizer,
+                showSourceIcon: state => state.generalModule.showSourceIcon
             })
         },
 
@@ -320,13 +344,54 @@
                     }
                 }
             },
+
+            copyToQueue(track) {
+                this.$emit('openQueueModal', (queue) => {
+                    this[ADD_TRACK]({ track, queue });
+                });
+            },
+
+            handleContextMenu(track, index) {
+                this.$emit('contextMenu', type => {
+                    if (type === 'play') {
+                        this.playTrack(index);
+                    } else if (type === 'move') {
+                        this.$emit('openQueueModal', (queue) => {
+                            this[ADD_TRACK]({ track, queue });
+                            this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1));
+                            trashCan.data.push(track);
+                        });
+                    } else if (type === 'remove') {
+                        this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1));
+                        trashCan.data.push(track);
+                    }
+                });
+            },
+
+            unSelect() {
+                this.selectedIndex = null;
+            },
+
+            mapMediaSourceIcon,
+            mapMediaSourceName,
+
             ...mapMutations([
                 UPDATE_QUEUE,
-                UPDATE_PLAYING_QUEUE_INDEX
+                UPDATE_PLAYING_QUEUE_INDEX,
+                ADD_TRACK
             ])
         },
+
         filters: {
             formatDuration
+        },
+
+        created() {
+            document.addEventListener('click', this.unSelect);
+        },
+
+        destroyed() {
+            document.removeEventListener('click', this.unSelect);
         }
     }
 </script>
@@ -406,6 +471,11 @@
                     width: 18px;
                     height: 18px;
                     fill: #fff;
+                }
+
+                img {
+                    width: 15px;
+                    height: 15px;
                 }
 
                 .drag-handle {
