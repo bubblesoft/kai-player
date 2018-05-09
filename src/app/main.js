@@ -3,6 +3,7 @@
  */
 
 import 'whatwg-fetch';
+import 'abortcontroller-polyfill/dist/polyfill-patch-fetch';
 import 'url-polyfill';
 
 import Vue from 'vue';
@@ -17,7 +18,7 @@ import '../styles/bootstrap';
 import '../styles/base';
 import '../styles/pretty-checkbox';
 
-import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, SET_BACKGROUND_IMAGE, SET_LOCALE, SET_SHOW_SOURCE_ICON, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
+import { ADD_SOURCES, UPDATE_SOURCE, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, SET_BACKGROUND_IMAGE, SET_LOCALE, SET_SHOW_SOURCE_ICON, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
@@ -79,6 +80,8 @@ const messages = {
         'Cancel': 'Cancel',
         'Close': 'Close',
         'Settings': 'Settings',
+        'Add to playlist': 'Add to playlist',
+        'Import all as a playlist': 'Import all as a playlist',
         'Chart': 'Chart',
         'Artwork': 'Artwork',
         'Media Source': 'Media Source',
@@ -91,6 +94,8 @@ const messages = {
         'New Playlist': 'New Playlist',
         'Listen Randomly': 'Listen Randomly',
         'Drag a track here and start random listening': 'Drag a track here and start random listening',
+        'Select a media source': 'Select a media source',
+        'Select a channel': 'Select a channel',
         'Unknown Artist': 'Unknown Artist',
         'Select a background': 'Select a background',
         'Select a visualizer': 'Select a visualizer',
@@ -113,6 +118,8 @@ const messages = {
         'Cancel': '取消',
         'Close': '关闭',
         'Settings': '设置',
+        'Add to playlist': '添加到播放列表',
+        'Import all as a playlist': '导入全部为播放列表',
         'Chart': '排行榜',
         'Artwork': '图片',
         'Media Source': '媒体源',
@@ -125,6 +132,8 @@ const messages = {
         'New Playlist': '新建播放列表',
         'Listen Randomly': '随便听听',
         'Drag a track here and start random listening': '拖动一个音频到这里开始收听',
+        'Select a media source': '选择媒体源',
+        'Select a channel': '选择频道',
         'Unknown Artist': '未知艺术家',
         'Select a background': '选择背景',
         'Select a visualizer': '选择可视化',
@@ -147,6 +156,8 @@ const messages = {
         'Cancel': 'いええ',
         'Close': '閉じる',
         'Settings': '设置',
+        'Add to playlist': 'Add to playlist',
+        'Import all as a playlist': 'Import all as a playlist',
         'Chart': 'ランキング',
         'Artwork': 'アートワーク',
         'Media Source': '媒体源',
@@ -159,6 +170,8 @@ const messages = {
         'New Playlist': '新規プレーリスト',
         'Listen Randomly': 'Listen Randomly',
         'Drag a track here and start random listening': 'Drag a track here and start random listening',
+        'Select a media source': 'Select a media source',
+        'Select a channel': 'Select a channel',
         'Unknown Artist': 'Unknown Artist',
         'Select a background': 'Select a background',
         'Select a visualizer': 'Select a visualizer',
@@ -181,6 +194,8 @@ const messages = {
         'Cancel': 'Cancel',
         'Close': 'Close',
         'Settings': 'Settings',
+        'Add to playlist': 'Add to playlist',
+        'Import all as a playlist': 'Import all as a playlist',
         'Chart': 'Chart',
         'Artwork': 'Artwork',
         'Media Source': 'Media Source',
@@ -193,6 +208,8 @@ const messages = {
         'New Playlist': 'New Playlist',
         'Listen Randomly': 'Listen Randomly',
         'Drag a track here and start random listening': 'Drag a track here and start random listening',
+        'Select a media source': 'Select a media source',
+        'Select a channel': 'Select a channel',
         'Unknown Artist': 'Unknown Artist',
         'Select a background': 'Select a background',
         'Select a visualizer': 'Select a visualizer',
@@ -276,8 +293,20 @@ const sourceModule = {
         sourceGroup
     },
     mutations: {
-        [ADD_SOURCES] (state, payload) {
-            state.sourceGroup.add(...payload);
+        [ADD_SOURCES] (state, sources) {
+            state.sourceGroup.add(...sources);
+        },
+        [UPDATE_SOURCE] (state, { index, active }) {
+            state.sourceGroup.get(index).active = active;
+            localStorage.setItem('kaiplayersourceactive', JSON.stringify((() => {
+                const data = {};
+
+                state.sourceGroup.get().forEach(source => {
+                   data[source.id] = source.active;
+                });
+
+                return data;
+            })()))
         }
     }
 };

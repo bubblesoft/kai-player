@@ -26,7 +26,7 @@
                     heading="Chart"
                     @close="listOpen = false;"
                 )
-                    listPane
+                    listPane(@contextMenu="listContextMenuCallback = $event; $refs.listContextMenu.open();")
             transition(name="fade")
                 pane-frame(
                     v-if="searchOpen"
@@ -34,7 +34,7 @@
                     heading="Search"
                     @close="searchOpen = false;"
                 )
-                    searchPane
+                    searchPane(@contextMenu="searchContextMenuCallback = $event; $refs.searchContextMenu.open();")
             transition(name="fade")
                 pane-frame(
                     v-if="playlistOpen"
@@ -52,6 +52,11 @@
                 )
                     tracksPane
         settings(v-model="showSettings")
+        contextMenu(ref="listContextMenu")
+            li(v-interact:tap="() => { listContextMenuCallback('add'); }") {{ $t('Add to playlist') }}
+            li(v-interact:tap="() => { listContextMenuCallback('import'); }") {{ $t('Import all as a playlist') }}
+        contextMenu(ref="searchContextMenu")
+            li(v-interact:tap="() => { searchContextMenuCallback('add'); }") {{ $t('Add to playlist') }}
 </template>
 
 <script>
@@ -68,6 +73,8 @@
 
     import { getRecommendedTrack, generateLayout } from '../scripts/utils';
 
+    import contextMenu from 'vue-context-menu';
+
     import banner from './banner';
     import controlBar from './control-bar';
     import paneFrame from './pane-frame';
@@ -81,6 +88,7 @@
 
     export default {
         components: {
+            contextMenu,
             banner,
             controlBar,
             paneFrame,
@@ -95,7 +103,9 @@
 
         data() {
             return {
-                showSettings: false
+                showSettings: false,
+                listContextMenuCallback: () => {},
+                searchContextMenuCallback: () => {}
             }
         },
 
@@ -320,6 +330,8 @@
 
             this[UPDATE_PLAYING_QUEUE_INDEX](0);
 
+            const sourceActiveMap = JSON.parse(localStorage.getItem('kaiplayersourceactive')) || { hearthis: false };
+
             (async () => {
                 const sources = (await (await fetch(config.urlBase + '/audio/sources', {
                     method: 'POST',
@@ -340,7 +352,11 @@
                         }));
                     });
 
-                    _source.active = true;
+                    if (sourceActiveMap.hasOwnProperty(source.id)) {
+                        _source.active = sourceActiveMap[source.id];
+                    } else {
+                        _source.active = true;
+                    }
 
                     return _source;
                 });
@@ -410,6 +426,15 @@
             border-radius: 2px;
             background-color: #3e3e3e;
         }
+
+        .ctx-menu-container li {
+            padding: 5px 10px;
+            font-size: 14px;
+
+            &:hover {
+                background-color: #eee;
+            }
+        }
     }
 
 
@@ -425,5 +450,12 @@
 
     .fade-enter, .fade-leave-active {
         opacity: 0 !important;
+    }
+</style>
+
+<style lang="scss">
+    .blur {
+        filter: blur(1px);
+        transition-duration: 0;
     }
 </style>

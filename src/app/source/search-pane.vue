@@ -5,24 +5,28 @@
                 input.form-control(
                     v-model="keywords"
                     @keyup.enter="search(keywords)"
-                    :placeholder="searchInputPlaceHolder"
+                    :placeholder="$t('Search for music')"
                     type="text"
                 )
                 span.input-group-btn
                     button.btn.btn-default(
                         v-interact:tap="() => { search(keywords); }"
                         type="button"
-                    ) Search
-        .list-wrap
+                    ) {{ $t('Search') }}
+        .list-wrap(
+            ref="list"
+            :class="{ blur: loading }"
+        )
             table.table-condensed.table.table-hover
                 draggable(
                     v-model="tracks"
-                    :options="{ group: { name: 'tracks', pull: 'clone', put: false }, sort: false, handle: 'tr.active', forceFallback: true, fallbackOnBody: true }"
+                    :options="{ group: { name: 'tracks', pull: 'clone', put: false }, sort: false, handle: '.drag-handle', forceFallback: true, fallbackOnBody: true }"
                     element="tbody"
                 )
                     tr(
                         v-for="track in tracks"
                         v-interact:doubletap="() => { addToPlayback(track); }"
+                        @contextmenu.prevent="handleContextMenu(track);"
                     )
                         td(style="padding: 0;")
                         td {{ track.name }}
@@ -32,6 +36,18 @@
                             style="width:46px"
                         ) {{ track.duration | formatDuration('mm:ss') }}
                         td(v-else)
+                        td.drag-handle
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
+        vueLoading(
+            v-if="loading"
+            type="cylon"
+            color="#fff"
+        )
 </template>
 
 <script>
@@ -47,17 +63,20 @@
     import Artist from '../Artist';
 
     import draggable from 'vuedraggable';
+    import vueLoading from 'vue-loading-template';
+
+    let controller = new AbortController;
 
     export default {
         components: {
-            draggable
+            draggable,
+            vueLoading
         },
         data() {
           return {
               keywords: '',
               tracks: [],
-              searchButtonText: '',
-              searchInputPlaceHolder: ''
+              loading: false
           }
         },
         computed: {
@@ -85,25 +104,39 @@
                 const activeSources = this.sources.filter(source => source.active)
                     .map(source => source.id);
 
-                this.tracks = (await (await fetch(config.urlBase + '/audio/search', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        keywords,
-                        sources: activeSources
-                    }),
-                    headers: new Headers({
-                        'Content-Type': 'application/json'
-                    })
-                })).json()).data.map(trackData => {
-                    return new Track({
-                        id: trackData.source + '_' + trackData.id,
-                        name: trackData.name,
-                        duration: trackData.duration || null,
-                        artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
-                        picture: trackData.picture
+                this.loading = true;
+
+                try {
+                    controller.abort();
+                    controller = new AbortController;
+
+                    this.tracks = (await (await fetch(config.urlBase + '/audio/search', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            keywords,
+                            sources: activeSources
+                        }),
+                        headers: new Headers({
+                            'Content-Type': 'application/json'
+                        }),
+                        signal: controller.signal
+                    })).json()).data.map(trackData => {
+                        return new Track({
+                            id: trackData.source + '_' + trackData.id,
+                            name: trackData.name,
+                            duration: trackData.duration || null,
+                            artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
+                            picture: trackData.picture
+                        });
                     });
-                });
+                } catch (e) {
+                    console.log(e);
+                }
+
+                this.$refs.list.scrollTop = 0;
+                this.loading = false;
             },
+
             async addToPlayback(track) {
                 this[ADD_TRACK](track);
 
@@ -116,6 +149,15 @@
                 this.visualizer.start();
                 track.duration = this.player.duration * 1000;
             },
+
+            handleContextMenu(track) {
+                this.$emit('contextMenu', type => {
+                    if (type === 'add') {
+                        this.addToPlayback(track);
+                    }
+                });
+            },
+
             ...mapMutations([
                     UPDATE_PLAYING_QUEUE_INDEX,
                     ADD_TRACK
@@ -123,10 +165,6 @@
         },
         filters: {
             formatDuration
-        },
-        created() {
-            this.searchButtonText = this.$t('Search');
-            this.searchInputPlaceHolder = this.$t('Search for music');
         }
     }
 </script>
@@ -149,13 +187,51 @@
             margin-top: 36px;
             box-shadow: inset 0 2px 1px -1.5px rgba(255, 255, 255, 0.2);
             overflow: auto;
+            transition: filter .5s;
 
             tr {
                 cursor: default;
 
                 td {
                     word-break: break-word;
+
+                    &.drag-handle {
+                         width: 28px;
+                         text-align: center;
+                         vertical-align: middle;
+                         cursor: move;
+                         cursor: -webkit-grab;
+
+                        svg {
+                            width: 18px;
+                            height: 18px;
+                            fill: #fff;
+                        }
+                    }
                 }
+            }
+        }
+
+        .vue-loading {
+            position: absolute;
+            left: 0;
+            top: 36px;
+            right: 0;
+            bottom: 0;
+        }
+    }
+
+    .sortable-drag {
+        color: #fff;
+
+        td {
+            padding: 0 2px;
+
+            svg {
+                vertical-align: middle;
+                width: 18px;
+                height: 18px;
+                fill: #fff;
             }
         }
     }

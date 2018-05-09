@@ -3,6 +3,10 @@
         .toolbar
             select.form-control.input-sm(v-model="sourceSelected")
                 option(
+                    value=""
+                    disabled
+                ) {{ $t('Select a media source') }}
+                option(
                     v-for="source in sources"
                     :value="source"
                 ) {{ source.name }}
@@ -11,19 +15,27 @@
                 v-model="channelSelected"
             )
                 option(
+                    value=""
+                    disabled
+                ) {{ $t('Select a channel') }}
+                option(
                     v-for="channel in sourceSelected.get()"
                     :value="channel"
                 ) {{ channel.name }}
-        .list-wrap(ref="list")
+        .list-wrap(
+            ref="list"
+            :class="{ blur: loading }"
+        )
             table.table-condensed.table.table-hover
                 draggable(
                     v-model="tracks"
-                    :options="{ group: { name: 'tracks', pull: 'clone', put: false }, sort: false, handle: 'tr.active', forceFallback: true, fallbackOnBody: true }"
+    :options="{ group: { name: 'tracks', pull: 'clone', put: false }, sort: false, handle: '.drag-handle', forceFallback: true, fallbackOnBody: true }"
                     element="tbody"
                 )
                     tr(
                         v-for="track in tracks"
                         v-interact:doubletap="() => { addToPlayback(track); }"
+                        @contextmenu.prevent="handleContextMenu(track);"
                     )
                         td(style="padding: 0;")
                         td {{ track.name }}
@@ -33,27 +45,51 @@
                             style="width:46px"
                         ) {{ track.duration | formatDuration('mm:ss') }}
                         td(v-else)
+                        td.drag-handle
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
+        vueLoading(
+            v-if="loading"
+            type="cylon"
+            color="#fff"
+        )
+    vueLoading(
+        v-else
+        type="cylon"
+        color="#fff"
+    )
 </template>
 
 <script>
     import { mapState, mapMutations } from 'vuex';
 
+    import moment from 'moment';
+
     import { formatDuration } from '../../scripts/utils';
 
-    import { UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../../scripts/mutation-types';
+    import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../../scripts/mutation-types';
+
+    import Queue from '../queue/Queue';
 
     import draggable from 'vuedraggable';
+    import vueLoading from 'vue-loading-template';
 
     export default {
         components: {
-            draggable
+            draggable,
+            vueLoading
         },
 
         data() {
             return {
-              sourceSelected: null,
-              channelSelected: null,
-              tracks: []
+                sourceSelected: null,
+                channelSelected: null,
+                tracks: [],
+                loading: false
             }
         },
 
@@ -87,24 +123,6 @@
             })
         },
 
-        watch: {
-            channelSelected(channel) {
-                channel
-                    .get()
-                    .then(tracks => {
-                        this.tracks = tracks;
-                        this.$refs.list.scrollTop = 0;
-                    });
-            },
-            sources(sources) {
-                this.sourceSelected = sources[0];
-                this.channelSelected = this.sourceSelected.get(0);
-            },
-            sourceSelected(source) {
-                this.channelSelected = source.get(0);
-            }
-        },
-
         methods: {
             async addToPlayback(track) {
                 this[ADD_TRACK](track);
@@ -122,7 +140,30 @@
                 track.duration = this.player.duration * 1000;
             },
 
+            handleContextMenu(track) {
+                this.$emit('contextMenu', type => {
+                    if (type === 'add') {
+                        this.addToPlayback(track);
+                    } else if ( type === 'import') {
+                        this[INSERT_QUEUE]({
+                            index: this.queueGroup.length,
+                            queue: new Queue({ name: `${this.channelSelected.name}(${moment().format('YYYY-MM-DD')})` })
+                        });
+
+                        this[UPDATE_QUEUE_GROUP]({ active: this.queueGroup.length - 1 });
+
+                        this.addToPlayback(this.tracks[0]);
+
+                        this.tracks.slice(1).forEach(track => {
+                            this[ADD_TRACK](track);
+                        });
+                    }
+                });
+            },
+
             ...mapMutations([
+                UPDATE_QUEUE_GROUP,
+                INSERT_QUEUE,
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
                 SWITCH_TO_VISUALIZER,
@@ -133,6 +174,26 @@
 
         filters: {
             formatDuration
+        },
+
+        watch: {
+            async channelSelected(channel) {
+                if (channel) {
+                    this.loading = true;
+                    this.tracks = await channel.get();
+                    this.$refs.list.scrollTop = 0;
+                    this.loading = false;
+                } else {
+                    this.tracks = [];
+                }
+            },
+            sources(sources) {
+                this.sourceSelected = sources[0];
+                this.channelSelected = this.sourceSelected.get(0);
+            },
+            sourceSelected(source) {
+                this.channelSelected = source.get(0);
+            }
         },
 
         created() {
@@ -174,13 +235,51 @@
             margin-top: 36px;
             box-shadow: inset 0 2px 1px -1.5px rgba(255, 255, 255, 0.2);
             overflow: auto;
+            transition: filter .5s;
 
-            tr {
-                cursor: default;
+            td {
+                word-break: break-all;
 
-                td {
-                    word-break: break-all;
+                &.drag-handle {
+                    width: 28px;
+                    text-align: center;
+                    vertical-align: middle;
+                    cursor: move;
+                    cursor: -webkit-grab;
+
+                    svg {
+                        width: 18px;
+                        height: 18px;
+                        fill: #fff;
+                    }
                 }
+            }
+        }
+
+        .vue-loading {
+            top: 36px;
+        }
+    }
+
+    .vue-loading {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+    }
+
+    .sortable-drag {
+        color: #fff;
+
+        td {
+            padding: 0 2px;
+
+            svg {
+                vertical-align: middle;
+                width: 18px;
+                height: 18px;
+                fill: #fff;
             }
         }
     }

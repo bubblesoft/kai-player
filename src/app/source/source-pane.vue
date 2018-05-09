@@ -3,7 +3,7 @@
         table.table-condensed.table.table-hover
             tbody
                 tr(
-                    v-for="source in sources"
+                    v-for="(source, index) in sources"
                 )
                     td
                         input(
@@ -15,16 +15,41 @@
 </template>
 
 <script>
-    import { mapState } from 'vuex';
+    import { mapState, mapMutations } from 'vuex';
+
+    import { UPDATE_SOURCE } from '../../scripts/mutation-types';
 
     export default {
+        data() {
+            return {
+                sources: []
+            }
+        },
+
         computed: {
-            sources() {
-              return this.sourceGroup.get();
-            },
             ...mapState({
                 sourceGroup: state => state.sourceModule.sourceGroup
             })
+        },
+
+        methods: {
+            ...mapMutations([
+                UPDATE_SOURCE
+            ])
+        },
+
+        watch: {
+            'sourceGroup.length' () {
+                this.sources = this.sourceGroup.get();
+
+                this.sources.forEach((source, index) => {
+                    this.$watch(() => {
+                        return this.sources[index].active;
+                    }, to => {
+                        this[UPDATE_SOURCE]({ index, active: to });
+                    });
+                });
+            }
         }
     }
 </script>

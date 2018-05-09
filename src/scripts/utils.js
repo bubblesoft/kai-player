@@ -2,7 +2,7 @@
  * Created by qhyang on 2017/12/7.
  */
 
-import Moment from 'moment';
+import momnet from 'moment';
 
 import config from '../config';
 
@@ -65,7 +65,7 @@ const formatDuration = (val, formatStr) => {
         }
     };
 
-    let duration = Moment.duration(val);
+    let duration = momnet.duration(val);
 
     if (formatStr.match("hh")) {
         formatStr = formatStr.replace("hh", prefix(duration.get("hours")));
