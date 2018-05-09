@@ -79,6 +79,10 @@ const messages = {
         'Confirm': 'Confirm',
         'Cancel': 'Cancel',
         'Close': 'Close',
+        'Play': 'Play',
+        'Select': 'Select',
+        'Remove': 'Remove',
+        'New': 'New',
         'Settings': 'Settings',
         'Add to playlist': 'Add to playlist',
         'Import all as a playlist': 'Import all as a playlist',
@@ -97,6 +101,16 @@ const messages = {
         'Select a media source': 'Select a media source',
         'Select a channel': 'Select a channel',
         'Unknown Artist': 'Unknown Artist',
+        'Add to a playlist': 'Add to a playlist',
+        'Move to...': 'Move to...',
+        'Enter edit mode': 'Enter edit mode',
+        'Exit edit mode': 'Exit edit mode',
+        'Drag a track here to remove it': 'Drag a track here to remove it',
+        'Drag a playlist here to remove it': 'Drag a playlist here to remove it',
+        'Remove duplicated tracks': 'Remove duplicated tracks',
+        'Remove duplicated tracks?': 'Remove duplicated tracks？',
+        'Select a playlist': 'Select a playlist',
+        'Remove the playlist?': 'Remove the playlist?',
         'Select a background': 'Select a background',
         'Select a visualizer': 'Select a visualizer',
         'Histogram': 'Histogram',
@@ -111,16 +125,16 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language',
-        'Enter edit mode': 'Enter edit mode',
-        'Exit edit mode': 'Exit edit mode',
-        'Drag a track here to remove it': 'Drag a track here to remove it',
-        'Drag a playlist here to remove it': 'Drag a playlist here to remove it'
+        'Select a language': 'Select a language'
     },
     'zh-CN': {
         'Confirm': '确定',
         'Cancel': '取消',
         'Close': '关闭',
+        'Play': '播放',
+        'Select': '选择',
+        'Remove': '删除',
+        'New': '新建',
         'Settings': '设置',
         'Add to playlist': '添加到播放列表',
         'Import all as a playlist': '导入全部为播放列表',
@@ -139,6 +153,16 @@ const messages = {
         'Select a media source': '选择媒体源',
         'Select a channel': '选择频道',
         'Unknown Artist': '未知艺术家',
+        'Add to a playlist': '添加到播放列表',
+        'Move to...': '移动到...',
+        'Enter edit mode': '进入编辑模式',
+        'Exit edit mode': '退出编辑模式',
+        'Drag a track here to remove it': '拖动一个音频到这里删除',
+        'Drag a playlist here to remove it': '拖动一个播放列表到这里删除',
+        'Remove duplicated tracks': '删除重复项',
+        'Remove duplicated tracks?': '确定删除重复项目？',
+        'Select a playlist': '选择播放列表',
+        'Remove the playlist?': '确定删除播放列表?',
         'Select a background': '选择背景',
         'Select a visualizer': '选择可视化',
         'Histogram': '直方图',
@@ -153,16 +177,16 @@ const messages = {
         'Upload': '上传图片',
         'Language': '语言',
         'Drag & Drop you files or Browse': '拖动文件到这里或者点击浏览文件',
-        'Select a language': '选择语言',
-        'Enter edit mode': '进入编辑模式',
-        'Exit edit mode': '退出编辑模式',
-        'Drag a track here to remove it': '拖动一个音频到这里删除',
-        'Drag a playlist here to remove it': '拖动一个播放列表到这里删除'
+        'Select a language': '选择语言'
     },
     'ja-JP': {
         'Confirm': 'はい',
         'Cancel': 'いええ',
         'Close': '閉じる',
+        'Play': '再生',
+        'Select': 'Select',
+        'Remove': '削除',
+        'New': '新規作成',
         'Settings': '设置',
         'Add to playlist': 'Add to playlist',
         'Import all as a playlist': 'Import all as a playlist',
@@ -181,6 +205,16 @@ const messages = {
         'Select a media source': 'Select a media source',
         'Select a channel': 'Select a channel',
         'Unknown Artist': 'Unknown Artist',
+        'Add to a playlist': 'Add to a playlist',
+        'Move to...': 'Move to...',
+        'Enter edit mode': 'Enter edit mode',
+        'Exit edit mode': 'Exit edit mode',
+        'Drag a track here to remove it': 'Drag a track here to remove it',
+        'Drag a playlist here to remove it': 'Drag a playlist here to remove it',
+        'Remove duplicated tracks': 'Remove duplicated tracks',
+        'Remove duplicated tracks?': 'Remove duplicated tracks？',
+        'Select a playlist': 'プレーリスト選択',
+        'Remove the playlist?': 'Remove the playlist?',
         'Select a background': 'Select a background',
         'Select a visualizer': 'Select a visualizer',
         'Histogram': 'Histogram',
@@ -195,16 +229,16 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language',
-        'Enter edit mode': 'Enter edit mode',
-        'Exit edit mode': 'Exit edit mode',
-        'Drag a track here to remove it': 'Drag a track here to remove it',
-        'Drag a playlist here to remove it': 'Drag a playlist here to remove it'
+        'Select a language': 'Select a language'
     },
     'ko-KR': {
         'Confirm': 'Confirm',
         'Cancel': 'Cancel',
         'Close': 'Close',
+        'Play': 'Play',
+        'Select': 'Select',
+        'Remove': 'Remove',
+        'New': 'New',
         'Settings': 'Settings',
         'Add to playlist': 'Add to playlist',
         'Import all as a playlist': 'Import all as a playlist',
@@ -223,6 +257,16 @@ const messages = {
         'Select a media source': 'Select a media source',
         'Select a channel': 'Select a channel',
         'Unknown Artist': 'Unknown Artist',
+        'Add to a playlist': 'Add to a playlist',
+        'Move to...': 'Move to...',
+        'Enter edit mode': 'Enter edit mode',
+        'Exit edit mode': 'Exit edit mode',
+        'Drag a track here to remove it': 'Drag a track here to remove it',
+        'Drag a playlist here to remove it': 'Drag a playlist here to remove it',
+        'Remove duplicated tracks': 'Remove duplicated tracks',
+        'Remove duplicated tracks?': 'Remove duplicated tracks？',
+        'Select a playlist': 'Select a playlist',
+        'Remove the playlist?': 'Remove the playlist?',
         'Select a background': 'Select a background',
         'Select a visualizer': 'Select a visualizer',
         'Histogram': 'Histogram',
@@ -237,11 +281,7 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language',
-        'Enter edit mode': 'Enter edit mode',
-        'Exit edit mode': 'Exit edit mode',
-        'Drag a track here to remove it': 'Drag a track here to remove it',
-        'Drag a playlist here to remove it': 'Drag a playlist here to remove it'
+        'Select a language': 'Select a language'
     }
 };
 
@@ -317,12 +357,94 @@ const sourceModule = {
             localStorage.setItem('kaiplayersourceactive', JSON.stringify((() => {
                 const data = {};
 
+<<<<<<< HEAD
                 state.sourceGroup.get().forEach(source => {
                    data[source.id] = source.active;
                 });
 
                 return data;
             })()))
+=======
+const saveQueueData = (queueGroup, playingQueueIndex) => {
+        localStorage.setItem('kaiplayerplayingqueues', JSON.stringify({
+            queues: queueGroup.get().map(queue => {
+                return {
+                    type: (() => {
+                        switch (queue.constructor) {
+                            case RandomQueue:
+                                return 'random';
+
+                            case Queue:
+                            default:
+                                return 'basic';
+                        }
+                    })(),
+                    name: queue.name,
+                    tracks: queue.get().map(track => {
+                        return {
+                            id: track.id,
+                            name: track.name,
+                            duration: track.duration,
+                            artists: track.artists.map(artist => {
+                                return {
+                                    name: artist.name
+                                }
+                            }),
+                            picture: track.picture
+                        }
+                    }),
+                    active: queue.active
+                }
+            }),
+            active: queueGroup.active,
+            playing: playingQueueIndex
+        }));
+    },
+
+    restoreQueueData = () => {
+        const queueGroup = new QueueGroup({ name: 'Global' });
+
+        let playingQueueIndex = null;
+
+        const queueGroupData = JSON.parse(localStorage.getItem('kaiplayerplayingqueues'));
+
+        if (queueGroupData && queueGroupData.queues.length) {
+            queueGroup.add(...queueGroupData.queues.map(queueData => {
+                const queue = (() => {
+                    switch (queueData.type) {
+                        case 'random':
+                            return new RandomQueue({ name: queueData.name });
+
+                        case 'basic':
+                        default:
+                            return new Queue({ name: queueData.name });
+                    }
+                })();
+
+                queue.active = queueData.active;
+
+                if (queueData.tracks.length) {
+                    queue.add(...queueData.tracks.map(trackData => {
+                        return new Track({
+                            id: trackData.id,
+                            name: trackData.name,
+                            duration: trackData.duration,
+                            artists: trackData.artists.map(artistData => {
+                                return new Artist({
+                                    name: artistData.name
+                                })
+                            }),
+                            picture: trackData.picture
+                        });
+                    }));
+                }
+
+                return queue;
+            }));
+
+            queueGroup.active = queueGroupData.active;
+            playingQueueIndex = queueGroupData.playing;
+>>>>>>> ui improvements
         }
     }
 };
@@ -362,9 +484,7 @@ const queueModule = {
             state.playingQueueIndex = index;
         },
 
-        [ADD_TRACK](state, track) {
-            const queue = state.queueGroup.get(state.queueGroup.active);
-
+        [ADD_TRACK](state, { track, queue = state.queueGroup.get(state.queueGroup.active) }) {
             queue.active = queue.add(track);
 
             const active = state.queueGroup.active;

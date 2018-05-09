@@ -103,7 +103,7 @@ const generateLayout = (type, viewportWidth, viewportHeight) => {
             tracks: { mode: 'ratio', visible: true, attach: 'left', y: .7, width: 1, height: .3, opacity: .4 }
         };
     }
-}
+};
 
 const loadImage = url => {
     return new Promise((resolve, reject) => {
@@ -121,4 +121,30 @@ const loadImage = url => {
     });
 };
 
-export { initHowlOnProgress, getRecommendedTrack, formatDuration, generateLayout, loadImage };
+const mapMediaSourceIcon = (id) => {
+    switch (id) {
+        case 'soundcloud':
+            return require('../assets/soundcloud.ico');
+        case 'netease':
+            return 'http://s1.music.126.net/style/favicon.ico';
+        case 'qq':
+            return 'https://y.qq.com/favicon.ico';
+        case 'hearthis':
+            return require('../assets/hearthisat.ico');
+    }
+};
+
+const mapMediaSourceName = (id) => {
+    switch (id) {
+        case 'soundcloud':
+            return 'SoundCloud';
+        case 'netease':
+            return '网易云音乐';
+        case 'qq':
+            return 'QQ音乐';
+        case 'hearthis':
+            return 'hearthis.at';
+    }
+};
+
+export { initHowlOnProgress, getRecommendedTrack, formatDuration, generateLayout, loadImage, mapMediaSourceIcon, mapMediaSourceName };

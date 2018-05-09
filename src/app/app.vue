@@ -42,7 +42,7 @@
                     heading="Playlist"
                     @close="playlistOpen = false;"
                 )
-                    playlistPane
+                    playlistPane(@contextMenu="playlistContextMenuCallback = $event; $refs.playlistContextMenu.open();")
             transition(name="fade")
                 pane-frame(
                     v-if="tracksOpen"
@@ -50,13 +50,28 @@
                     heading="Tracks"
                     @close="tracksOpen = false;"
                 )
-                    tracksPane
+                    tracksPane(
+                        @openQueueModal="selectQueueModalCallback = $event; showSelectQueueModal = true;"
+                        @contextMenu="trackContextMenuCallback = $event; $refs.trackContextMenu.open();"
+                    )
         settings(v-model="showSettings")
+        selectQueueModal(
+            v-model="showSelectQueueModal"
+            :callback="selectQueueModalCallback"
+        )
         contextMenu(ref="listContextMenu")
             li(v-interact:tap="() => { listContextMenuCallback('add'); }") {{ $t('Add to playlist') }}
             li(v-interact:tap="() => { listContextMenuCallback('import'); }") {{ $t('Import all as a playlist') }}
         contextMenu(ref="searchContextMenu")
             li(v-interact:tap="() => { searchContextMenuCallback('add'); }") {{ $t('Add to playlist') }}
+        contextMenu(ref="trackContextMenu")
+            li(v-interact:tap="() => { trackContextMenuCallback('play'); }") {{ $t('Play') }}
+            li(v-interact:tap="() => { trackContextMenuCallback('move'); }") {{ $t('Move to...') }}
+            li(v-interact:tap="() => { trackContextMenuCallback('remove'); }") {{ $t('Remove') }}
+        contextMenu(ref="playlistContextMenu")
+            li(v-interact:tap="() => { playlistContextMenuCallback('open'); }") {{ $t('Select') }}
+            li(v-interact:tap="() => { playlistContextMenuCallback('create'); }") {{ $t('New') }}
+            li(v-interact:tap="() => { playlistContextMenuCallback('remove'); }") {{ $t('Remove') }}
 </template>
 
 <script>
@@ -64,7 +79,7 @@
 
     import config from '../config';
 
-    import { ADD_SOURCES, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SWITCH_TO_BACKGROUND } from '../scripts/mutation-types';
+    import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SWITCH_TO_BACKGROUND } from '../scripts/mutation-types';
 
     import Source from './source/Source';
     import Channel from './source/Channel';
@@ -85,6 +100,7 @@
     import playlistPane from './queue/playlist-pane';
     import tracksPane from './queue/tracks-pane';
     import settings from './settings';
+    import selectQueueModal from './select-queue-modal';
 
     export default {
         components: {
@@ -98,14 +114,19 @@
             listPane,
             playlistPane,
             tracksPane,
-            settings
+            settings,
+            selectQueueModal
         },
 
         data() {
             return {
                 showSettings: false,
+                showSelectQueueModal: false,
                 listContextMenuCallback: () => {},
-                searchContextMenuCallback: () => {}
+                searchContextMenuCallback: () => {},
+                selectQueueModalCallback: () => {},
+                trackContextMenuCallback: () => {},
+                playlistContextMenuCallback: () => {}
             }
         },
 
@@ -299,6 +320,7 @@
 
             ...mapMutations([
                 ADD_SOURCES,
+                UPDATE_QUEUE_GROUP,
                 INSERT_QUEUE,
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
@@ -328,9 +350,15 @@
                 })
             });
 
+<<<<<<< HEAD
             this[UPDATE_PLAYING_QUEUE_INDEX](0);
 
             const sourceActiveMap = JSON.parse(localStorage.getItem('kaiplayersourceactive')) || { hearthis: false };
+=======
+                this[UPDATE_QUEUE_GROUP]({ active: 1 });
+                this[UPDATE_PLAYING_QUEUE_INDEX](1);
+            }
+>>>>>>> ui improvements
 
             (async () => {
                 const sources = (await (await fetch(config.urlBase + '/audio/sources', {
@@ -362,7 +390,14 @@
                 });
 
                 this[ADD_SOURCES](sources);
+<<<<<<< HEAD
                 this[ADD_TRACK](await getRecommendedTrack(null, sources));
+=======
+
+                if (this.queue.constructor === RandomQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
+                    this[ADD_TRACK]({ track: await getRecommendedTrack(null, sources) });
+                }
+>>>>>>> ui improvements
             })();
         },
 
