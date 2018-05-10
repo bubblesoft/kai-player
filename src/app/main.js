@@ -344,7 +344,7 @@ const visualizationModule = {
 
             const background = state.background;
 
-            if (playing && background.activeRenderer !== previousRenderer) {
+            if (!playing && background.activeRenderer !== previousRenderer) {
                 previousRenderer.hide();
                 previousRenderer.pause();
                 background.activeRenderer.start();

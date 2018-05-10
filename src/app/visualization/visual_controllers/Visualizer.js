@@ -41,7 +41,7 @@ export default class Visualizer extends VisualController {
             super.activeType = type;
         }
 
-        this.activeRenderer.renderPicture(this._picture);
+        this._picture && this.activeRenderer.renderPicture(this._picture);
 
         if (this._active) {
             this.stop();

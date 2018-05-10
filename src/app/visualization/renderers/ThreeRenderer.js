@@ -94,7 +94,7 @@ export default class ThreeRenderer extends Renderer {
         requestAnimationFrame(async () => {
             if (this.mode === 'physics') {
                 this.mode = 'basic';
-                this.threeAudioVisualization.switchMode('basic');
+                await this.threeAudioVisualization.switchMode('basic');
             }
 
             this.threeAudioVisualization.startFloatingTiles(20);

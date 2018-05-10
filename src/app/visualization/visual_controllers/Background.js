@@ -18,7 +18,7 @@ export default class Background extends VisualController {
         }
 
         super.activeType = type;
-        this.activeRenderer.renderPicture(this._picture);
+        this._picture && this.activeRenderer.renderPicture(this._picture);
 
         if (this._active) {
             this.activeRenderer.start();
@@ -37,11 +37,11 @@ export default class Background extends VisualController {
     }
 
     start() {
+        super.start();
+
         if (this.activeRenderer === artworkRenderer) {
             return;
         }
-
-        super.start();
 
         this.activeRenderer.animate();
     }

@@ -410,6 +410,7 @@
                 this.player.pause();
                 this.visualizer.stop();
                 this[SWITCH_TO_BACKGROUND]();
+                this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
             },
 
             stop() {
@@ -417,6 +418,7 @@
                 this.progress = 0;
                 this.visualizer.stop();
                 this[SWITCH_TO_BACKGROUND]();
+                this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
             },
 
             changeProgress(progress) {
