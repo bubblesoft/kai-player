@@ -18,17 +18,22 @@ import '../styles/bootstrap';
 import '../styles/base';
 import '../styles/pretty-checkbox';
 
-import { ADD_SOURCES, UPDATE_SOURCE, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, SET_BACKGROUND_IMAGE, SET_LOCALE, SET_SHOW_SOURCE_ICON, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
+import { ADD_SOURCES, UPDATE_SOURCE, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, SET_BACKGROUND_IMAGE, SET_LOCALE, SET_SHOW_SOURCE_ICON, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
 import PlayerController from './PlayerController';
+import Queue from './queue/Queue';
+import RandomQueue from './queue/RandomQueue';
+import Track from './Track';
+import Artist from './Artist';
 import Player from './Player';
 import { threeRenderer, histogramRenderer } from './visualization/renderers/renderers';
 import Background from './visualization/visual_controllers/Background';
 import Visualizer from './visualization/visual_controllers/Visualizer';
 
-import app from './app';
+
+import App from './app';
 
 if (!window["Promise"]) {
     window["Promise"] = require("promise-polyfill");
@@ -128,7 +133,7 @@ const messages = {
         'Select a language': 'Select a language'
     },
     'zh-CN': {
-        'Confirm': '确定',
+        'Confirm': '确认',
         'Cancel': '取消',
         'Close': '关闭',
         'Play': '播放',
@@ -177,7 +182,7 @@ const messages = {
         'Upload': '上传图片',
         'Language': '语言',
         'Drag & Drop you files or Browse': '拖动文件到这里或者点击浏览文件',
-        'Select a language': '选择语言'
+        'Select a language': '选择语言',
     },
     'ja-JP': {
         'Confirm': 'はい',
@@ -281,7 +286,7 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language'
+        'Select a language': 'Select a language',
     }
 };
 
@@ -357,14 +362,16 @@ const sourceModule = {
             localStorage.setItem('kaiplayersourceactive', JSON.stringify((() => {
                 const data = {};
 
-<<<<<<< HEAD
                 state.sourceGroup.get().forEach(source => {
                    data[source.id] = source.active;
                 });
 
                 return data;
             })()))
-=======
+        }
+    }
+};
+
 const saveQueueData = (queueGroup, playingQueueIndex) => {
         localStorage.setItem('kaiplayerplayingqueues', JSON.stringify({
             queues: queueGroup.get().map(queue => {
@@ -444,17 +451,20 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
 
             queueGroup.active = queueGroupData.active;
             playingQueueIndex = queueGroupData.playing;
->>>>>>> ui improvements
         }
-    }
-};
 
-const queueGroup = new QueueGroup({ name: 'Global' });
+        return {
+            queueGroup,
+            playingQueueIndex
+        }
+    };
+
+const queueData = restoreQueueData();
 
 const queueModule = {
     state: {
-        queueGroup,
-        playingQueueIndex: null
+        queueGroup: queueData.queueGroup,
+        playingQueueIndex: queueData.playingQueueIndex
     },
     mutations: {
         [UPDATE_QUEUE_GROUP](state, { queues, active }) {
@@ -463,10 +473,13 @@ const queueModule = {
             if (typeof active === 'number') {
                 state.queueGroup.active = active;
             }
+
+            saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
         [INSERT_QUEUE](state, { index, queue }) {
             state.queueGroup.insert(index, queue);
+            saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
         [UPDATE_QUEUE](state, { index, name, tracks, active }) {
@@ -475,21 +488,33 @@ const queueModule = {
             name && (queue.name = name);
             tracks && queue.update(tracks);
 
-            if (typeof active === 'number') {
+            if (typeof active === 'number' || active === null) {
                 queue.active = active;
             }
+
+            saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
         [UPDATE_PLAYING_QUEUE_INDEX](state, index) {
             state.playingQueueIndex = index;
+            saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
         [ADD_TRACK](state, { track, queue = state.queueGroup.get(state.queueGroup.active) }) {
             queue.active = queue.add(track);
 
             const active = state.queueGroup.active;
+
             state.queueGroup.active = null;
             state.queueGroup.active = active;
+            saveQueueData(state.queueGroup, state.playingQueueIndex);
+        },
+
+        [UPDATE_TRACK](state, { index, duration, queue = state.queueGroup.get(state.queueGroup.active) }) {
+            if (duration) {
+                queue.get(index).duration = duration;
+                saveQueueData(state.queueGroup, state.playingQueueIndex);
+            }
         }
     }
 };
@@ -611,5 +636,5 @@ new Vue({
     el: 'app',
     store,
     i18n,
-    render: createElement => createElement(app)
+    render: createElement => createElement(App)
 });

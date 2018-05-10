@@ -64,6 +64,13 @@
                         @contextmenu.prevent="handleContextMenu(queue, index);"
                         :class="{ active: selectedIndex === index, 'active-queue': activeIndex === index }"
                     )
+                        td.drag-handle(v-if="editMode")
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
                         td(style="width:18px")
                             svg(
                                 v-if="index === playingIndex"
@@ -80,13 +87,6 @@
                             )
                         td(v-if="queue.constructor === RandomQueue") ∞
                         td(v-else) {{ queue.length }}
-                        td.drag-handle(v-if="editMode")
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
 </template>
 
 <script>
@@ -329,7 +329,18 @@
         }
     }
 
-    .sortable-fallback {
+    .sortable-drag {
         color: #fff;
+
+        td {
+            padding: 0 2px;
+
+            svg {
+                width: 18px;
+                height: 18px;
+                fill: #fff;
+                vertical-align: middle;
+            }
+        }
     }
 </style>

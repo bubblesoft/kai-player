@@ -283,4 +283,17 @@
             }
         }
     }
+
+    .random-queue-box tr {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(51, 122, 183, .2);
+
+        td {
+            display: none;
+        }
+    }
 </style>

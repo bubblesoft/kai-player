@@ -70,7 +70,9 @@
         .list-wrap(v-if="queue")
             draggable.random-queue-box(
                 v-if="queue.constructor === RandomQueue"
-                :options="{ group: 'tracks' }"
+                v-model="tracks"
+                :options="{ group: 'tracks', draggable: '' }"
+                @add="handleAdd"
             )
                 yoyoMarquee(
                     v-if="activeTrack"
@@ -83,7 +85,7 @@
                 draggable(
                     v-model="tracks"
                     :options="{ group: 'tracks', handle: '.drag-handle', forceFallback: true, fallbackOnBody: true }"
-                    @sort="onSort"
+                    @sort="handleSort"
                     @start="dragging = true"
                     @end="dragging = false"
                     element="tbody"
@@ -96,6 +98,13 @@
                         :class="{ active: selectedIndex === index }"
                         ref="tracks"
                     )
+                        td.drag-handle(v-if="editMode")
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
                         td(style="width: 18px;")
                             template(v-if="queueGroup.active === playingQueueIndex && index === activeIndex")
                                 svg(
@@ -130,13 +139,6 @@
                                 :alt="mapMediaSourceName(track.id.split('_')[0])"
                                 :title="mapMediaSourceName(track.id.split('_')[0])"
                             )
-                        td.drag-handle(v-if="editMode")
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
 
                     tr(
                         slot="footer"
@@ -152,7 +154,7 @@
 
     import RandomQueue from './RandomQueue';
 
-    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK } from '../../scripts/mutation-types';
+    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK } from '../../scripts/mutation-types';
 
     import draggable from 'vuedraggable';
     import tooltip from 'vue-strap/src/tooltip';
@@ -268,9 +270,13 @@
 
                 await this.playerController.playTrack(track);
                 this.playingQueueIndex = this.queueGroup.active;
-                this.visualizer.listen(this.player._sound._sounds[0]._node);
-                this.visualizer.start();
-                this.tracks[index].duration = this.player.duration * 1000;
+                this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
+
+                if (!playing) {
+                    this[SWITCH_TO_VISUALIZER]();
+                }
+
+                this[UPDATE_TRACK]({ index, duration: this.player.duration * 1000 });
             },
 
             async removeDuplicated() {
@@ -324,7 +330,7 @@
                 document.addEventListener('click', select);
             },
 
-            onSort(e) {
+            handleSort(e) {
                 if (this.activeIndex !== null) {
                     if (e.from === e.to) {
                         if (e.oldIndex === this.activeIndex) {
@@ -343,6 +349,10 @@
                         }
                     }
                 }
+            },
+
+            handleAdd(e) {
+                this.playTrack(e.newIndex);
             },
 
             copyToQueue(track) {
@@ -378,7 +388,8 @@
             ...mapMutations([
                 UPDATE_QUEUE,
                 UPDATE_PLAYING_QUEUE_INDEX,
-                ADD_TRACK
+                ADD_TRACK,
+                UPDATE_TRACK
             ])
         },
 
@@ -485,6 +496,27 @@
                     cursor: move;
                     cursor: -webkit-grab;
                 }
+            }
+        }
+    }
+
+    .sortable-drag {
+        color: #fff;
+
+        td {
+            padding: 0 2px;
+
+            svg {
+                width: 18px;
+                height: 18px;
+                fill: #fff;
+                vertical-align: middle;
+            }
+
+            img {
+                width: 15px;
+                height: 15px;
+                vertical-align: middle;
             }
         }
     }
