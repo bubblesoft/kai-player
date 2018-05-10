@@ -103,7 +103,7 @@
                     path(d="M6 6h2v12H6zm3.5 6l8.5 6V6z")
             .control-button.control-button_big(
                 v-if="!playing"
-                v-interact:tap="async () => { play(queue.get(queue.active)); }"
+                v-interact:tap="async () => { play(); }"
                 :class="{ loading: loading || player.state === 'loading' }"
                 key="play"
             )
@@ -177,7 +177,7 @@
 
     import RandomQueue from './queue/RandomQueue';
 
-    import { ADD_TRACK, SAVE_LAYOUT, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
+    import { ADD_TRACK, SAVE_LAYOUT, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
 
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
@@ -374,21 +374,43 @@
                 return this.player.ready;
             },
 
-            async play(track) {
-                await this.playerController.playTrack(track);
+            async _playTrack(track) {
+                if (track) {
+                    await this.playerController.playTrack(track);
 
-                if (this.activeVisualizerType === 'random') {
-                    this.activeVisualizerType = 'random';
+                    if (this.activeVisualizerType === 'random') {
+                        this.activeVisualizerType = 'random';
+                    }
+
+                    this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
+                    this[VISUALIZER_LOAD_RESOURCE]({ picture: track.picture });
+
+                }
+            },
+
+            async play() {
+                this.loading = true;
+
+                if (this.queue.active !== null) {
+                    await this._playTrack(this.queue.get(this.queue.active));
+                } else {
+                    await this._playTrack(await new Promise(resolve => {
+                        const unwatch = this.$watch('track', (to) => {
+                            unwatch();
+                            resolve(to);
+                        });
+                    }));
                 }
 
-                this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
-                this[SWITCH_TO_VISUALIZER](this.player._sound._sounds[0]._node);
+                this.loading = false;
+                this[SWITCH_TO_VISUALIZER]();
             },
 
             pause() {
                 this.player.pause();
                 this.visualizer.stop();
                 this[SWITCH_TO_BACKGROUND]();
+                this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
             },
 
             stop() {
@@ -396,6 +418,7 @@
                 this.progress = 0;
                 this.visualizer.stop();
                 this[SWITCH_TO_BACKGROUND]();
+                this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
             },
 
             changeProgress(progress) {
@@ -403,7 +426,7 @@
             },
 
             async previous() {
-                await this.play(this.queue.get(this.queue.previous()));
+                await this._playTrack(this.queue.get(this.queue.previous()));
             },
 
             async next() {
@@ -415,7 +438,7 @@
                     this.loading = false;
                 }
 
-                await this.play(this.queue.get(this.queue.next()));
+                await this._playTrack(this.queue.get(this.queue.next()));
             },
 
             toggleSettingsModal() {
@@ -429,7 +452,10 @@
                 UPDATE_ACTIVE_VISUALIZER_TYPE,
                 SWITCH_TO_VISUALIZER,
                 SWITCH_TO_BACKGROUND,
-                VISUALIZER_LISTEN_TO
+                TRIGGER_BACKGROUND_EVENT,
+                VISUALIZER_LISTEN_TO,
+                BACKGROUND_LOAD_RESOURCE,
+                VISUALIZER_LOAD_RESOURCE
             ])
         },
 

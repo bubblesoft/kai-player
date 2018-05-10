@@ -18,7 +18,7 @@ import '../styles/bootstrap';
 import '../styles/base';
 import '../styles/pretty-checkbox';
 
-import { ADD_SOURCES, UPDATE_SOURCE, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, SET_BACKGROUND_IMAGE, SET_LOCALE, SET_SHOW_SOURCE_ICON, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../scripts/mutation-types';
+import { ADD_SOURCES, UPDATE_SOURCE, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, SET_BACKGROUND_IMAGE, SET_LOCALE, SET_SHOW_SOURCE_ICON, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
@@ -28,7 +28,7 @@ import RandomQueue from './queue/RandomQueue';
 import Track from './Track';
 import Artist from './Artist';
 import Player from './Player';
-import { threeRenderer, histogramRenderer } from './visualization/renderers/renderers';
+import { threeRenderer, histogramRenderer, electricArcRenderer, artworkRenderer } from './visualization/renderers/renderers';
 import Background from './visualization/visual_controllers/Background';
 import Visualizer from './visualization/visual_controllers/Visualizer';
 
@@ -130,7 +130,8 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language'
+        'Select a language': 'Select a language',
+        'Electric Arc': 'Electric Arc'
     },
     'zh-CN': {
         'Confirm': '确认',
@@ -183,6 +184,7 @@ const messages = {
         'Language': '语言',
         'Drag & Drop you files or Browse': '拖动文件到这里或者点击浏览文件',
         'Select a language': '选择语言',
+        'Electric Arc': '电弧'
     },
     'ja-JP': {
         'Confirm': 'はい',
@@ -234,7 +236,8 @@ const messages = {
         'Upload': 'Upload',
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
-        'Select a language': 'Select a language'
+        'Select a language': 'Select a language',
+        'Electric Arc': 'Electric Arc'
     },
     'ko-KR': {
         'Confirm': 'Confirm',
@@ -287,6 +290,7 @@ const messages = {
         'Language': 'Language',
         'Drag & Drop you files or Browse': 'Drag & Drop you files or Browse',
         'Select a language': 'Select a language',
+        'Electric Arc': 'Electric Arc'
     }
 };
 
@@ -531,19 +535,19 @@ const playerModule = {
 
 const visualizationModule = {
     state: {
-        background: new Background('three'),
-        visualizer: new Visualizer('random')
+        background: new Background( localStorage.getItem('kaisoftbackgroundtype') || 'three'),
+        visualizer: new Visualizer(localStorage.getItem('kaisoftvisualizertype') || 'random')
     },
     mutations: {
         [UPDATE_ACTIVE_BACKGROUND_TYPE](state, type) {
             const previousRenderer = state.background.activeRenderer,
-                playing = playerModule.state.player.playing;
+                playing = playerModule.state.player ? playerModule.state.player.playing : false;
 
             state.background.activeType = type;
 
             const background = state.background;
 
-            if (playing && background.activeRenderer !== previousRenderer) {
+            if (!playing && background.activeRenderer !== previousRenderer) {
                 previousRenderer.hide();
                 previousRenderer.pause();
                 background.activeRenderer.start();
@@ -552,6 +556,7 @@ const visualizationModule = {
 
             state.background = null;
             state.background = background;
+            localStorage.setItem('kaisoftbackgroundtype', type);
         },
 
         [UPDATE_ACTIVE_VISUALIZER_TYPE](state, type) {
@@ -571,6 +576,7 @@ const visualizationModule = {
 
             state.visualizer = null;
             state.visualizer = visualizer;
+            localStorage.setItem('kaisoftvisualizertype', type);
         },
 
         [SWITCH_TO_BACKGROUND](state) {
@@ -587,19 +593,16 @@ const visualizationModule = {
             }
         },
 
-        [SWITCH_TO_VISUALIZER](state) {
+        async [SWITCH_TO_VISUALIZER](state) {
             if (state.background.activeRenderer !== state.visualizer.activeRenderer) {
-                state.background.event('play');
-
-                setTimeout(() => {
-                    state.background.activeRenderer.hide();
-                    state.visualizer.activeRenderer.start();
-                    state.visualizer.start();
-                    state.visualizer.activeRenderer.show();
-                    state.background.stop();
-                    state.background.activeRenderer.pause();
-                    state.background.event('reset');
-                }, 2000);
+                await state.background.event('play');
+                state.background.activeRenderer.hide();
+                state.visualizer.activeRenderer.start();
+                state.visualizer.start();
+                state.visualizer.activeRenderer.show();
+                state.background.stop();
+                state.background.activeRenderer.pause();
+                state.background.event('reset');
             } else {
                 state.background.stop();
                 state.visualizer.start();
@@ -612,12 +615,22 @@ const visualizationModule = {
 
         [VISUALIZER_LISTEN_TO](state, audioSource) {
             state.visualizer.listen(audioSource);
+        },
+
+        [BACKGROUND_LOAD_RESOURCE](state, { picture } = {}) {
+            state.background.loadResource({ picture });
+        },
+
+        [VISUALIZER_LOAD_RESOURCE](state, { picture } = {}) {
+            state.visualizer.loadResource({ picture });
         }
     },
     actions: {
         initVisualization(context, mountPoint) {
             threeRenderer.init(mountPoint);
             histogramRenderer.init(mountPoint);
+            electricArcRenderer.init(mountPoint);
+            artworkRenderer.init(mountPoint);
         }
     }
 };

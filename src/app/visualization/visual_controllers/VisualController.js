@@ -2,7 +2,7 @@
  * Created by qhyang on 2018/3/1.
  */
 
-import threeRenderer from '../renderers/renderers';
+import { threeRenderer, histogramRenderer, electricArcRenderer } from '../renderers/renderers';
 
 const mapTypeName = type => {
     switch (type) {
@@ -10,16 +10,24 @@ const mapTypeName = type => {
             return 'Tiles';
         case 'histogram':
             return 'Histogram';
+        case 'electricArc':
+            return 'Electric Arc';
+        case 'artwork':
+            return 'Artwork';
     }
 };
 
 export default class VisualController {
     _renderers = {
-        three: threeRenderer
+        three: threeRenderer,
+        histogram: histogramRenderer,
+        electricArc: electricArcRenderer
     };
     _activeType;
     _mountPoint;
     _root;
+    _active;
+    _picture;
 
     get types() {
         return Object.keys(this._renderers).map(type => {
@@ -53,7 +61,15 @@ export default class VisualController {
 
     hide() { }
 
-    start() { }
+    start() {
+        this._active = true;
+    }
 
-    stop() { }
+    stop() {
+        this._active = false;
+    }
+
+    loadResource({ picture } = {}) {
+        this._picture = picture;
+    }
 };

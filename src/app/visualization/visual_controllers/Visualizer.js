@@ -5,14 +5,13 @@
 import Clubber from 'clubber';
 
 import VisualController from './VisualController';
-import { threeRenderer, histogramRenderer } from '../renderers/renderers';
+import { threeRenderer, histogramRenderer, electricArcRenderer, artworkRenderer } from '../renderers/renderers';
 
 import '../../../styles/histogram';
 
 
-export default class Visualizer extends VisualController{
+export default class Visualizer extends VisualController {
     _random;
-    _active;
     _clubber;
 
     get types() {
@@ -37,18 +36,25 @@ export default class Visualizer extends VisualController{
             const rendererTypes = Object.keys(this._renderers);
 
             super.activeType = rendererTypes[Math.floor(rendererTypes.length * Math.random())];
-
-            return;
+        } else {
+            this._random = false;
+            super.activeType = type;
         }
 
-        this._random = false;
-        super.activeType = type;
+        this._picture && this.activeRenderer.renderPicture(this._picture);
+
+        if (this._active) {
+            this.stop();
+            this.start();
+        }
     }
 
     constructor(type) {
         const renderers = {
             three: threeRenderer,
-            histogram: histogramRenderer
+            histogram: histogramRenderer,
+            electricArc: electricArcRenderer,
+            artwork: artworkRenderer
         };
 
         if (type === 'random') {
@@ -78,6 +84,15 @@ export default class Visualizer extends VisualController{
             return;
         }
 
+        if (this.activeRenderer === artworkRenderer) {
+            requestAnimationFrame(() => {
+                this._active = true;
+            });
+            return;
+        }
+
+        super.start();
+
         const bandWidth = this.activeRenderer.bandWidth;
 
         let bands = [];
@@ -102,13 +117,17 @@ export default class Visualizer extends VisualController{
         };
 
         requestAnimationFrame(() => {
-            this._active = true;
             render();
         });
 
     }
 
     stop() {
-        this._active = false;
+        super.stop();
+    }
+
+    loadResource({ picture } = {}) {
+        super.loadResource({ picture });
+        this.activeRenderer.renderPicture(picture);
     }
 }

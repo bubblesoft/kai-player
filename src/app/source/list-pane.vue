@@ -131,7 +131,7 @@
 
                 await this.playerController.playTrack(track);
                 this.playingQueueIndex = this.queueGroup.active;
-                this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
+                this[VISUALIZER_LISTEN_TO](this.player._sound._sounds[0]._node, track.picture);
 
                 if (!playing) {
                     this[SWITCH_TO_VISUALIZER]();
