@@ -13,6 +13,7 @@ export default class ArtworkRenderer extends Renderer {
     init(mountPoint) {
         this.root = document.createElement('div');
         this.root.style.cssText = `
+            display: none;
             position: absolute;
             left: 0;
             top: 0;

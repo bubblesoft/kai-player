@@ -18,7 +18,7 @@ export default class Background extends VisualController {
         }
 
         super.activeType = type;
-        this._picture && this.activeRenderer.renderPicture(this._picture);
+        this.activeRenderer._picture && this.activeRenderer.renderPicture(this.activeRenderer._picture);
 
         if (this._active) {
             this.activeRenderer.start();

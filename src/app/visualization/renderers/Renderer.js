@@ -3,6 +3,8 @@
  */
 
 export default class Renderer {
+    _picture;
+
     constructor() {
         this.active = false;
     }

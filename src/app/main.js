@@ -541,7 +541,7 @@ const visualizationModule = {
     mutations: {
         [UPDATE_ACTIVE_BACKGROUND_TYPE](state, type) {
             const previousRenderer = state.background.activeRenderer,
-                playing = playerModule.state.player ? playerModule.state.player.playing : false;
+                playing = playerModule.state.playerController.player ? playerModule.state.playerController.player.playing : false;
 
             state.background.activeType = type;
 

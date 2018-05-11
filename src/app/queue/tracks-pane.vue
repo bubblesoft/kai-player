@@ -154,7 +154,7 @@
 
     import RandomQueue from './RandomQueue';
 
-    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK } from '../../scripts/mutation-types';
+    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, VISUALIZER_LISTEN_TO, SWITCH_TO_VISUALIZER, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
 
     import draggable from 'vuedraggable';
     import tooltip from 'vue-strap/src/tooltip';
@@ -266,11 +266,13 @@
 
         methods: {
             async playTrack(index) {
-                const track = await this.queue.get(this.queue.goTo(index));
+                const playing = this.playing,
+                    track = await this.queue.get(this.queue.goTo(index));
 
                 await this.playerController.playTrack(track);
                 this.playingQueueIndex = this.queueGroup.active;
                 this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
+                this[VISUALIZER_LOAD_RESOURCE]({ picture: track.picture });
 
                 if (!playing) {
                     this[SWITCH_TO_VISUALIZER]();
@@ -389,7 +391,10 @@
                 UPDATE_QUEUE,
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
-                UPDATE_TRACK
+                UPDATE_TRACK,
+                VISUALIZER_LISTEN_TO,
+                SWITCH_TO_VISUALIZER,
+                VISUALIZER_LOAD_RESOURCE
             ])
         },
 

@@ -131,6 +131,10 @@
         },
 
         computed: {
+            track() {
+                return this.queue ? this.queue.get(this.queue.active) : [];
+            },
+
             pictureLayout: {
                 get() {
                     return this.layout.picture;
@@ -400,6 +404,8 @@
 
                     this[ADD_TRACK](track);
                     this[BACKGROUND_LOAD_RESOURCE]({ picture: track.picture });
+                } else {
+                    this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
                 }
             })();
         },
@@ -424,12 +430,6 @@
             this.background.activeRenderer.start();
             this.background.start();
             this.background.activeRenderer.show();
-
-            //TODO: remove later
-            this.player.on('end', () => {
-                this.visualizer.stop();
-                this[SWITCH_TO_BACKGROUND]();
-            });
         },
         destroyed() {
             document.body.removeEventListener('click', this.blur);
