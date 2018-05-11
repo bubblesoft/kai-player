@@ -13,7 +13,7 @@
                     picturePane
             transition(name="fade")
                 pane-frame(
-                    v-if="sourceOpen"
+                    v-show="sourceOpen"
                     v-model="sourceLayout"
                     heading="Media Source"
                     @close="sourceOpen = false;"
@@ -21,7 +21,7 @@
                     sourcePane
             transition(name="fade")
                 pane-frame(
-                    v-if="listOpen"
+                    v-show="listOpen"
                     v-model="listLayout"
                     heading="Chart"
                     @close="listOpen = false;"
@@ -29,7 +29,7 @@
                     listPane(@contextMenu="listContextMenuCallback = $event; $refs.listContextMenu.open();")
             transition(name="fade")
                 pane-frame(
-                    v-if="searchOpen"
+                    v-show="searchOpen"
                     v-model="searchLayout"
                     heading="Search"
                     @close="searchOpen = false;"

@@ -37,6 +37,13 @@
                         v-interact:doubletap="() => { addToPlayback(track); }"
                         @contextmenu.prevent="handleContextMenu(track);"
                     )
+                        td.drag-handle
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
                         td(style="padding: 0;")
                         td {{ track.name }}
                         td {{ track.artists.map(artist => artist.name).join(', ') }}
@@ -45,13 +52,6 @@
                             style="width:46px"
                         ) {{ track.duration | formatDuration('mm:ss') }}
                         td(v-else)
-                        td.drag-handle
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
         vueLoading(
             v-if="loading"
             type="cylon"
@@ -71,7 +71,7 @@
 
     import { formatDuration } from '../../scripts/utils';
 
-    import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO } from '../../scripts/mutation-types';
+    import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK ,UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
 
     import Queue from '../queue/Queue';
 
@@ -115,11 +115,21 @@
                 }
             },
 
+            activeVisualizerType: {
+                get() {
+                    return this.visualizer.activeType;
+                },
+                set(type) {
+                    this[UPDATE_ACTIVE_VISUALIZER_TYPE](type);
+                }
+            },
+
             ...mapState({
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 queueGroup: state => state.queueModule.queueGroup,
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.queueGroup.active),
-                playerController: state => state.playerModule.playerController
+                playerController: state => state.playerModule.playerController,
+                visualizer: state => state.visualizationModule.visualizer
             })
         },
 
@@ -131,13 +141,19 @@
 
                 await this.playerController.playTrack(track);
                 this.playingQueueIndex = this.queueGroup.active;
+
+                if (this.activeVisualizerType === 'random') {
+                    this.activeVisualizerType = 'random';
+                }
+
                 this[VISUALIZER_LISTEN_TO](this.player._sound._sounds[0]._node, track.picture);
+                this[VISUALIZER_LOAD_RESOURCE]({ picture: track.picture });
 
                 if (!playing) {
                     this[SWITCH_TO_VISUALIZER]();
                 }
 
-                track.duration = this.player.duration * 1000;
+                this[UPDATE_TRACK]({ index: this.queue.active, duration: this.player.duration * 1000 });
             },
 
             handleContextMenu(track) {
@@ -166,9 +182,12 @@
                 INSERT_QUEUE,
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
+                UPDATE_TRACK,
+                UPDATE_ACTIVE_VISUALIZER_TYPE,
                 SWITCH_TO_VISUALIZER,
                 TRIGGER_BACKGROUND_EVENT,
-                VISUALIZER_LISTEN_TO
+                VISUALIZER_LISTEN_TO,
+                VISUALIZER_LOAD_RESOURCE
             ])
         },
 
@@ -243,7 +262,6 @@
                 &.drag-handle {
                     width: 28px;
                     text-align: center;
-                    vertical-align: middle;
                     cursor: move;
                     cursor: -webkit-grab;
 
@@ -276,10 +294,10 @@
             padding: 0 2px;
 
             svg {
-                vertical-align: middle;
                 width: 18px;
                 height: 18px;
                 fill: #fff;
+                vertical-align: middle;
             }
         }
     }

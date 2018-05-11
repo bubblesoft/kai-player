@@ -28,6 +28,13 @@
                         v-interact:doubletap="() => { addToPlayback(track); }"
                         @contextmenu.prevent="handleContextMenu(track);"
                     )
+                        td.drag-handle
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
                         td(style="padding: 0;")
                         td {{ track.name }}
                         td {{ track.artists.map(artist => artist.name).join(', ') }}
@@ -36,13 +43,12 @@
                             style="width:46px"
                         ) {{ track.duration | formatDuration('mm:ss') }}
                         td(v-else)
-                        td.drag-handle
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
+                        td(v-if="showSourceIcon")
+                            img(
+                                :src="mapMediaSourceIcon(track.id.split('_')[0])"
+                                :alt="mapMediaSourceName(track.id.split('_')[0])"
+                                :title="mapMediaSourceName(track.id.split('_')[0])"
                             )
-                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
         vueLoading(
             v-if="loading"
             type="cylon"
@@ -55,9 +61,9 @@
 
     import config from '../../config';
 
-    import { formatDuration } from '../../scripts/utils';
+    import { formatDuration, mapMediaSourceIcon, mapMediaSourceName } from '../../scripts/utils';
 
-    import { UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK } from '../../scripts/mutation-types';
+    import { UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
 
     import Track from '../Track';
     import Artist from '../Artist';
@@ -83,6 +89,11 @@
             sources() {
                 return this.sourceGroup.get();
             },
+
+            player() {
+                return this.playerController.player;
+            },
+
             playingQueueIndex: {
                 get() {
                     return this.$store.state.queueModule.playingQueueIndex;
@@ -91,12 +102,24 @@
                     this[UPDATE_PLAYING_QUEUE_INDEX](index);
                 }
             },
+
+            activeVisualizerType: {
+                get() {
+                    return this.visualizer.activeType;
+                },
+                set(type) {
+                    this[UPDATE_ACTIVE_VISUALIZER_TYPE](type);
+                }
+            },
+
             ...mapState({
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 queueGroup: state => state.queueModule.queueGroup,
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.queueGroup.active),
-                player: state => state.playerModule.player,
-                i18next: state => state.generalModule.i18next
+                playerController: state => state.playerModule.playerController,
+                visualizer: state => state.visualizationModule.visualizer,
+                i18next: state => state.generalModule.i18next,
+                showSourceIcon: state => state.generalModule.showSourceIcon
             })
         },
         methods: {
@@ -140,14 +163,23 @@
             async addToPlayback(track) {
                 this[ADD_TRACK]({ track });
 
-                const url = await track.getStreamUrl();
+                const playing = this.player.playing;
 
-                await this.player.load([url]);
-                this.player.play();
+                await this.playerController.playTrack(track);
                 this.playingQueueIndex = this.queueGroup.active;
-                this.visualizer.listen(this.player._sound._sounds[0]._node);
-                this.visualizer.start();
-                track.duration = this.player.duration * 1000;
+
+                if (this.activeVisualizerType === 'random') {
+                    this.activeVisualizerType = 'random';
+                }
+
+                this[VISUALIZER_LISTEN_TO](this.player._sound._sounds[0]._node, track.picture);
+                this[VISUALIZER_LOAD_RESOURCE]({ picture: track.picture });
+
+                if (!playing) {
+                    this[SWITCH_TO_VISUALIZER]();
+                }
+
+                this[UPDATE_TRACK]({ index: this.queue.active, duration: this.player.duration * 1000 });
             },
 
             handleContextMenu(track) {
@@ -158,9 +190,17 @@
                 });
             },
 
+            mapMediaSourceIcon,
+            mapMediaSourceName,
+
             ...mapMutations([
-                    UPDATE_PLAYING_QUEUE_INDEX,
-                    ADD_TRACK
+                UPDATE_PLAYING_QUEUE_INDEX,
+                ADD_TRACK,
+                UPDATE_TRACK,
+                UPDATE_ACTIVE_VISUALIZER_TYPE,
+                SWITCH_TO_VISUALIZER,
+                VISUALIZER_LISTEN_TO,
+                VISUALIZER_LOAD_RESOURCE
             ])
         },
         filters: {
@@ -198,7 +238,6 @@
                     &.drag-handle {
                          width: 28px;
                          text-align: center;
-                         vertical-align: middle;
                          cursor: move;
                          cursor: -webkit-grab;
 
@@ -228,11 +267,16 @@
             padding: 0 2px;
 
             svg {
-                vertical-align: middle;
                 width: 18px;
                 height: 18px;
                 fill: #fff;
+                vertical-align: middle;
             }
         }
+    }
+
+    img {
+        width: 15px;
+        height: 15px;
     }
 </style>
