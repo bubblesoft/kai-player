@@ -86,7 +86,7 @@
     import Queue from './queue/Queue';
     import RandomQueue from './queue/RandomQueue';
 
-    import { getRecommendedTrack, generateLayout } from '../scripts/utils';
+    import { urlBase, getRecommendedTrack, generateLayout } from '../scripts/utils';
 
     import contextMenu from 'vue-context-menu';
 
@@ -369,7 +369,7 @@
             const sourceActiveMap = JSON.parse(localStorage.getItem('kaiplayersourceactive')) || { hearthis: false };
 
             (async () => {
-                const sources = (await (await fetch(config.urlBase + '/audio/sources', {
+                const sources = (await (await fetch(urlBase + '/audio/sources', {
                     method: 'POST',
                     headers: new Headers({
                         'Content-Type': 'application/json'

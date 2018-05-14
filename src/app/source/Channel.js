@@ -5,6 +5,8 @@
 import Track from '../Track';
 import Artist from '../Artist';
 
+import { urlBase } from '../../scripts/utils';
+
 export default class Channel {
 
     /**
@@ -39,7 +41,7 @@ export default class Channel {
             return this._get();
         }
 
-        return (await (await fetch(require('../../config').urlBase + '/audio/list', {
+        return (await (await fetch(urlBase + '/audio/list', {
             method: 'POST',
             body: JSON.stringify({
                 source: this.source,

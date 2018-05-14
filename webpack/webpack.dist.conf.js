@@ -1,5 +1,5 @@
 /**
- * Created by qhyang on 2017/11/30.
+ * Created by qhyang on 2018/5/11.
  */
 
 'use strict';
@@ -9,21 +9,18 @@ const path = require('path');
 const webpack = require('webpack');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
 const rootDir = path.resolve(__dirname, '..');
 
 module.exports = {
-    mode: 'development',
-    devServer: {
-        contentBase: path.resolve(rootDir, 'dist')
-    },
-    devtool: 'source-map',
+    mode: 'production',
     entry: {
         app: [ path.resolve(rootDir, 'src', 'app', 'main') ]
     },
     output: {
         filename: '[name].bundle.js',
-        path: path.resolve(rootDir, 'build')
+        path: path.resolve(rootDir, 'dist')
     },
     module: {
         rules: [
@@ -67,7 +64,8 @@ module.exports = {
             template: path.resolve(rootDir, 'src', 'index.html'),
             chunks: [ 'app', 'runtime' ]
         }),
-        new VueLoaderPlugin()
+        new VueLoaderPlugin(),
+        new UglifyJSPlugin()
     ],
     optimization: {
         runtimeChunk: {

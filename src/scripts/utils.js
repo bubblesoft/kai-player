@@ -4,10 +4,18 @@
 
 import momnet from 'moment';
 
-import config from '../config';
-
 import Track from '../app/Track';
 import Artist from '../app/Artist';
+
+const urlBase = (() => {
+    switch (process.env.NODE_ENV) {
+        case 'development':
+            return 'http://localhost:3000';
+        case 'production':
+        default:
+            return '';
+    }
+})();
 
 const initHowlOnProgress = (howl) => {
     howl.interval, howl._onprogress = [];
@@ -33,7 +41,7 @@ const initHowlOnProgress = (howl) => {
 };
 
 const getRecommendedTrack = async (track, sources) => {
-    const recommendedTrack = (await (await fetch(config.urlBase + '/audio/recommend', {
+    const recommendedTrack = (await (await fetch(urlBase + '/audio/recommend', {
         method: 'POST',
         body: JSON.stringify({
             track: track ? {
@@ -147,4 +155,4 @@ const mapMediaSourceName = (id) => {
     }
 };
 
-export { initHowlOnProgress, getRecommendedTrack, formatDuration, generateLayout, loadImage, mapMediaSourceIcon, mapMediaSourceName };
+export { urlBase, initHowlOnProgress, getRecommendedTrack, formatDuration, generateLayout, loadImage, mapMediaSourceIcon, mapMediaSourceName };
