@@ -41,7 +41,7 @@ const initHowlOnProgress = (howl) => {
 };
 
 const getRecommendedTrack = async (track, sources) => {
-    const recommendedTrack = (await (await fetch(urlBase + '/audio/recommend', {
+    const recommendedTrack = (await (await fetch('/audio/recommend', {
         method: 'POST',
         body: JSON.stringify({
             track: track ? {
@@ -102,14 +102,26 @@ const generateLayout = (type, viewportWidth, viewportHeight) => {
             tracks: { mode: 'bottom', visible: true, attach: false, ratioX: .5, bottomY: viewportHeight * .08, width: width * 1.1, height: viewportHeight * .45, opacity: .4 }
         };
     } else if (type === 'mobile') {
-        return {
-            picture: { mode: 'ratio', visible: false, x: .03, y: .03, width: .5, height: .3, opacity: .4, autoHide: true },
-            source: { mode: 'ratio', visible: false, attach: 'left', y: .1, width: 1, height: .3, opacity: .4 },
-            list: { mode: 'ratio', visible: true, attach: 'left', y: .05, width: 1, height: .37, opacity: .4 },
-            search: { mode: 'ratio', visible: false, attach: 'left', y: 0, width: 1, height: .4, opacity: .4 },
-            playlist: { mode: 'ratio', visible: true, attach: 'left', y: .42, width: 1, height: .28, opacity: .4 },
-            tracks: { mode: 'ratio', visible: true, attach: 'left', y: .7, width: 1, height: .3, opacity: .4 }
-        };
+        console.log(viewportHeight);
+        if (viewportHeight < 580) {
+            return {
+                picture: { mode: 'ratio', visible: false, x: .03, y: .03, width: .5, height: .3, opacity: .4, autoHide: true },
+                source: { mode: 'ratio', visible: false, attach: 'left', y: .1, width: 1, height: .3, opacity: .4 },
+                list: { mode: 'ratio', visible: true, attach: 'left', y: .05, width: 1, height: .45, opacity: .4 },
+                search: { mode: 'ratio', visible: false, attach: 'left', y: 0, width: 1, height: .4, opacity: .4 },
+                playlist: { mode: 'ratio', visible: false, attach: 'left', y: .42, width: 1, height: .28, opacity: .4 },
+                tracks: { mode: 'ratio', visible: true, attach: 'left', y: .5, width: 1, height: .5, opacity: .4 }
+            };
+        } else {
+            return {
+                picture: { mode: 'ratio', visible: false, x: .03, y: .03, width: .5, height: .3, opacity: .4, autoHide: true },
+                source: { mode: 'ratio', visible: false, attach: 'left', y: .1, width: 1, height: .3, opacity: .4 },
+                list: { mode: 'ratio', visible: true, attach: 'left', y: .05, width: 1, height: .37, opacity: .4 },
+                search: { mode: 'ratio', visible: false, attach: 'left', y: 0, width: 1, height: .4, opacity: .4 },
+                playlist: { mode: 'ratio', visible: true, attach: 'left', y: .42, width: 1, height: .28, opacity: .4 },
+                tracks: { mode: 'ratio', visible: true, attach: 'left', y: .7, width: 1, height: .3, opacity: .4 }
+            };
+        }
     }
 };
 

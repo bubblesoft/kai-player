@@ -77,8 +77,6 @@
 <script>
     import { mapState, mapMutations, mapActions } from 'vuex';
 
-    import config from '../config';
-
     import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SWITCH_TO_BACKGROUND, BACKGROUND_LOAD_RESOURCE } from '../scripts/mutation-types';
 
     import Source from './source/Source';
@@ -369,7 +367,7 @@
             const sourceActiveMap = JSON.parse(localStorage.getItem('kaiplayersourceactive')) || { hearthis: false };
 
             (async () => {
-                const sources = (await (await fetch(urlBase + '/audio/sources', {
+                const sources = (await (await fetch('/audio/sources', {
                     method: 'POST',
                     headers: new Headers({
                         'Content-Type': 'application/json'

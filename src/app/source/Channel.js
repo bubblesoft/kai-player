@@ -41,7 +41,7 @@ export default class Channel {
             return this._get();
         }
 
-        return (await (await fetch(urlBase + '/audio/list', {
+        return (await (await fetch('/audio/list', {
             method: 'POST',
             body: JSON.stringify({
                 source: this.source,

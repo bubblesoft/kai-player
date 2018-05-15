@@ -2,8 +2,6 @@
  * Created by qhyang on 2017/12/11.
  */
 
-import { urlBase } from '../scripts/utils';
-
 export default class Track {
     duration;
     _id;
@@ -44,7 +42,7 @@ export default class Track {
         }
 
         return (async() => {
-            return (await (await fetch(urlBase + '/audio/streamurl', {
+            return (await (await fetch('/audio/streamurl', {
                 method: 'POST',
                 body: JSON.stringify({
                     id: this.id.split('_')[1],

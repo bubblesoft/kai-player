@@ -23,6 +23,7 @@ export default class ArtworkRenderer extends Renderer {
             background-position: center;
             background-repeat: no-repeat;
             transition: opacity .6s;
+            pointer-events: none;
         `;
         mountPoint.appendChild(this.root);
     }

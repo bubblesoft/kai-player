@@ -52,8 +52,6 @@
 <script>
     import { mapMutations } from 'vuex';
 
-    import config from '../config';
-
     import { SET_BACKGROUND_IMAGE, SET_LOCALE, SET_SHOW_SOURCE_ICON } from '../scripts/mutation-types';
 
     import prettyCheckbox from 'pretty-checkbox-vue/check';
@@ -88,7 +86,7 @@
             return {
                 showUploader: false,
                 pondServer: {
-                    url: config.urlBase + '/upload/files',
+                    url: '/upload/files',
                     revert: null,
                     restore: null,
                     load: null,

@@ -492,7 +492,6 @@
         background-size: auto 100%, auto, 200px auto;
         background-repeat: no-repeat;
         box-shadow: 0 0 25px rgba(0, 0, 0, 0.1),
-            inset 0 0 1px rgba(255, 255, 255, 0.6),
             inset 0 0 20px rgba(255, 255, 255, 0.1);
         z-index: 1;
 
@@ -593,34 +592,33 @@
             .vue-slider-component {
                 margin: 6px;
 
-                @media (max-width: 425px) {
+                @media (max-width: 445px) {
                     margin: 2px;
                 }
             }
 
             .progress {
-                @media (max-width: 425px) {
+                @media (max-width: 445px) {
                     width: 45%;
                 }
             }
 
             .time {
                 color: #fff;
-                font-size: 8px;
                 text-align: center;
                 white-space: nowrap;
 
-                @media (max-width: 350px) {
+                @media (max-width: 370px) {
                     display: none;
                 }
             }
 
             .volume {
-                @media (max-width: 768px) {
+                @media (max-width: 788px) {
                     width: 15% !important;
                 }
 
-                @media (max-width: 425px) {
+                @media (max-width: 445px) {
                     display: none;
                 }
             }
@@ -649,7 +647,7 @@
         .control-button_big {
             margin: 6px;
 
-            @media (max-width: 425px) {
+            @media (max-width: 445px) {
                 margin: 2px;
             }
 
@@ -675,7 +673,7 @@
         .control-button_small {
             margin: 4px;
 
-            @media (max-width: 425px) {
+            @media (max-width: 445px) {
                 margin: 1px;
             }
 

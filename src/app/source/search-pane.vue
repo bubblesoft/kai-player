@@ -59,9 +59,7 @@
 <script>
     import { mapState, mapMutations } from 'vuex';
 
-    import config from '../../config';
-
-    import { urlBase, formatDuration, mapMediaSourceIcon, mapMediaSourceName } from '../../scripts/utils';
+    import { formatDuration, mapMediaSourceIcon, mapMediaSourceName } from '../../scripts/utils';
 
     import { UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
 
@@ -133,7 +131,7 @@
                     controller.abort();
                     controller = new AbortController;
 
-                    this.tracks = (await (await fetch(urlBase + '/audio/search', {
+                    this.tracks = (await (await fetch('/audio/search', {
                         method: 'POST',
                         body: JSON.stringify({
                             keywords,

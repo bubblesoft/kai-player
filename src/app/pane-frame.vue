@@ -107,79 +107,84 @@
 
         methods: {
             saveLayout() {
-                const controlBarHeight = document.querySelector('#control-bar').offsetHeight,
-                    panel = this.$el,
-                    layout = {
-                        mode: this.value.mode,
-                        visible: true,
-                        attach: this.attach,
-                        opacity: this.opacity,
-                        autoHide: this.autoHide
-                    };
+                const panel = this.$el;
 
-                switch (this.value.mode) {
-                    case 'ratio':
-                        layout.width = panel.offsetWidth / this.viewportWidth;
-                        layout.height = panel.offsetHeight / this.viewportHeight;
-                        layout.x = +panel.getAttribute('data-x') / this.viewportWidth;
-                        layout.y = +panel.getAttribute('data-y') / this.viewportHeight;
+                if (panel.style.display !== 'none') {
+                    const controlBarHeight = document.querySelector('#control-bar').offsetHeight,
+                            layout = {
+                                mode: this.value.mode,
+                                visible: this.value.visible,
+                                attach: this.attach,
+                                opacity: this.opacity,
+                                autoHide: this.autoHide
+                            };
 
-                        break;
+                    switch (this.value.mode) {
+                        case 'ratio':
+                            layout.width = panel.offsetWidth / this.viewportWidth;
+                            layout.height = panel.offsetHeight / this.viewportHeight;
+                            layout.x = +panel.getAttribute('data-x') / this.viewportWidth;
+                            layout.y = +panel.getAttribute('data-y') / this.viewportHeight;
 
-                    case 'leftTop':
-                        layout.width = panel.offsetWidth;
-                        layout.height = panel.offsetHeight;
-                        layout.x = +panel.getAttribute('data-x');
-                        layout.y = +panel.getAttribute('data-y');
+                            break;
 
-                        break;
+                        case 'leftTop':
+                            layout.width = panel.offsetWidth;
+                            layout.height = panel.offsetHeight;
+                            layout.x = +panel.getAttribute('data-x');
+                            layout.y = +panel.getAttribute('data-y');
 
-                    case 'bottom':
-                        layout.width = panel.offsetWidth;
-                        layout.height = panel.offsetHeight;
-                        layout.ratioX = (+panel.getAttribute('data-x') + layout.width / 2) / this.viewportWidth;
-                        layout.bottomY = this.viewportHeight - panel.getAttribute('data-y') - layout.height;
+                            break;
 
-                        break;
+                        case 'bottom':
+                            layout.width = panel.offsetWidth;
+                            layout.height = panel.offsetHeight;
+                            layout.ratioX = (+panel.getAttribute('data-x') + layout.width / 2) / this.viewportWidth;
+                            layout.bottomY = this.viewportHeight - panel.getAttribute('data-y') - layout.height;
+
+                            break;
+                    }
+
+                    this.$emit('input', layout);
                 }
-
-                this.$emit('input', layout);
             },
 
             onWindowResize() {
-                const controlBarHeight = document.querySelector('#control-bar').offsetHeight,
-                    panel = this.$el,
-                    width = panel.offsetWidth,
-                    height = panel.offsetHeight;
+                if (this.$el !== 'none') {
+                    const controlBarHeight = document.querySelector('#control-bar').offsetHeight,
+                            panel = this.$el,
+                            width = panel.offsetWidth,
+                            height = panel.offsetHeight;
 
-                this.viewportWidth = window.innerWidth;
-                this.viewportHeight = window.innerHeight - controlBarHeight;
+                    this.viewportWidth = window.innerWidth;
+                    this.viewportHeight = window.innerHeight - controlBarHeight;
 
-                let x, y;
+                    let x, y;
 
-                if(this.value.mode === 'bottom') {
-                    if (this.attach === 'left') {
-                        x = 0;
-                    } else if (this.attach === 'right') {
-                        x = this.viewportWidth - width;
-                    } else {
-                        x = this.viewportWidth * this.ratioX - width / 2
+                    if(this.value.mode === 'bottom') {
+                        if (this.attach === 'left') {
+                            x = 0;
+                        } else if (this.attach === 'right') {
+                            x = this.viewportWidth - width;
+                        } else {
+                            x = this.viewportWidth * this.ratioX - width / 2
+                        }
+
+                        if (this.attach === 'top') {
+                            y = 0;
+                        } else if (this.attach === 'bottom') {
+                            y = this.viewportHeight - height;
+                        } else {
+                            y = this.viewportHeight - this.bottomY - height - 2;
+                        }
+
+                        panel.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+                        panel.setAttribute('data-x', x);
+                        panel.setAttribute('data-y', y);
                     }
 
-                    if (this.attach === 'top') {
-                        y = 0;
-                    } else if (this.attach === 'bottom') {
-                        y = this.viewportHeight - height;
-                    } else {
-                        y = this.viewportHeight - this.bottomY - height - 2;
-                    }
-
-                    panel.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
-                    panel.setAttribute('data-x', x);
-                    panel.setAttribute('data-y', y);
+                    this.saveLayout();
                 }
-
-                this.saveLayout();
             },
 
             activate() {
@@ -211,10 +216,12 @@
 
                     if (typeof this.value.x === 'number') {
                         x = this.viewportWidth * this.value.x;
+                        this.ratioX = (x + width / 2) / this.viewportWidth;
                     }
 
                     if (typeof this.value.y === 'number') {
                         y = this.viewportHeight * this.value.y;
+                        this.bottomY = this.viewportHeight - y - height;
                     }
 
                     break;
@@ -231,15 +238,11 @@
                     width = this.value.width;
                     height = this.value.height;
 
-                    if (typeof this.value.ratioX === 'number') {
-                        x = this.viewportWidth * this.value.ratioX - width / 2;
-                        this.ratioX = typeof this.value.ratioX === 'number' ? this.value.ratioX : (x + this.value.width / 2) / this.viewportWidth;
-                    }
+                    x = this.viewportWidth * this.value.ratioX - width / 2;
+                    this.ratioX = typeof this.value.ratioX === 'number' ? this.value.ratioX : (x + this.value.width / 2) / this.viewportWidth;
 
-                    if (typeof this.value.bottomY === 'number') {
-                        y = this.viewportHeight - this.value.bottomY - height;
-                        this.bottomY = typeof this.value.bottomY === 'number' ? this.value.bottomY : this.viewportHeight - this.value.y - this.value.height;
-                    }
+                    y = this.viewportHeight - this.value.bottomY - height;
+                    this.bottomY = typeof this.value.bottomY === 'number' ? this.value.bottomY : this.viewportHeight - this.value.y - this.value.height;
 
                     break;
             }
@@ -293,7 +296,6 @@
 
                         this.ratioX = (x + width / 2) / this.viewportWidth;
                         this.bottomY = this.viewportHeight - y - height;
-
                         this.saveLayout();
                     },
                     snap: {
