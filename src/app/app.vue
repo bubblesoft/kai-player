@@ -42,7 +42,7 @@
                     heading="Playlist"
                     @close="playlistOpen = false;"
                 )
-                    playlistPane(@contextMenu="playlistContextMenuCallback = $event; $refs.playlistContextMenu.open();")
+                    playlistPane(@contextMenu="(e, callback) => { playlistContextMenuCallback = callback; $refs.playlistContextMenu.open(e); }")
             transition(name="fade")
                 pane-frame(
                     v-if="tracksOpen"
@@ -52,7 +52,7 @@
                 )
                     tracksPane(
                         @openQueueModal="selectQueueModalCallback = $event; showSelectQueueModal = true;"
-                        @contextMenu="trackContextMenuCallback = $event; $refs.trackContextMenu.open();"
+                        @contextMenu="(e, callback) => { trackContextMenuCallback = callback; $refs.trackContextMenu.open(e); }"
                     )
         settings(v-model="showSettings")
         selectQueueModal(
@@ -66,10 +66,14 @@
             li(v-interact:tap="() => { searchContextMenuCallback('add'); }") {{ $t('Add to playlist') }}
         contextMenu(ref="trackContextMenu")
             li(v-interact:tap="() => { trackContextMenuCallback('play'); }") {{ $t('Play') }}
+            li(v-interact:tap="() => { trackContextMenuCallback('up'); }") {{ $t('Move up') }}
+            li(v-interact:tap="() => { trackContextMenuCallback('down'); }") {{ $t('Move down') }}
             li(v-interact:tap="() => { trackContextMenuCallback('move'); }") {{ $t('Move to...') }}
             li(v-interact:tap="() => { trackContextMenuCallback('remove'); }") {{ $t('Remove') }}
         contextMenu(ref="playlistContextMenu")
             li(v-interact:tap="() => { playlistContextMenuCallback('open'); }") {{ $t('Select') }}
+            li(v-interact:tap="() => { playlistContextMenuCallback('up'); }") {{ $t('Move up') }}
+            li(v-interact:tap="() => { playlistContextMenuCallback('down'); }") {{ $t('Move down') }}
             li(v-interact:tap="() => { playlistContextMenuCallback('create'); }") {{ $t('New') }}
             li(v-interact:tap="() => { playlistContextMenuCallback('remove'); }") {{ $t('Remove') }}
 </template>
@@ -400,7 +404,7 @@
                 if (this.queue.constructor === RandomQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
                     const track = await getRecommendedTrack(null, sources);
 
-                    this[ADD_TRACK](track);
+                    this[ADD_TRACK]({ track });
                     this[BACKGROUND_LOAD_RESOURCE]({ picture: track.picture });
                 } else {
                     this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
@@ -446,6 +450,7 @@
         background-position: center;
         z-index: 1;
         user-select: none;
+        -moz-user-select: none;
 
         ::-webkit-scrollbar {
             width: 5px;

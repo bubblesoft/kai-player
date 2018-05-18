@@ -61,7 +61,7 @@
                         v-for="(queue, index) in queues"
                         v-interact:doubletap="() => activeIndex = index"
                         v-interact:tap="() => { select(index); }"
-                        @contextmenu.prevent="handleContextMenu(queue, index);"
+                        @contextmenu.prevent="handleContextMenu($event, queue, index);"
                         :class="{ active: selectedIndex === index, 'active-queue': activeIndex === index }"
                     )
                         td.drag-handle(v-if="editMode")
@@ -213,10 +213,58 @@
                 }
             },
 
-            handleContextMenu(queue, index) {
-                this.$emit('contextMenu', async type => {
+            handleContextMenu(e, queue, index) {
+                this.$emit('contextMenu', e, async type => {
                     if (type === 'open') {
                         this.activeIndex = index;
+                    } else if (type === 'up') {
+                        if (index > 0) {
+                            this.$set(this.queues, index, this.queues[index - 1]);
+                            this.$set(this.queues, index - 1, queue);
+                            this.queues = this.queues;
+
+                            if (this.activeIndex === index - 1) {
+                                this.activeIndex++;
+                            } else if (this.activeIndex === index) {
+                                this.activeIndex--;
+                            }
+
+                            if (this.playingIndex === index - 1) {
+                                this.playingIndex++;
+                            } else if (this.playingIndex === index) {
+                                this.playingIndex--;
+                            }
+
+                            if (this.selectedIndex === index - 1) {
+                                this.selectedIndex++;
+                            } else if (this.selectedIndex === index) {
+                                this.selectedIndex--;
+                            }
+                        }
+                    } else if (type === 'down') {
+                        if (index + 1 < this.queues.length) {
+                            this.$set(this.queues, index, this.queues[index + 1]);
+                            this.$set(this.queues, index + 1, queue);
+                            this.queues = this.queues;
+
+                            if (this.activeIndex === index) {
+                                this.activeIndex++;
+                            } else if (this.activeIndex === index + 1) {
+                                this.activeIndex--;
+                            }
+
+                            if (this.playingIndex === index) {
+                                this.playingIndex++;
+                            } else if (this.playingIndex === index + 1) {
+                                this.playingIndex--;
+                            }
+
+                            if (this.selectedIndex === index) {
+                                this.selectedIndex++;
+                            } else if (this.selectedIndex === index + 1) {
+                                this.selectedIndex--;
+                            }
+                        }
                     } else if (type === 'create') {
                         this.insert(typeof this.selectedIndex === 'number' ? this.selectedIndex + 1 : this.queueGroup.length);
                     } else if (type === 'remove') {
