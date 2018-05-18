@@ -147,7 +147,12 @@
                             name: trackData.name,
                             duration: trackData.duration || null,
                             artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
-                            picture: trackData.picture
+                            picture: (() => {
+                                const url = new URL(trackData.picture);
+
+                                return `/proxy/${url.hostname}${url.pathname}`;
+
+                            })()
                         });
                     });
                 } catch (e) {

@@ -56,7 +56,12 @@ export default class Channel {
                 name: trackData.name,
                 duration: trackData.dt,
                 artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
-                picture: trackData.picture
+                picture: (() => {
+                    const url = new URL(trackData.picture);
+
+                    return `/proxy/${url.hostname}${url.pathname}`;
+
+                })()
             })
         });
     }

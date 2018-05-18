@@ -60,7 +60,12 @@ const getRecommendedTrack = async (track, sources) => {
         name: recommendedTrack.name,
         duration: recommendedTrack.duration || null,
         artists: recommendedTrack.artists.map(artist => new Artist({ name: artist.name })),
-        picture: recommendedTrack.picture
+        picture: (() => {
+            const url = new URL(recommendedTrack.picture);
+
+            return `/proxy/${url.hostname}${url.pathname}`;
+
+        })()
     });
 };
 
@@ -94,7 +99,7 @@ const generateLayout = (type, viewportWidth, viewportHeight) => {
         (width > 500) && (width = 500);
 
         return {
-            picture: { mode: 'leftTop', visible: true, x: viewportWidth * .03, y: viewportWidth * .03 - 40, width: Math.min(viewportWidth * .25, 400), height: Math.min(viewportWidth * .25, 400), opacity: .4, autoHide: true },
+            picture: { mode: 'leftTop', visible: true, x: viewportWidth * .03, y: viewportWidth * .03 - 40, width: Math.min(viewportWidth * .25, 360), height: Math.min(viewportWidth * .25, 360), opacity: .4, autoHide: true },
             source: { mode: 'bottom', visible: true, attach: 'left', bottomY: viewportHeight * .4, width: 258, height: 173, opacity: .4 },
             list: { mode: 'bottom', visible: true, attach: 'right', bottomY: viewportHeight * .35, width, height: viewportHeight * .45, opacity: .4 },
             search: { mode: 'bottom', visible: true, attach: 'left', bottomY: viewportHeight * .03, width, height: viewportHeight * .35, opacity: .4 },
@@ -102,7 +107,6 @@ const generateLayout = (type, viewportWidth, viewportHeight) => {
             tracks: { mode: 'bottom', visible: true, attach: false, ratioX: .5, bottomY: viewportHeight * .08, width: width * 1.1, height: viewportHeight * .45, opacity: .4 }
         };
     } else if (type === 'mobile') {
-        console.log(viewportHeight);
         if (viewportHeight < 580) {
             return {
                 picture: { mode: 'ratio', visible: false, x: .03, y: .03, width: .5, height: .3, opacity: .4, autoHide: true },

@@ -391,16 +391,18 @@
             async play() {
                 this.loading = true;
 
-                if (this.queue.active !== null) {
-                    await this._playTrack(this.queue.get(this.queue.active));
-                } else {
-                    await this._playTrack(await new Promise(resolve => {
-                        const unwatch = this.$watch('track', (to) => {
-                            unwatch();
-                            resolve(to);
-                        });
+                try {
+                    if (this.queue.active !== null) {
+                        await this._playTrack(this.queue.get(this.queue.active));
+                    } else {
+                        await this._playTrack(await new Promise(resolve => {
+                            const unwatch = this.$watch('track', (to) => {
+                                        unwatch();
+                        resolve(to);
+                    });
                     }));
-                }
+                    }
+                } catch (e) { }
 
                 this.loading = false;
                 this[SWITCH_TO_VISUALIZER]();

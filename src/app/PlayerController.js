@@ -13,9 +13,9 @@ export default class PlayerController {
         const url = new URL(await track.getStreamUrl());
 
         try {
-            await this.player.load(url.href);
+            await this.player.load(`/${track.id.split('_')[0]}${url.pathname}`);
         } catch (e) {
-            await this.player.load(`/${track.id.split('_')[0]}/${url.hostname}/${url.pathname}`);
+            await this.player.load(url.href);
         }
 
         this.player.play();

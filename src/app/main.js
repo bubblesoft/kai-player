@@ -2,6 +2,7 @@
  * Created by qhyang on 2017/12/1.
  */
 
+import Promise from 'promise-polyfill';
 import 'whatwg-fetch';
 import 'abortcontroller-polyfill/dist/polyfill-patch-fetch';
 import 'url-polyfill';
@@ -32,11 +33,10 @@ import { threeRenderer, histogramRenderer, electricArcRenderer, artworkRenderer 
 import Background from './visualization/visual_controllers/Background';
 import Visualizer from './visualization/visual_controllers/Visualizer';
 
-
 import App from './app';
 
-if (!window["Promise"]) {
-    window["Promise"] = require("promise-polyfill");
+if (!window['Promise']) {
+    window['Promise'] = Promise;
 }
 
 Vue.use(Vuex);
