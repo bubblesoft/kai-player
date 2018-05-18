@@ -86,25 +86,18 @@
                     v-model="tracks"
                     :options="{ group: 'tracks', handle: '.drag-handle', forceFallback: true, fallbackOnBody: true }"
                     @sort="handleSort"
-                    @start="dragging = true"
-                    @end="dragging = false"
+                    @start="dragging = true; fixDrag();"
+                    @end="dragging = false;"
                     element="tbody"
                 )
                     tr(
                         v-for="(track, index) in tracks"
                         v-interact:doubletap="() => { playTrack(index); }"
                         v-interact:tap="() => { select(index); }"
-                        @contextmenu.prevent="handleContextMenu(track, index);"
+                        @contextmenu.prevent="handleContextMenu($event, track, index);"
                         :class="{ active: selectedIndex === index }"
                         ref="tracks"
                     )
-                        td.drag-handle(v-if="editMode")
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
                         td(style="width: 18px;")
                             template(v-if="queueGroup.active === playingQueueIndex && index === activeIndex")
                                 svg(
@@ -139,6 +132,13 @@
                                 :alt="mapMediaSourceName(track.id.split('_')[0])"
                                 :title="mapMediaSourceName(track.id.split('_')[0])"
                             )
+                        td.drag-handle(v-if="editMode")
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
 
                     tr(
                         slot="footer"
@@ -363,8 +363,8 @@
                 });
             },
 
-            handleContextMenu(track, index) {
-                this.$emit('contextMenu', type => {
+            handleContextMenu(e, track, index) {
+                this.$emit('contextMenu', e, type => {
                     if (type === 'play') {
                         this.playTrack(index);
                     } else if (type === 'move') {
@@ -373,11 +373,55 @@
                             this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1));
                             trashCan.data.push(track);
                         });
+                    } else if (type === 'up') {
+                        if (index > 0) {
+                            this.$set(this.tracks, index, this.tracks[index - 1]);
+                            this.$set(this.tracks, index - 1, track);
+                            this.tracks = this.tracks;
+
+                            if (this.activeIndex === index - 1) {
+                                this.activeIndex++;
+                            } else if (this.activeIndex === index) {
+                                this.activeIndex--;
+                            }
+
+                            if (this.selectedIndex === index - 1) {
+                                this.selectedIndex++;
+                            } else if (this.selectedIndex === index) {
+                                this.selectedIndex--;
+                            }
+                        }
+                    } else if (type === 'down') {
+                        if (index + 1 < this.tracks.length) {
+                            this.$set(this.tracks, index, this.tracks[index + 1]);
+                            this.$set(this.tracks, index + 1, track);
+                            this.tracks = this.tracks;
+
+                            if (this.activeIndex === index) {
+                                this.activeIndex++;
+                            } else if (this.activeIndex === index + 1) {
+                                this.activeIndex--;
+                            }
+
+                            if (this.selectedIndex === index) {
+                                this.selectedIndex++;
+                            } else if (this.selectedIndex === index + 1) {
+                                this.selectedIndex--;
+                            }
+                        }
                     } else if (type === 'remove') {
                         this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1));
                         trashCan.data.push(track);
                     }
                 });
+            },
+
+            fixDrag() {
+                const el = document.querySelector('.sortable-fallback');
+
+                if (el) {
+                    el.style.width = this.$refs.tracks[0].offsetWidth;
+                }
             },
 
             unSelect() {
@@ -479,34 +523,41 @@
                     font-style: italic;
                 }
             }
-
-            tr {
-                cursor: default;
-
-                svg {
-                    width: 18px;
-                    height: 18px;
-                    fill: #fff;
-                }
-
-                img {
-                    width: 15px;
-                    height: 15px;
-                }
-
-                .drag-handle {
-                    width: 28px;
-                    text-align: center;
-                    vertical-align: middle;
-                    cursor: move;
-                    cursor: -webkit-grab;
-                }
-            }
         }
     }
 
-    .sortable-drag {
+    tr {
+        cursor: default;
+
+        &.sortable-ghost {
+            opacity: .5 !important;
+        }
+
+        svg {
+            width: 18px;
+            height: 18px;
+            fill: #fff;
+        }
+
+        img {
+            width: 15px;
+            height: 15px;
+        }
+
+        .drag-handle {
+            width: 28px;
+            text-align: center;
+            vertical-align: middle;
+            cursor: move;
+            cursor: -webkit-grab;
+        }
+    }
+
+    .sortable-fallback {
+        display: table;
+        position: absolute;
         color: #fff;
+        opacity: .5;
 
         td {
             padding: 0 2px;
