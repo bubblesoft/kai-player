@@ -51,7 +51,7 @@ module.exports = {
                 loader: 'pug-plain-loader'
             },
             {
-                test: /\.(?:mp3|svg|png|ico)$/,
+                test: /\.(?:svg|png|ico)$/,
                 loader: 'url-loader?limit=8192'
             },
             {
@@ -132,6 +132,6 @@ module.exports = {
         }
     },
     resolve: {
-        extensions: [ '.vue', '.scss', '.less', '.js', '.css' ]
+        extensions: [ '.vue', '.js', '.scss', '.less', '.css' ]
     }
 };
