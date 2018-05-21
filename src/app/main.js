@@ -81,6 +81,7 @@ Vue.directive('interact', {
 
 const messages = {
     'en-US': {
+        'Error': 'Error',
         'Confirm': 'Confirm',
         'Cancel': 'Cancel',
         'Close': 'Close',
@@ -134,6 +135,7 @@ const messages = {
         'Electric Arc': 'Electric Arc'
     },
     'zh-CN': {
+        'Error': '错误',
         'Confirm': '确认',
         'Cancel': '取消',
         'Close': '关闭',
@@ -187,6 +189,7 @@ const messages = {
         'Electric Arc': '电弧'
     },
     'ja-JP': {
+        'Error': 'Error',
         'Confirm': 'はい',
         'Cancel': 'いいえ',
         'Close': '閉じる',
@@ -240,6 +243,7 @@ const messages = {
         'Electric Arc': 'Electric Arc'
     },
     'ko-KR': {
+        'Error': 'Error',
         'Confirm': '네',
         'Cancel': '아니',
         'Close': '닫는다',
