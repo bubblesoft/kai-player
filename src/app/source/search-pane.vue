@@ -28,13 +28,6 @@
                         v-interact:doubletap="() => { addToPlayback(track); }"
                         @contextmenu.prevent="handleContextMenu(track);"
                     )
-                        td.drag-handle
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
                         td(style="padding: 0;")
                         td {{ track.name }}
                         td {{ track.artists.map(artist => artist.name).join(', ') }}
@@ -49,6 +42,13 @@
                                 :alt="mapMediaSourceName(track.id.split('_')[0])"
                                 :title="mapMediaSourceName(track.id.split('_')[0])"
                             )
+                        td.drag-handle
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
         vueLoading(
             v-if="loading"
             type="cylon"
@@ -61,7 +61,7 @@
 
     import { formatDuration, mapMediaSourceIcon, mapMediaSourceName } from '../../scripts/utils';
 
-    import { UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
+    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
 
     import Track from '../Track';
     import Artist from '../Artist';
@@ -86,6 +86,10 @@
         computed: {
             sources() {
                 return this.sourceGroup.get();
+            },
+
+            queue() {
+                this.queueGroup.get(this.queueGroup.active)
             },
 
             player() {
@@ -113,7 +117,6 @@
             ...mapState({
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 queueGroup: state => state.queueModule.queueGroup,
-                queue: state => state.queueModule.queueGroup.get(state.queueModule.queueGroup.active),
                 playerController: state => state.playerModule.playerController,
                 visualizer: state => state.visualizationModule.visualizer,
                 i18next: state => state.generalModule.i18next,
@@ -148,6 +151,10 @@
                             duration: trackData.duration || null,
                             artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
                             picture: (() => {
+                                if (!trackData.picture) {
+                                    return null;
+                                }
+
                                 const url = new URL(trackData.picture);
 
                                 return `/proxy/${url.hostname}${url.pathname}`;
@@ -165,6 +172,10 @@
 
             async addToPlayback(track) {
                 this[ADD_TRACK]({ track });
+                this[UPDATE_QUEUE]({
+                    index: this.queueGroup.active,
+                    active: this.queue.length - 1
+                });
 
                 const playing = this.player.playing;
 
@@ -193,10 +204,18 @@
                 });
             },
 
+            fixDrag() {
+                const el = document.querySelector('.sortable-fallback');
+                if (el) {
+                    el.style.width = this.$refs.list.offsetWidth;
+                }
+            },
+
             mapMediaSourceIcon,
             mapMediaSourceName,
 
             ...mapMutations([
+                UPDATE_QUEUE,
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
                 UPDATE_TRACK,
@@ -231,27 +250,6 @@
             box-shadow: inset 0 2px 1px -1.5px rgba(255, 255, 255, 0.2);
             overflow: auto;
             transition: filter .5s;
-
-            tr {
-                cursor: default;
-
-                td {
-                    word-break: break-word;
-
-                    &.drag-handle {
-                         width: 28px;
-                         text-align: center;
-                         cursor: move;
-                         cursor: -webkit-grab;
-
-                        svg {
-                            width: 18px;
-                            height: 18px;
-                            fill: #fff;
-                        }
-                    }
-                }
-            }
         }
 
         .vue-loading {
@@ -263,23 +261,47 @@
         }
     }
 
-    .sortable-drag {
-        color: #fff;
+    tr {
+        cursor: default;
+
+        &.sortable-ghost {
+            opacity: .5 !important;
+        }
 
         td {
-            padding: 0 2px;
+            word-wrap: break-word;
+            word-break: break-all;
+
+            &.drag-handle {
+                width: 28px;
+                text-align: center;
+                cursor: move;
+                cursor: -webkit-grab;
+            }
 
             svg {
                 width: 18px;
                 height: 18px;
                 fill: #fff;
-                vertical-align: middle;
+            }
+
+            img {
+                vertical-align: top;
+                width: 15px;
+                height: 15px;
+                margin-top: 2px;
             }
         }
     }
 
-    img {
-        width: 15px;
-        height: 15px;
+    .sortable-fallback {
+        display: table;
+        position: absolute;
+        color: #fff;
+        opacity: .5;
+
+        td {
+            padding: 5px;
+        }
     }
 </style>

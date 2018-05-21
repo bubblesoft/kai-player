@@ -33,13 +33,7 @@
         },
 
         methods: {
-            ...mapMutations([
-                UPDATE_SOURCE
-            ])
-        },
-
-        watch: {
-            'sourceGroup.length' () {
+            loadSources() {
                 this.sources = this.sourceGroup.get();
 
                 this.sources.forEach((source, index) => {
@@ -49,6 +43,22 @@
                         this[UPDATE_SOURCE]({ index, active: to });
                     });
                 });
+            },
+
+            ...mapMutations([
+                UPDATE_SOURCE
+            ])
+        },
+
+        created() {
+            if (this.sourceGroup.length) {
+                this.loadSources();
+            }
+        },
+
+        watch: {
+            'sourceGroup.length' () {
+                this.loadSources();
             }
         }
     }

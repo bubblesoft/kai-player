@@ -517,12 +517,7 @@ const queueModule = {
         },
 
         [ADD_TRACK](state, { track, queue = state.queueGroup.get(state.queueGroup.active) }) {
-            queue.active = queue.add(track);
-
-            const active = state.queueGroup.active;
-
-            state.queueGroup.active = null;
-            state.queueGroup.active = active;
+            queue.add(track);
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 

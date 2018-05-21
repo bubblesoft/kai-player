@@ -32,6 +32,7 @@ module.exports = {
     },
     output: {
         filename: '[name].bundle.js',
+        chunkFilename: '[name].bundle.js',
         path: path.resolve(rootDir, 'build')
     },
     module: {

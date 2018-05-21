@@ -92,13 +92,13 @@
 
     import contextMenu from 'vue-context-menu';
 
+    import loading from './loading';
+    import error from './error';
     import banner from './banner';
     import controlBar from './control-bar';
     import paneFrame from './pane-frame';
     import picturePane from './queue/picture-pane';
     import sourcePane from './source/source-pane';
-    import searchPane from './source/search-pane';
-    import listPane from './source/list-pane';
     import playlistPane from './queue/playlist-pane';
     import tracksPane from './queue/tracks-pane';
     import settings from './settings';
@@ -107,13 +107,30 @@
     export default {
         components: {
             contextMenu,
+            loading,
+            error,
             banner,
             controlBar,
             paneFrame,
             picturePane,
-            sourcePane,
-            searchPane,
-            listPane,
+            sourcePane: () => ({
+                component: import('./source/source-pane'),
+                loading,
+                error,
+                timeout: 30000
+            }),
+            searchPane: () => ({
+                component: import('./source/search-pane'),
+                loading,
+                error,
+                timeout: 30000
+            }),
+            listPane: () => ({
+                component: import('./source/list-pane'),
+                loading,
+                error,
+                timeout: 30000
+            }),
             playlistPane,
             tracksPane,
             settings,
@@ -401,7 +418,7 @@
 
                 this[ADD_SOURCES](sources);
 
-                if (this.queue.constructor === RandomQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
+                if (this.queue && this.queue.constructor === RandomQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
                     const track = await getRecommendedTrack(null, sources);
 
                     this[ADD_TRACK]({ track });
