@@ -2,7 +2,10 @@
     #control-bar(:style="{ backgroundImage: 'url(' + require('../assets/highlight.svg') + '),linear-gradient(rgba(255,255,255,.15) 10%,rgba(255,255,255,0) 90%),url(' + pic + ')' }")
         .tool-bar
             .options
-                select.form-control(v-model="activeBackgroundType")
+                select.form-control(
+                    v-if="visualizationInit"
+                    v-model="activeBackgroundType"
+                )
                     option(
                         value=""
                         disabled
@@ -11,7 +14,10 @@
                         v-for="tpe in background.types"
                         :value="tpe.value"
                     ) {{ $t(tpe.name) }}
-                select.form-control(v-model="activeVisualizerType")
+                select.form-control(
+                    v-if="visualizationInit"
+                    v-model="activeVisualizerType"
+                )
                     option(
                         value=""
                         disabled
@@ -170,7 +176,7 @@
 </template>
 
 <script>
-    import { mapState, mapMutations } from 'vuex';
+    import { mapState, mapMutations, mapActions } from 'vuex';
 
     import scale from '../scripts/scale';
     import applyCanvasMask from '../scripts/canvasMask';
@@ -225,6 +231,7 @@
                 },
                 set(type) {
                     this[UPDATE_ACTIVE_BACKGROUND_TYPE](type);
+                    this.track && this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
                 }
             },
 
@@ -234,6 +241,7 @@
                 },
                 set(type) {
                     this[UPDATE_ACTIVE_VISUALIZER_TYPE](type);
+                    this.track && this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
                 }
             },
 
@@ -347,6 +355,7 @@
                 queue: state => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex),
                 playerController: state => state.playerModule.playerController,
                 sourceGroup: state => state.sourceModule.sourceGroup,
+                visualizationInit: state => state.visualizationModule.init,
                 background: state => state.visualizationModule.background,
                 visualizer: state => state.visualizationModule.visualizer,
                 layout: state => state.generalModule.layout
@@ -405,22 +414,31 @@
                 } catch (e) { }
 
                 this.loading = false;
+                await this.triggerBackgroundEvent('play');
                 this[SWITCH_TO_VISUALIZER]();
             },
 
-            pause() {
+            async pause() {
                 this.player.pause();
                 this.visualizer.stop();
                 this[SWITCH_TO_BACKGROUND]();
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
+                await this.triggerBackgroundEvent('pause');
+                this.triggerBackgroundEvent('reset');
             },
 
-            stop() {
+            async stop() {
+                if (!this.player.playing) {
+                    return;
+                }
+
                 this.player.stop();
                 this.progress = 0;
                 this.visualizer.stop();
                 this[SWITCH_TO_BACKGROUND]();
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
+                await this.triggerBackgroundEvent('stop');
+                this.triggerBackgroundEvent('reset');
             },
 
             changeProgress(progress) {
@@ -428,10 +446,19 @@
             },
 
             async previous() {
+                const playing = this.player.playing;
+
                 await this._playTrack(this.queue.get(this.queue.previous()));
+                await this.triggerBackgroundEvent('previousTrack');
+
+                if (!playing) {
+                    this[SWITCH_TO_VISUALIZER]();
+                }
             },
 
             async next() {
+                const playing = this.player.playing;
+
                 this.player.stop();
 
                 if (this.queue.constructor === RandomQueue) {
@@ -441,6 +468,11 @@
                 }
 
                 await this._playTrack(this.queue.get(this.queue.next()));
+                await this.triggerBackgroundEvent('nextTrack');
+
+                if (!playing) {
+                    this[SWITCH_TO_VISUALIZER]();
+                }
             },
 
             toggleSettingsModal() {
@@ -458,6 +490,10 @@
                 VISUALIZER_LISTEN_TO,
                 BACKGROUND_LOAD_RESOURCE,
                 VISUALIZER_LOAD_RESOURCE
+            ]),
+
+            ...mapActions([
+                'triggerBackgroundEvent'
             ])
         },
 

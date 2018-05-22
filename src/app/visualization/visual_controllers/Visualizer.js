@@ -5,7 +5,6 @@
 import Clubber from 'clubber';
 
 import VisualController from './VisualController';
-import { threeRenderer, histogramRenderer, electricArcRenderer, artworkRenderer } from '../renderers/renderers';
 
 import '../../../styles/histogram';
 
@@ -49,8 +48,10 @@ export default class Visualizer extends VisualController {
         }
     }
 
-    constructor(type) {
-        const renderers = {
+    constructor(type, renderers) {
+        const { threeRenderer, histogramRenderer, electricArcRenderer, artworkRenderer } = renderers;
+
+        const _renderers = {
             three: threeRenderer,
             histogram: histogramRenderer,
             electricArc: electricArcRenderer,
@@ -58,7 +59,7 @@ export default class Visualizer extends VisualController {
         };
 
         if (type === 'random') {
-            const rendererTypes = Object.keys(renderers);
+            const rendererTypes = Object.keys(_renderers);
 
             super(rendererTypes[Math.floor(rendererTypes.length * Math.random())]);
             this._random = true;
@@ -66,7 +67,7 @@ export default class Visualizer extends VisualController {
             super(type);
         }
 
-        this._renderers = renderers;
+        this._renderers = _renderers;
         this._active = false;
 
         this._clubber = new Clubber({
@@ -83,6 +84,8 @@ export default class Visualizer extends VisualController {
         if (this._active) {
             return;
         }
+
+        const { artworkRenderer } = this._renderers.artwork;
 
         if (this.activeRenderer === artworkRenderer) {
             requestAnimationFrame(() => {

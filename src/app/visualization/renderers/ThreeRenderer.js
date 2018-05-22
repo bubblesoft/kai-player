@@ -137,6 +137,8 @@ export default class ThreeRenderer extends Renderer {
             layout = 'musicNote';
         }
 
+        this.stopAnimate();
+
         if (this.mode === 'physics') {
             this.threeAudioVisualization._currentLayout = layout;
             await this.threeAudioVisualization.switchMode('basic');
@@ -144,5 +146,7 @@ export default class ThreeRenderer extends Renderer {
         } else {
             await this.threeAudioVisualization.switchLayout(layout);
         }
+
+        this.animate();
     }
 }

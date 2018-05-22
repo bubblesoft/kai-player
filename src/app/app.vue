@@ -429,7 +429,7 @@
             })();
         },
 
-        mounted() {
+        async mounted() {
             this[SET_MODE](window.innerWidth < 600 ? 'mobile' : 'desktop');
 
             const layoutData = localStorage.getItem('kaiplayerlayout' + this.mode);
@@ -445,10 +445,19 @@
 
             document.body.addEventListener('click', this.blur);
 
-            this.initVisualization(this.$el);
+            await this.initVisualization(this.$el);
             this.background.activeRenderer.start();
             this.background.start();
             this.background.activeRenderer.show();
+
+            if (this.queue.constructor === RandomQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
+                const track = await getRecommendedTrack(null, sources);
+
+                this[ADD_TRACK](track);
+                this[BACKGROUND_LOAD_RESOURCE]({ picture: track.picture });
+            } else {
+                this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
+            }
         },
         destroyed() {
             document.body.removeEventListener('click', this.blur);
