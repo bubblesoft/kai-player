@@ -2,8 +2,6 @@
  * Created by qhyang on 2018/3/1.
  */
 
-import { threeRenderer, histogramRenderer, electricArcRenderer } from '../renderers/renderers';
-
 const mapTypeName = type => {
     switch (type) {
         case 'three':
@@ -18,11 +16,7 @@ const mapTypeName = type => {
 };
 
 export default class VisualController {
-    _renderers = {
-        three: threeRenderer,
-        histogram: histogramRenderer,
-        electricArc: electricArcRenderer
-    };
+    _renderers;
     _activeType;
     _mountPoint;
     _root;

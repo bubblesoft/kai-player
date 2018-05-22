@@ -18,7 +18,7 @@ import '../styles/bootstrap';
 import '../styles/base';
 import '../styles/pretty-checkbox';
 
-import { ADD_SOURCES, UPDATE_SOURCE, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, SET_BACKGROUND_IMAGE, SET_LOCALE, SET_SHOW_SOURCE_ICON, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
+import { ADD_SOURCES, UPDATE_SOURCE, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, SET_BACKGROUND_IMAGE, SET_LOCALE, SET_SHOW_SOURCE_ICON, INIT_VISUALIZATION, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
@@ -28,7 +28,6 @@ import RandomQueue from './queue/RandomQueue';
 import Track from './Track';
 import Artist from './Artist';
 import Player from './Player';
-import { threeRenderer, histogramRenderer, electricArcRenderer, artworkRenderer } from './visualization/renderers/renderers';
 import Background from './visualization/visual_controllers/Background';
 import Visualizer from './visualization/visual_controllers/Visualizer';
 
@@ -535,10 +534,16 @@ const playerModule = {
 
 const visualizationModule = {
     state: {
-        background: new Background( localStorage.getItem('kaisoftbackgroundtype') || 'three'),
-        visualizer: new Visualizer(localStorage.getItem('kaisoftvisualizertype') || 'random')
+        background: null,
+        visualizer: null,
+        init: false
     },
     mutations: {
+        [INIT_VISUALIZATION](state, renderers) {
+            state.background = new Background( localStorage.getItem('kaisoftbackgroundtype') || 'three', renderers);
+            state.visualizer = new Visualizer(localStorage.getItem('kaisoftvisualizertype') || 'random', renderers);
+            state.init = true;
+        },
         [UPDATE_ACTIVE_BACKGROUND_TYPE](state, type) {
             const previousRenderer = state.background.activeRenderer,
                 playing = playerModule.state.playerController.player ? playerModule.state.playerController.player.playing : false;
@@ -595,7 +600,6 @@ const visualizationModule = {
 
         async [SWITCH_TO_VISUALIZER](state) {
             if (state.background.activeRenderer !== state.visualizer.activeRenderer) {
-                await state.background.event('play');
                 state.background.activeRenderer.hide();
                 state.visualizer.activeRenderer.start();
                 state.visualizer.start();
@@ -607,10 +611,6 @@ const visualizationModule = {
                 state.background.stop();
                 state.visualizer.start();
             }
-        },
-
-        [TRIGGER_BACKGROUND_EVENT](state, type) {
-            state.background.event(type);
         },
 
         [VISUALIZER_LISTEN_TO](state, audioSource) {
@@ -626,11 +626,18 @@ const visualizationModule = {
         }
     },
     actions: {
-        initVisualization(context, mountPoint) {
-            threeRenderer.init(mountPoint);
-            histogramRenderer.init(mountPoint);
-            electricArcRenderer.init(mountPoint);
-            artworkRenderer.init(mountPoint);
+        async initVisualization({ commit }, mountPoint) {
+            const renderers = await import('./visualization/renderers/renderers');
+
+            commit(INIT_VISUALIZATION, renderers);
+
+            renderers.threeRenderer.init(mountPoint);
+            renderers.histogramRenderer.init(mountPoint);
+            renderers.electricArcRenderer.init(mountPoint);
+            renderers.artworkRenderer.init(mountPoint);
+        },
+        async triggerBackgroundEvent({ commit, state }, type) {
+            await state.background.event(type);
         }
     }
 };

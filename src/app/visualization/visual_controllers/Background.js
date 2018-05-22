@@ -3,7 +3,6 @@
  */
 
 import VisualController from './VisualController';
-import { threeRenderer, artworkRenderer } from '../renderers/renderers';
 
 export default class Background extends VisualController {
     get activeType() {
@@ -27,8 +26,10 @@ export default class Background extends VisualController {
         }
     }
 
-    constructor(type) {
+    constructor(type, renderers) {
         super(type);
+
+        const { threeRenderer, artworkRenderer } = renderers;
 
         this._renderers = {
             three: threeRenderer,
@@ -38,6 +39,8 @@ export default class Background extends VisualController {
 
     start() {
         super.start();
+
+        const { artworkRenderer } = this._renderers.artwork;
 
         if (this.activeRenderer === artworkRenderer) {
             return;
