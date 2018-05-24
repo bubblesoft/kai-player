@@ -44,8 +44,6 @@ export default class ThreeRenderer extends Renderer {
     }
 
     renderAudio(bands) {
-        window.threeAudioVisualization = this.threeAudioVisualization;
-
         if (this.mode === 'basic') {
             this.threeAudioVisualization.switchMode('physics');
             this.mode = 'physics';

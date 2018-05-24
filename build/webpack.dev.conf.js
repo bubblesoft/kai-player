@@ -9,7 +9,6 @@ const path = require('path');
 const webpack = require('webpack');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const BannerWebpackPlugin = require("banner-webpack-plugin");
 
 const rootDir = path.resolve(__dirname, '..');
 
@@ -77,62 +76,7 @@ module.exports = {
             template: path.resolve(rootDir, 'src', 'index.html'),
             chunks: [ 'app', 'runtime' ]
         }),
-        new VueLoaderPlugin(),
-        new BannerWebpackPlugin({
-            chunks: {
-                app: {
-                    afterContent: `//
-                    (function() {  
-                        if (window.TweenLite) {
-                            var counter = document.querySelector('.kai-loading__counter');
-        
-                            TweenLite.to({
-                                progress: 20
-                            }, 0.5, {
-                                progress: 100,
-                                onUpdate: function() {
-                                    counter.querySelector('h1').childNodes[0].data = this.target.progress.toFixed() + "%";
-                                    counter.querySelector('hr').style.width = this.target.progress.toFixed() + "%";
-                                },
-                                onComplete: function() {
-                                    TweenLite.to({
-                                        opacity: 1
-                                    }, 0.5, {
-                                        opacity: 0,
-                                        onUpdate: function() {
-                                            document.querySelector('.kai-loading').style.opacity = '' + this.target.opacity;
-                                        },
-                                        onComplete: function() {
-                                            document.querySelector('.kai-loading').style.display = 'none';
-                                        }
-                                    });
-                                }
-                            });
-                        } else {
-                            document.querySelector('.kai-loading').style.display = 'none';
-                        }
-                    }());
-                `},
-                runtime: {
-                    beforeContent: `//
-                    (function() {  
-                        if (window.TweenLite) {
-                            var counter = document.querySelector('.kai-loading__counter');
-        
-                            TweenLite.to({
-                                progress: 10
-                            }, 0.5, {
-                                progress: 20,
-                                onUpdate: function() {
-                                    counter.querySelector('h1').childNodes[0].data = this.target.progress.toFixed() + "%";
-                                    counter.querySelector('hr').style.width = this.target.progress.toFixed() + "%";
-                                }
-                            });
-                        }
-                    }());
-                `}
-            }
-        })
+        new VueLoaderPlugin()
     ],
     optimization: {
         runtimeChunk: {
