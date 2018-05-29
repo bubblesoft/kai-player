@@ -9,14 +9,14 @@ const path = require('path');
 const webpack = require('webpack');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const BannerWebpackPlugin = require("banner-webpack-plugin");
+const BannerWebpackPlugin = require('banner-webpack-plugin');
 
 const rootDir = path.resolve(__dirname, '..');
 
 module.exports = {
     mode: 'development',
     devServer: {
-        contentBase: path.resolve(rootDir, 'dist'),
+        contentBase: path.resolve(rootDir, 'build'),
         proxy: {
             '/audio': 'http://localhost:3000'
         }
@@ -41,6 +41,13 @@ module.exports = {
                 exclude: /node_modules/
             },
             {
+                test: /\.js$/,
+                loader: 'babel-loader',
+                include: [
+                    path.resolve(rootDir, 'node_modules', 'three-audio-visualization')
+                ]
+            },
+            {
                 test: /\.scss$/,
                 loaders: [ 'style-loader', 'css-loader', 'sass-loader' ],
                 exclude: /node_modules/
@@ -52,6 +59,13 @@ module.exports = {
             },
             {
                 test: /\.(?:mp3|svg|png|ico)$/,
+                loader: 'url-loader?limit=8192'
+            },
+            {
+                include: [
+                    path.resolve(rootDir, 'node_modules', 'three-audio-visualization', 'src', 'vendors', 'physijs', 'physijs_worker.js'),
+                    path.resolve(rootDir, 'node_modules', 'ammo.js')
+                ],
                 loader: 'url-loader?limit=8192'
             },
             {

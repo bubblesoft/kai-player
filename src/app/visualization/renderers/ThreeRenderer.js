@@ -11,10 +11,12 @@ import Renderer from './Renderer';
 const color = (() => {
     const colors = config.colorSet;
 
+    colors.splice(2, 2);
+
     let i = 0;
 
     return () => {
-        if (i > 5) {
+        if (i === colors.length) {
             i = 0;
         }
 
@@ -24,6 +26,8 @@ const color = (() => {
 
 export default class ThreeRenderer extends Renderer {
     mode;
+    animateTimeout;
+    tileAnimateTimeouts = [];
 
     constructor() {
         super();
@@ -35,10 +39,7 @@ export default class ThreeRenderer extends Renderer {
     init(mountPoint) {
         super.init(mountPoint);
 
-        this.threeAudioVisualization.init(this.root.offsetWidth || window.innerWidth, this.root.offsetHeight || window.innerHeight, {
-            accentColor: '#fff',
-            accentIndices: [0]
-        });
+        this.threeAudioVisualization.init(this.root.offsetWidth || window.innerWidth, this.root.offsetHeight || window.innerHeight);
 
         this.threeAudioVisualization.mount(this.root);
     }
@@ -47,8 +48,8 @@ export default class ThreeRenderer extends Renderer {
         window.threeAudioVisualization = this.threeAudioVisualization;
 
         if (this.mode === 'basic') {
-            this.threeAudioVisualization.switchMode('physics');
             this.mode = 'physics';
+            this.threeAudioVisualization.switchMode('physics');
         }
 
         let data = [];
@@ -58,7 +59,7 @@ export default class ThreeRenderer extends Renderer {
             band(data[index]);
         });
 
-        this.threeAudioVisualization.applyForces(...data.map(band => Math.sqrt(band[3] * 800000000000)));
+        this.threeAudioVisualization.applyForces(...data.map(band => Math.sqrt(band[3] * 500000000000)));
     }
 
     start() {
@@ -92,32 +93,34 @@ export default class ThreeRenderer extends Renderer {
         super.animate();
 
         requestAnimationFrame(async () => {
+            if (!this.animating) {
+                return;
+            }
+
             if (this.mode === 'physics') {
                 this.mode = 'basic';
                 await this.threeAudioVisualization.switchMode('basic');
             }
 
-            this.threeAudioVisualization.startFloatingTiles(20);
+            this.threeAudioVisualization.startFloatingTiles(10);
 
             color();
 
             const animateTiles = () => {
-                if (this.animating) {
-                    const tileColor = color();
+                const tileColor = color();
 
-                    this.threeAudioVisualization._tiles.forEach((tile, index) => {
-                        setTimeout(() => {
-                            this.threeAudioVisualization.rollOverTile(index, {
-                                color: tileColor,
-                                direction: 'horizontal'
-                            });
-                        }, 500 * Math.random());
-                    });
+                this.threeAudioVisualization._tiles.forEach((tile, index) => {
+                    this.tileAnimateTimeouts[index] = setTimeout(() => {
+                        this.threeAudioVisualization.rollOverTile(index, {
+                            color: tileColor,
+                            direction: 'horizontal'
+                        });
+                    }, 500 * Math.random());
+                });
 
-                    setTimeout(() => {
-                        animateTiles();
-                    }, 3000 + 10000 * Math.random());
-                }
+                this.animateTimeout = setTimeout(() => {
+                    animateTiles();
+                }, 3000 + 10000 * Math.random());
             };
 
             animateTiles();
@@ -126,6 +129,12 @@ export default class ThreeRenderer extends Renderer {
 
     stopAnimate() {
         super.stopAnimate();
+
+        clearTimeout(this.animateTimeout);
+
+        this.tileAnimateTimeouts.forEach(timeout => {
+            clearTimeout(timeout);
+        });
 
         this.threeAudioVisualization.stopFloatingTiles();
     }
@@ -141,10 +150,16 @@ export default class ThreeRenderer extends Renderer {
 
         if (this.mode === 'physics') {
             this.threeAudioVisualization._currentLayout = layout;
-            await this.threeAudioVisualization.switchMode('basic');
+
+            try {
+                await this.threeAudioVisualization.switchMode('basic');
+            } catch (e) { }
+
             this.mode = 'basic';
         } else {
-            await this.threeAudioVisualization.switchLayout(layout);
+            try {
+                await this.threeAudioVisualization.switchLayout(layout);
+            } catch (e) { }
         }
 
         this.animate();

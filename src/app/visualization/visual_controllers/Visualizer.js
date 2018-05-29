@@ -110,13 +110,13 @@ export default class Visualizer extends VisualController {
         }
 
         const render = () => {
+            if (!this._active) {
+                return;
+            }
+
             this._clubber.update();
             this.activeRenderer.renderAudio(bands);
-
-
-            if (this._active) {
-                requestAnimationFrame(render);
-            }
+            requestAnimationFrame(render);
         };
 
         requestAnimationFrame(() => {
