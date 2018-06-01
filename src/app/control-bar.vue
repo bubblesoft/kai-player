@@ -414,7 +414,11 @@
                 } catch (e) { }
 
                 this.loading = false;
-                await this.triggerBackgroundEvent('play');
+
+                if (this.activeBackgroundType !== 'three' || this.activeVisualizerType !== 'three') {
+                    await this.triggerBackgroundEvent('play');
+                }
+
                 this[SWITCH_TO_VISUALIZER]();
             },
 
@@ -424,7 +428,7 @@
                 this[SWITCH_TO_BACKGROUND]();
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
                 await this.triggerBackgroundEvent('pause');
-                this.triggerBackgroundEvent('reset');
+                await this.triggerBackgroundEvent('reset');
             },
 
             async stop() {
@@ -438,7 +442,7 @@
                 this[SWITCH_TO_BACKGROUND]();
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
                 await this.triggerBackgroundEvent('stop');
-                this.triggerBackgroundEvent('reset');
+                await this.triggerBackgroundEvent('reset');
             },
 
             changeProgress(progress) {
