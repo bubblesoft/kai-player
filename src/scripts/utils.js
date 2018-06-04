@@ -61,6 +61,10 @@ const getRecommendedTrack = async (track, sources) => {
         duration: recommendedTrack.duration || null,
         artists: recommendedTrack.artists.map(artist => new Artist({ name: artist.name })),
         picture: (() => {
+            if (!recommendedTrack.picture) {
+                return null;
+            }
+
             const url = new URL(recommendedTrack.picture);
 
             return `/proxy/${url.hostname}${url.pathname}`;
@@ -96,7 +100,7 @@ const generateLayout = (type, viewportWidth, viewportHeight) => {
         let width = viewportWidth * .3;
 
         (width < 300) && (width = 300);
-        (width > 500) && (width = 500);
+        (width > 600) && (width = 600);
 
         return {
             picture: { mode: 'leftTop', visible: true, x: viewportWidth * .03, y: viewportWidth * .03 - 40, width: Math.min(viewportWidth * .25, 360), height: Math.min(viewportWidth * .25, 360), opacity: .4, autoHide: true },

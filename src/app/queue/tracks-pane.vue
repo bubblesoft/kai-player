@@ -266,6 +266,8 @@
 
         methods: {
             async playTrack(index) {
+                this.player.stop();
+
                 const playing = this.playing,
                     track = await this.queue.get(this.queue.goTo(index));
 

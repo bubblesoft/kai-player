@@ -49,7 +49,7 @@
 <style lang="scss" scoped>
     .yoyo-marquee {
         overflow: hidden;
-        text-align: center;
+        text-align: left;
 
         .content {
             display: inline-block;

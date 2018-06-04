@@ -81,7 +81,7 @@
 <script>
     import { mapState, mapMutations, mapActions } from 'vuex';
 
-    import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SWITCH_TO_BACKGROUND, BACKGROUND_LOAD_RESOURCE } from '../scripts/mutation-types';
+    import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SWITCH_TO_BACKGROUND, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE } from '../scripts/mutation-types';
 
     import Source from './source/Source';
     import Channel from './source/Channel';
@@ -358,6 +358,7 @@
                 LOAD_LAYOUT,
                 SAVE_LAYOUT,
                 SWITCH_TO_BACKGROUND,
+                VISUALIZER_LISTEN_TO,
                 BACKGROUND_LOAD_RESOURCE
             ]),
             ...mapActions([
@@ -384,16 +385,33 @@
                 this[UPDATE_QUEUE_GROUP]({ active: 1 });
                 this[UPDATE_PLAYING_QUEUE_INDEX](1);
             }
+        },
 
-            const sourceActiveMap = JSON.parse(localStorage.getItem('kaiplayersourceactive')) || { hearthis: false };
+        async mounted() {
+            this[SET_MODE](window.innerWidth < 600 ? 'mobile' : 'desktop');
 
-            (async () => {
-                const sources = (await (await fetch('/audio/sources', {
+            const layoutData = localStorage.getItem('kaiplayerlayout' + this.mode);
+
+            if (layoutData) {
+                this[LOAD_LAYOUT](JSON.parse(layoutData));
+            } else {
+                const viewportWidth = window.innerWidth,
+                    viewportHeight = window.innerHeight - document.querySelector('#control-bar').offsetHeight;
+
+                this[LOAD_LAYOUT](generateLayout(this.mode, viewportWidth, viewportHeight));
+            }
+
+            document.body.addEventListener('click', this.blur);
+
+            const sourceActiveMap = JSON.parse(localStorage.getItem('kaiplayersourceactive')) || { hearthis: false },
+                fetchPromise = fetch('/audio/sources', {
                     method: 'POST',
                     headers: new Headers({
                         'Content-Type': 'application/json'
                     })
-                })).json()).data.map(source => {
+                }),
+                initVisualizationPromise = this.initVisualization(this.$el),
+                sources = (await (await fetchPromise).json()).data.map(source => {
                     const _source = new Source({
                         id: source.id,
                         name: source.name
@@ -416,49 +434,33 @@
                     return _source;
                 });
 
-                this[ADD_SOURCES](sources);
+            this[ADD_SOURCES](sources);
 
-                if (this.queue && this.queue.constructor === RandomQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
-                    const track = await getRecommendedTrack(null, sources);
+            await initVisualizationPromise;
 
-                    this[ADD_TRACK]({ track });
-                    this[BACKGROUND_LOAD_RESOURCE]({ picture: track.picture });
-                } else {
-                    this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
-                }
-            })();
-        },
+            if (this.player.playing) {
+                this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
+                this.visualizer.activeRenderer.start();
+                this.visualizer.start();
+                this.visualizer.activeRenderer.show();
 
-        async mounted() {
-            this[SET_MODE](window.innerWidth < 600 ? 'mobile' : 'desktop');
-
-            const layoutData = localStorage.getItem('kaiplayerlayout' + this.mode);
-
-            if (layoutData) {
-                this[LOAD_LAYOUT](JSON.parse(layoutData));
-            } else {
-                const viewportWidth = window.innerWidth,
-                    viewportHeight = window.innerHeight - document.querySelector('#control-bar').offsetHeight;
-
-                this[LOAD_LAYOUT](generateLayout(this.mode, viewportWidth, viewportHeight));
+                return;
             }
 
-            document.body.addEventListener('click', this.blur);
-
-            await this.initVisualization(this.$el);
             this.background.activeRenderer.start();
             this.background.start();
             this.background.activeRenderer.show();
 
             if (this.queue.constructor === RandomQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
-                const track = await getRecommendedTrack(null, sources);
+                const track = await getRecommendedTrack(null, sources.filter(source => source.active));
 
-                this[ADD_TRACK](track);
+                this[ADD_TRACK]({ track });
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: track.picture });
             } else {
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
             }
         },
+
         destroyed() {
             document.body.removeEventListener('click', this.blur);
         }

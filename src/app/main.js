@@ -638,7 +638,10 @@ const visualizationModule = {
 
             commit(INIT_VISUALIZATION, renderers);
 
-            renderers.threeRenderer.init(mountPoint);
+            try {
+                renderers.threeRenderer.init(mountPoint);
+            } catch (e) { }
+
             renderers.histogramRenderer.init(mountPoint);
             renderers.electricArcRenderer.init(mountPoint);
             renderers.artworkRenderer.init(mountPoint);
