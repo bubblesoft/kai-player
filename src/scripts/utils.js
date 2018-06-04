@@ -64,7 +64,6 @@ const getRecommendedTrack = async (track, sources) => {
             const url = new URL(recommendedTrack.picture);
 
             return `/proxy/${url.hostname}${url.pathname}`;
-
         })()
     });
 };

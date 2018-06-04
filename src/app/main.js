@@ -19,7 +19,7 @@ import '../styles/bootstrap';
 import '../styles/base';
 import '../styles/pretty-checkbox';
 
-import { ADD_SOURCES, UPDATE_SOURCE, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, SET_BACKGROUND_IMAGE, SET_LOCALE, SET_SHOW_SOURCE_ICON, INIT_VISUALIZATION, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
+import { ADD_SOURCES, UPDATE_SOURCE, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, SET_BACKGROUND_IMAGE, SET_LOCALE, SET_SHOW_SOURCE_ICON, INIT_VISUALIZATION, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
@@ -85,12 +85,16 @@ const messages = {
         'Cancel': 'Cancel',
         'Close': 'Close',
         'Play': 'Play',
+        'Repeat all': 'Repeat all',
+        'Repeat one': 'Repeat one',
+        'Shuffle': 'Shuffle',
         'Move up': 'Move up',
         'Move down': 'Move down',
         'Select': 'Select',
         'Remove': 'Remove',
         'New': 'New',
         'Settings': 'Settings',
+        'Confirm Action': 'Confirm Action',
         'Add to playlist': 'Add to playlist',
         'Import all as a playlist': 'Import all as a playlist',
         'Chart': 'Chart',
@@ -141,12 +145,16 @@ const messages = {
         'Cancel': '取消',
         'Close': '关闭',
         'Play': '播放',
+        'Repeat all': '全部循环',
+        'Repeat one': '单曲循环',
+        'Shuffle': '随机',
         'Move up': '上移',
         'Move down': '下移',
         'Select': '选择',
         'Remove': '删除',
         'New': '新建',
         'Settings': '设置',
+        'Confirm Action': '确认',
         'Add to playlist': '添加到播放列表',
         'Import all as a playlist': '导入全部为播放列表',
         'Chart': '排行榜',
@@ -197,12 +205,16 @@ const messages = {
         'Cancel': 'いいえ',
         'Close': '閉じる',
         'Play': '再生',
+        'Repeat all': 'Repeat all',
+        'Shuffle': 'Shuffle',
+        'Repeat one': 'Repeat one',
         'Move down': 'Move down',
         'Move up': 'Move up',
         'Select': '選択',
         'Remove': '削除',
         'New': '新規作成',
         'Settings': '设置',
+        'Confirm Action': 'Confirm Action',
         'Add to playlist': 'プレーリストに追加',
         'Import all as a playlist': '全部を新規プレーリストに',
         'Chart': 'ランキング',
@@ -253,12 +265,16 @@ const messages = {
         'Cancel': '아니',
         'Close': '닫는다',
         'Play': '재생',
+        'Repeat all': 'Repeat all',
+        'Shuffle': 'Shuffle',
+        'Repeat one': 'Repeat one',
         'Move up': 'Move up',
         'Move down': 'Move down',
         'Select': '선택',
         'Remove': '삭제',
         'New': '신규작성',
         'Settings': 'Settings',
+        'Confirm Action': 'Confirm Action',
         'Add to playlist': 'Add to playlist',
         'Import all as a playlist': 'Import all as a playlist',
         'Chart': 'Chart',
@@ -525,6 +541,10 @@ const queueModule = {
                 queue.get(index).duration = duration;
                 saveQueueData(state.queueGroup, state.playingQueueIndex);
             }
+        },
+
+        [SWITCH_QUEUE_MODE](state, { queue = state.queueGroup.get(state.queueGroup.active) } = {}) {
+            queue.switchMode();
         }
     }
 };
@@ -625,11 +645,15 @@ const visualizationModule = {
         },
 
         [BACKGROUND_LOAD_RESOURCE](state, { picture } = {}) {
-            state.background.loadResource({ picture });
+            if (state.background) {
+                state.background.loadResource({ picture });
+            }
         },
 
         [VISUALIZER_LOAD_RESOURCE](state, { picture } = {}) {
-            state.visualizer.loadResource({ picture });
+            if (state.visualizer) {
+                state.visualizer.loadResource({ picture });
+            }
         }
     },
     actions: {
@@ -642,6 +666,14 @@ const visualizationModule = {
             renderers.histogramRenderer.init(mountPoint);
             renderers.electricArcRenderer.init(mountPoint);
             renderers.artworkRenderer.init(mountPoint);
+
+            const queueGroup = queueModule.state.queueGroup,
+                queue = queueGroup.get(queueGroup.active),
+                track = queue ? queue.get(queue.active) : null;
+
+            if (track) {
+                commit(BACKGROUND_LOAD_RESOURCE, { picture: track.picture });
+            }
         },
         async triggerBackgroundEvent({ commit, state }, type) {
             await state.background.event(type);

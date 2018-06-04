@@ -97,10 +97,6 @@
     import banner from './banner';
     import controlBar from './control-bar';
     import paneFrame from './pane-frame';
-    import picturePane from './queue/picture-pane';
-    import sourcePane from './source/source-pane';
-    import playlistPane from './queue/playlist-pane';
-    import tracksPane from './queue/tracks-pane';
     import settings from './settings';
     import selectQueueModal from './select-queue-modal';
 
@@ -112,7 +108,12 @@
             banner,
             controlBar,
             paneFrame,
-            picturePane,
+            picturePane: () => ({
+                component: import('./queue/picture-pane'),
+                loading,
+                error,
+                timeout: 30000
+            }),
             sourcePane: () => ({
                 component: import('./source/source-pane'),
                 loading,
@@ -131,8 +132,18 @@
                 error,
                 timeout: 30000
             }),
-            playlistPane,
-            tracksPane,
+            playlistPane: () => ({
+                component: import('./queue/playlist-pane'),
+                    loading,
+                    error,
+                    timeout: 30000
+            }),
+            tracksPane: () => ({
+                component: import('./queue/tracks-pane'),
+                    loading,
+                    error,
+                    timeout: 30000
+            }),
             settings,
             selectQueueModal
         },
@@ -151,7 +162,7 @@
 
         computed: {
             track() {
-                return this.queue ? this.queue.get(this.queue.active) : [];
+                return this.queue ? this.queue.get(this.queue.active) : null;
             },
 
             pictureLayout: {
@@ -384,49 +395,6 @@
                 this[UPDATE_QUEUE_GROUP]({ active: 1 });
                 this[UPDATE_PLAYING_QUEUE_INDEX](1);
             }
-
-            const sourceActiveMap = JSON.parse(localStorage.getItem('kaiplayersourceactive')) || { hearthis: false };
-
-            (async () => {
-                const sources = (await (await fetch('/audio/sources', {
-                    method: 'POST',
-                    headers: new Headers({
-                        'Content-Type': 'application/json'
-                    })
-                })).json()).data.map(source => {
-                    const _source = new Source({
-                        id: source.id,
-                        name: source.name
-                    });
-
-                    source.channels.forEach(channel => {
-                        _source.add(new Channel({
-                            source: source.id,
-                            type: channel.type,
-                            name: channel.name
-                        }));
-                    });
-
-                    if (sourceActiveMap.hasOwnProperty(source.id)) {
-                        _source.active = sourceActiveMap[source.id];
-                    } else {
-                        _source.active = true;
-                    }
-
-                    return _source;
-                });
-
-                this[ADD_SOURCES](sources);
-
-                if (this.queue && this.queue.constructor === RandomQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
-                    const track = await getRecommendedTrack(null, sources);
-
-                    this[ADD_TRACK]({ track });
-                    this[BACKGROUND_LOAD_RESOURCE]({ picture: track.picture });
-                } else {
-                    this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
-                }
-            })();
         },
 
         async mounted() {
@@ -445,15 +413,51 @@
 
             document.body.addEventListener('click', this.blur);
 
-            await this.initVisualization(this.$el);
+            const initVisualizationPromise = this.initVisualization(this.$el),
+                fetchPromise = fetch('/audio/sources', {
+                    method: 'POST',
+                    headers: new Headers({
+                        'Content-Type': 'application/json'
+                    })
+                });
+
+            await initVisualizationPromise;
+
             this.background.activeRenderer.start();
             this.background.start();
             this.background.activeRenderer.show();
 
-            if (this.queue.constructor === RandomQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
+            const sources = (await (await fetchPromise).json()).data.map(source => {
+                const _source = new Source({
+                    id: source.id,
+                    name: source.name
+                });
+
+                source.channels.forEach(channel => {
+                    _source.add(new Channel({
+                        source: source.id,
+                        type: channel.type,
+                        name: channel.name
+                    }));
+                });
+
+                const sourceActiveMap = JSON.parse(localStorage.getItem('kaiplayersourceactive')) || { hearthis: false };
+
+                if (sourceActiveMap.hasOwnProperty(source.id)) {
+                    _source.active = sourceActiveMap[source.id];
+                } else {
+                    _source.active = true;
+                }
+
+                return _source;
+            });
+
+            this[ADD_SOURCES](sources);
+
+            if (this.queue && this.queue.constructor === RandomQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
                 const track = await getRecommendedTrack(null, sources);
 
-                this[ADD_TRACK](track);
+                this[ADD_TRACK]({ track });
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: track.picture });
             } else {
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });

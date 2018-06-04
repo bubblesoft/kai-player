@@ -53,7 +53,7 @@
                     v-model="queues"
                     :options="{ group: 'queues', handle: '.drag-handle', forceFallback: true, fallbackOnBody: true }"
                     @sort="onSort"
-                    @start="dragging = true"
+                    @start="dragging = true; fixDrag();"
                     @end="dragging = false"
                     element="tbody"
                 )
@@ -63,14 +63,8 @@
                         v-interact:tap="() => { select(index); }"
                         @contextmenu.prevent="handleContextMenu($event, queue, index);"
                         :class="{ active: selectedIndex === index, 'active-queue': activeIndex === index }"
+                        ref="playlists"
                     )
-                        td.drag-handle(v-if="editMode")
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
                         td(style="width:18px")
                             svg(
                                 v-if="index === playingIndex"
@@ -87,6 +81,13 @@
                             )
                         td(v-if="queue.constructor === RandomQueue") ∞
                         td(v-else) {{ queue.length }}
+                        td.drag-handle(v-if="editMode")
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
 </template>
 
 <script>
@@ -284,6 +285,14 @@
                 });
             },
 
+            fixDrag() {
+                const el = document.querySelector('.sortable-fallback');
+
+                if (el) {
+                    el.style.width = this.$refs.playlists[0].offsetWidth;
+                }
+            },
+
             unSelect() {
                 this.selectedIndex = null;
             },
@@ -352,42 +361,42 @@
             margin-top: 25px;
             box-shadow: inset 0 2px 1px -1.5px rgba(255, 255, 255, 0.2);
             overflow: auto;
-
-            tr {
-                cursor: default;
-
-                &.active-queue {
-                    background-color: rgba(0, 0, 0, .3);
-                }
-
-                svg {
-                    width: 18px;
-                    height: 18px;
-                    fill: #fff;
-                }
-
-                .drag-handle {
-                    width: 28px;
-                    text-align: center;
-                    vertical-align: middle;
-                    cursor: move;
-                    cursor: -webkit-grab;
-                }
-            }
         }
     }
 
-    .sortable-drag {
+    tr {
+        cursor: default;
+
+        &.active-queue {
+            background-color: rgba(0, 0, 0, .3);
+        }
+
+        svg {
+            width: 18px;
+            height: 18px;
+            margin-top: 1px;
+            fill: #fff;
+        }
+
+        .drag-handle {
+            width: 28px;
+            text-align: center;
+            cursor: move;
+            cursor: -webkit-grab;
+        }
+    }
+
+    .sortable-fallback {
+        display: table;
+        position: absolute;
         color: #fff;
+        opacity: .5 !important;
 
         td {
-            padding: 0 2px;
+            padding: 0 5px;
 
             svg {
-                width: 18px;
-                height: 18px;
-                fill: #fff;
-                vertical-align: middle;
+                transform: translateY(4px);
             }
         }
     }
