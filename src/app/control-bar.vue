@@ -176,6 +176,45 @@
                 :process-style="{ 'background-color': 'rgba(255, 255, 255, 0.9)', filter: 'drop-shadow(2px 2px 10px rgba(150, 150, 150, 1))' }"
                 :tooltip-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)', 'border-color': 'rgba(255, 255, 255, 0.6)', 'border-style': 'none' }"
             )
+            tooltip.mode-switch(
+                v-if="mode === 'shuffle'"
+                effect="fadein"
+                placement="top"
+                :content="$t('Shuffle')"
+            )
+                .control-button(v-interact:tap="() => { SWITCH_QUEUE_MODE(); }")
+                    svg(
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                    )
+                        path(d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z")
+            tooltip.mode-switch(
+                v-else-if="mode === 'repeatOne'"
+                effect="fadein"
+                placement="top"
+                :content="$t('Repeat one')"
+            )
+                .control-button(v-interact:tap="() => { SWITCH_QUEUE_MODE(); }")
+                    svg(
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                    )
+                        path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z")
+            tooltip.mode-switch(
+                v-else
+                effect="fadein"
+                placement="top"
+                :content="$t('Repeat all')"
+            )
+                .control-button(v-interact:tap="() => { SWITCH_QUEUE_MODE(); }")
+                    svg(
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                    )
+                        path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z")
 </template>
 
 <script>
@@ -186,10 +225,11 @@
 
     import RandomQueue from './queue/RandomQueue';
 
-    import { ADD_TRACK, SAVE_LAYOUT, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
+    import { ADD_TRACK, SWITCH_QUEUE_MODE, SAVE_LAYOUT, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
 
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
+    import tooltip from 'vue-strap/src/tooltip';
 
     import yoyoMarquee from './yoyo-marquee';
 
@@ -199,6 +239,7 @@
         components: {
             vueSlider,
             checkbox,
+            tooltip,
             yoyoMarquee
         },
 
@@ -226,6 +267,10 @@
 
             duration() {
                 return this.player.duration;
+            },
+
+            mode() {
+                return this.queue.mode;
             },
 
             activeBackgroundType: {
@@ -489,6 +534,7 @@
 
             ...mapMutations([
                 ADD_TRACK,
+                SWITCH_QUEUE_MODE,
                 SAVE_LAYOUT,
                 UPDATE_ACTIVE_BACKGROUND_TYPE,
                 UPDATE_ACTIVE_VISUALIZER_TYPE,
@@ -533,7 +579,6 @@
         bottom: 0;
         box-sizing: border-box;
         width: 100%;
-        min-height: 12vh;
         padding: 4px;
         background-color: rgba(32, 32, 32, 0.30);
         background-image: url(../assets/highlight.svg),
@@ -675,6 +720,12 @@
                 }
 
                 @media (max-width: 445px) {
+                    display: none;
+                }
+            }
+
+            .mode-switch {
+                @media (min-width: 370px) and (max-width: 629px) {
                     display: none;
                 }
             }

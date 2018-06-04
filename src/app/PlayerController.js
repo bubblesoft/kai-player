@@ -2,6 +2,8 @@
  * Created by qhyang on 2018/5/2.
  */
 
+let playTrackPromiseReject = null;
+
 export default class PlayerController {
     player;
 
@@ -9,15 +11,33 @@ export default class PlayerController {
         this.player = player;
     }
 
-    async playTrack(track) {
-        const url = new URL(await track.getStreamUrl());
+    playTrack(track) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                if (playTrackPromiseReject) {
+                    playTrackPromiseReject({
+                        message: 'Loading track interrupted'
+                    });
+                }
 
-        try {
-            await this.player.load(`/${track.id.split('_')[0]}${url.pathname}${url.search}`);
-        } catch (e) {
-            await this.player.load(url.href);
-        }
+                playTrackPromiseReject = reject;
 
-        this.player.play();
+                const url = new URL(await track.getStreamUrl());
+
+                try {
+                    await this.player.load(`/${track.id.split('_')[0]}${url.pathname}${url.search}`);
+                    resolve();
+                    playTrackPromiseReject = null;
+                } catch (e) {
+                    await this.player.load(url.href);
+                    resolve();
+                    playTrackPromiseReject = null;
+                }
+
+                this.player.play();
+            } catch (e) {
+                reject(e);
+            }
+        });
     }
 }

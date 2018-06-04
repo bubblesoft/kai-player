@@ -86,7 +86,7 @@ module.exports = {
                     afterContent: `//
                     (function() {  
                         if (window.TweenLite) {
-                            var counter = document.querySelector('.loading__counter');
+                            var counter = document.querySelector('.kai-loading__counter');
         
                             TweenLite.to({
                                 progress: 20
@@ -102,14 +102,16 @@ module.exports = {
                                     }, 0.5, {
                                         opacity: 0,
                                         onUpdate: function() {
-                                            document.querySelector('.loading').style.opacity = '' + this.target.opacity;
+                                            document.querySelector('.kai-loading').style.opacity = '' + this.target.opacity;
                                         },
                                         onComplete: function() {
-                                            document.querySelector('.loading').style.display = 'none';
+                                            document.querySelector('.kai-loading').style.display = 'none';
                                         }
                                     });
                                 }
                             });
+                        } else {
+                            document.querySelector('.kai-loading').style.display = 'none';
                         }
                     }());
                 `},
@@ -117,7 +119,7 @@ module.exports = {
                     beforeContent: `//
                     (function() {  
                         if (window.TweenLite) {
-                            var counter = document.querySelector('.loading__counter');
+                            var counter = document.querySelector('.kai-loading__counter');
         
                             TweenLite.to({
                                 progress: 10

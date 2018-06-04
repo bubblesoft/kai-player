@@ -17,6 +17,45 @@
                                 path(d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5a2 2 0 0 0-2 2v4h2V5h14v14H5v-4H3v4a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z")
                 template(v-else)
                     tooltip(
+                        v-if="mode === 'shuffle'"
+                        effect="fadein"
+                        placement="top"
+                        :content="$t('Shuffle')"
+                    )
+                        .tool-button(v-interact:tap="() => { SWITCH_QUEUE_MODE(); }")
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z")
+                    tooltip(
+                        v-else-if="mode === 'repeatOne'"
+                        effect="fadein"
+                        placement="top"
+                        :content="$t('Repeat one')"
+                    )
+                        .tool-button(v-interact:tap="() => { SWITCH_QUEUE_MODE(); }")
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z")
+                    tooltip(
+                        v-else
+                        effect="fadein"
+                        placement="top"
+                        :content="$t('Repeat all')"
+                    )
+                        .tool-button(v-interact:tap="() => { SWITCH_QUEUE_MODE(); }")
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z")
+                    tooltip(
                         effect="fadein"
                         placement="top"
                         :content="$t('Remove duplicated tracks')"
@@ -68,12 +107,12 @@
                             )
                                 path(d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z")
         .list-wrap(v-if="queue")
-            draggable.random-queue-box(
-                v-if="queue.constructor === RandomQueue"
-                v-model="tracks"
-                :options="{ group: 'tracks', draggable: '' }"
-                @add="handleAdd"
-            )
+            .random-queue-box(v-if="queue.constructor === RandomQueue")
+                draggable.draggable(
+                    v-model="tracks"
+                    :options="{ group: 'tracks', draggable: '' }"
+                    @add="playTrack($event.newIndex);"
+                )
                 yoyoMarquee(
                     v-if="activeTrack"
                     style="width: 90%;"
@@ -86,6 +125,7 @@
                     v-model="tracks"
                     :options="{ group: 'tracks', handle: '.drag-handle', forceFallback: true, fallbackOnBody: true }"
                     @sort="handleSort"
+                    @add="handleAdd"
                     @start="dragging = true; fixDrag();"
                     @end="dragging = false;"
                     element="tbody"
@@ -148,13 +188,13 @@
 </template>
 
 <script>
-    import { mapState, mapMutations } from 'vuex';
+    import { mapState, mapMutations, mapActions } from 'vuex';
 
-    import { formatDuration, mapMediaSourceIcon, mapMediaSourceName } from '../../scripts/utils';
+    import { getRecommendedTrack, formatDuration, mapMediaSourceIcon, mapMediaSourceName } from '../../scripts/utils';
 
     import RandomQueue from './RandomQueue';
 
-    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, VISUALIZER_LISTEN_TO, SWITCH_TO_VISUALIZER, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
+    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, VISUALIZER_LISTEN_TO, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
 
     import draggable from 'vuedraggable';
     import tooltip from 'vue-strap/src/tooltip';
@@ -188,6 +228,10 @@
         computed: {
             queue() {
                 return this.queueGroup.get(this.queueGroup.active);
+            },
+
+            mode() {
+                return this.queue.mode;
             },
 
             tracks: {
@@ -240,6 +284,7 @@
 
             ...mapState({
                 queueGroup: state => state.queueModule.queueGroup,
+                sources: state => state.sourceModule.sourceGroup.get(),
                 playerController: state => state.playerModule.playerController,
                 visualizer: state => state.visualizationModule.visualizer,
                 showSourceIcon: state => state.generalModule.showSourceIcon
@@ -269,24 +314,51 @@
                 this.player.stop();
 
                 const playing = this.playing,
-                    track = await this.queue.get(this.queue.goTo(index));
+                    track = this.queue.get(this.queue.goTo(index));
 
-                await this.playerController.playTrack(track);
-                this.playingQueueIndex = this.queueGroup.active;
-                this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
-                this[VISUALIZER_LOAD_RESOURCE]({ picture: track.picture });
+                try {
+                    this[VISUALIZER_LOAD_RESOURCE]({ picture: track.picture });
+                    await this.playerController.playTrack(track);
+                } catch (e) {
+                    if (e.name === 'TypeError') {
+                        if (this.queue.constructor === RandomQueue) {
+                            this[ADD_TRACK]({ track: await getRecommendedTrack(this.track, this.sources.filter(source => source.active)) });
+                        }
 
-                if (!playing) {
-                    this[SWITCH_TO_VISUALIZER]();
+                        const track = this.queue.get(this.queue.next());
+
+                        this[VISUALIZER_LOAD_RESOURCE]({ picture: track.picture });
+                        await this.playerController.playTrack(track);
+                    }
                 }
 
+                this.playingQueueIndex = this.queueGroup.active;
+                this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
                 this[UPDATE_TRACK]({ index, duration: this.player.duration * 1000 });
+
+                if (!playing) {
+                    if (this.activeBackgroundType !== 'three' || this.activeVisualizerType !== 'three') {
+                        await this.triggerBackgroundEvent('play');
+                    }
+
+                    this[SWITCH_TO_VISUALIZER]();
+                }
+            },
+
+            handleTrackRemove(index) {
+                if (index === this.activeIndex) {
+                    this.player.unload();
+                    index > 0 && this.activeIndex--;
+                    this[SWITCH_TO_BACKGROUND]();
+                } else if (index < this.activeIndex) {
+                    this.activeIndex--;
+                }
             },
 
             async removeDuplicated() {
                 try {
                     await this.$confirm({
-                        title: this.$t('Confirm'),
+                        title: this.$t('Confirm Action'),
                         bodyText: this.$t('Remove duplicated tracks?'),
                         confirmText: this.$t('Confirm'),
                         cancelText: this.$t('Cancel')
@@ -345,18 +417,15 @@
                             this.activeIndex--;
                         }
                     } else if (e.from !== e.to) {
-                        if (e.oldIndex === this.activeIndex) {
-                            this.player.unload();
-                            e.oldIndex > 0 && this.activeIndex--;
-                        } else if (e.oldIndex < this.activeIndex) {
-                            this.activeIndex--;
-                        }
+                        this.handleTrackRemove(e.oldIndex);
                     }
                 }
             },
 
             handleAdd(e) {
-                this.playTrack(e.newIndex);
+                if (e.newIndex <= this.activeIndex) {
+                    activeIndex++;
+                }
             },
 
             copyToQueue(track) {
@@ -373,7 +442,6 @@
                         this.$emit('openQueueModal', (queue) => {
                             this[ADD_TRACK]({ track, queue });
                             this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1));
-                            trashCan.data.push(track);
                         });
                     } else if (type === 'up') {
                         if (index > 0) {
@@ -413,7 +481,8 @@
                         }
                     } else if (type === 'remove') {
                         this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1));
-                        trashCan.data.push(track);
+                        this.trashCan.data.push(track);
+                        this.handleTrackRemove(index);
                     }
                 });
             },
@@ -438,9 +507,15 @@
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
                 UPDATE_TRACK,
+                SWITCH_QUEUE_MODE,
                 VISUALIZER_LISTEN_TO,
+                SWITCH_TO_BACKGROUND,
                 SWITCH_TO_VISUALIZER,
                 VISUALIZER_LOAD_RESOURCE
+            ]),
+
+            ...mapActions([
+                'triggerBackgroundEvent'
             ])
         },
 
@@ -513,8 +588,16 @@
                 position: absolute;
                 left: 0;
                 top: 0;
-                width: 100%;
-                height: 100%;
+                right: 0;
+                bottom: 0;
+
+                .draggable {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    right: 0;
+                    bottom: 0;
+                }
 
                 .tips {
                     position: absolute;
@@ -538,18 +621,20 @@
         svg {
             width: 18px;
             height: 18px;
+            margin-top: 1px;
             fill: #fff;
         }
 
         img {
             width: 15px;
             height: 15px;
+            margin-top: -2px;
+            vertical-align: middle;
         }
 
         .drag-handle {
             width: 28px;
             text-align: center;
-            vertical-align: middle;
             cursor: move;
             cursor: -webkit-grab;
         }
@@ -559,22 +644,13 @@
         display: table;
         position: absolute;
         color: #fff;
-        opacity: .5;
+        opacity: .5 !important;
 
         td {
             padding: 0 2px;
 
             svg {
-                width: 18px;
-                height: 18px;
-                fill: #fff;
-                vertical-align: middle;
-            }
-
-            img {
-                width: 15px;
-                height: 15px;
-                vertical-align: middle;
+                transform: translateY(4px);
             }
         }
     }
