@@ -225,7 +225,7 @@
 
     import RandomQueue from './queue/RandomQueue';
 
-    import { ADD_TRACK, SWITCH_QUEUE_MODE, SAVE_LAYOUT, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
+    import { ADD_TRACK, SWITCH_QUEUE_MODE, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
 
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
@@ -303,7 +303,7 @@
 
                     layout.visible = visible;
 
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'picture',
                         layout
                     });
@@ -320,7 +320,7 @@
 
                     layout.visible = visible;
 
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'source',
                         layout
                     });
@@ -337,7 +337,7 @@
 
                     layout.visible = visible;
 
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'list',
                         layout
                     });
@@ -354,7 +354,7 @@
 
                     layout.visible = visible;
 
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'search',
                         layout
                     });
@@ -371,7 +371,7 @@
 
                     layout.visible = visible;
 
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'playlist',
                         layout
                     });
@@ -388,7 +388,7 @@
 
                     layout.visible = visible;
 
-                    this[SAVE_LAYOUT] ({
+                    this.saveLayout({
                         index: 'tracks',
                         layout
                     });
@@ -535,7 +535,6 @@
             ...mapMutations([
                 ADD_TRACK,
                 SWITCH_QUEUE_MODE,
-                SAVE_LAYOUT,
                 UPDATE_ACTIVE_BACKGROUND_TYPE,
                 UPDATE_ACTIVE_VISUALIZER_TYPE,
                 SWITCH_TO_VISUALIZER,
@@ -547,7 +546,8 @@
             ]),
 
             ...mapActions([
-                'triggerBackgroundEvent'
+                'triggerBackgroundEvent',
+                'saveLayout'
             ])
         },
 

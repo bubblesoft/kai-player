@@ -81,14 +81,14 @@
 <script>
     import { mapState, mapMutations, mapActions } from 'vuex';
 
-    import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SWITCH_TO_BACKGROUND, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE } from '../scripts/mutation-types';
+    import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SWITCH_TO_BACKGROUND, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE } from '../scripts/mutation-types';
 
     import Source from './source/Source';
     import Channel from './source/Channel';
     import Queue from './queue/Queue';
     import RandomQueue from './queue/RandomQueue';
 
-    import { urlBase, getRecommendedTrack, generateLayout } from '../scripts/utils';
+    import { getRecommendedTrack } from '../scripts/utils';
 
     import contextMenu from 'vue-context-menu';
 
@@ -170,7 +170,7 @@
                     return this.layout.picture;
                 },
                 set(layout) {
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'picture',
                         layout
                     });
@@ -181,7 +181,7 @@
                     return this.layout.source;
                 },
                 set(layout) {
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'source',
                         layout
                     });
@@ -192,7 +192,7 @@
                     return this.layout.list;
                 },
                 set(layout) {
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'list',
                         layout
                     });
@@ -203,7 +203,7 @@
                     return this.layout.search
                 },
                 set(layout) {
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'search',
                         layout
                     });
@@ -214,7 +214,7 @@
                     return this.layout.playlist;
                 },
                 set(layout) {
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'playlist',
                         layout
                     });
@@ -225,7 +225,7 @@
                     return this.layout.tracks;
                 },
                 set(layout) {
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'tracks',
                         layout
                     });
@@ -242,7 +242,7 @@
 
                     layout.visible = visible;
 
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'picture',
                         layout
                     });
@@ -259,7 +259,7 @@
 
                     layout.visible = visible;
 
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'source',
                         layout
                     });
@@ -276,7 +276,7 @@
 
                     layout.visible = visible;
 
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'list',
                         layout
                     });
@@ -293,7 +293,7 @@
 
                     layout.visible = visible;
 
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'search',
                         layout
                     });
@@ -310,7 +310,7 @@
 
                     layout.visible = visible;
 
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'playlist',
                         layout
                     });
@@ -327,7 +327,7 @@
 
                     layout.visible = visible;
 
-                    this[SAVE_LAYOUT]({
+                    this.saveLayout({
                         index: 'tracks',
                         layout
                     });
@@ -367,13 +367,14 @@
                 UPDATE_ACTIVE_PANEL_INDEX,
                 SET_MODE,
                 LOAD_LAYOUT,
-                SAVE_LAYOUT,
                 SWITCH_TO_BACKGROUND,
                 VISUALIZER_LISTEN_TO,
                 BACKGROUND_LOAD_RESOURCE
             ]),
             ...mapActions([
-                'initVisualization'
+                'initVisualization',
+                'loadLayout',
+                'saveLayout'
             ])
         },
 
@@ -400,17 +401,7 @@
 
         async mounted() {
             this[SET_MODE](window.innerWidth < 600 ? 'mobile' : 'desktop');
-
-            const layoutData = localStorage.getItem('kaiplayerlayout' + this.mode);
-
-            if (layoutData) {
-                this[LOAD_LAYOUT](JSON.parse(layoutData));
-            } else {
-                const viewportWidth = window.innerWidth,
-                    viewportHeight = window.innerHeight - document.querySelector('#control-bar').offsetHeight;
-
-                this[LOAD_LAYOUT](generateLayout(this.mode, viewportWidth, viewportHeight));
-            }
+            this.loadLayout({ mode: this.mode });
 
             document.body.addEventListener('click', this.blur);
 

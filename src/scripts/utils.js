@@ -102,31 +102,31 @@ const generateLayout = (type, viewportWidth, viewportHeight) => {
         (width > 600) && (width = 600);
 
         return {
-            picture: { mode: 'leftTop', visible: true, x: viewportWidth * .03, y: viewportWidth * .03 - 40, width: Math.min(viewportWidth * .25, 360), height: Math.min(viewportWidth * .25, 360), opacity: .4, autoHide: true },
-            source: { mode: 'bottom', visible: true, attach: 'left', bottomY: viewportHeight * .4, width: 258, height: 173, opacity: .4 },
-            list: { mode: 'bottom', visible: true, attach: 'right', bottomY: viewportHeight * .35, width, height: viewportHeight * .45, opacity: .4 },
-            search: { mode: 'bottom', visible: true, attach: 'left', bottomY: viewportHeight * .03, width, height: viewportHeight * .35, opacity: .4 },
+            picture: { mode: 'leftTop', visible: true, x: viewportWidth * .03, y: viewportWidth * .03 - 40, width: Math.min(viewportWidth * .25, 360), height: Math.min(viewportWidth * .25, 360), opacity: .4, lock: false, autoHide: true },
+            source: { mode: 'bottom', visible: true, attach: 'left', bottomY: viewportHeight * .4, width: 258, height: 173, opacity: .4, lock: false },
+            list: { mode: 'bottom', visible: true, attach: 'right', bottomY: viewportHeight * .35, width, height: viewportHeight * .45, opacity: .4, lock: false },
+            search: { mode: 'bottom', visible: true, attach: 'left', bottomY: viewportHeight * .03, width, height: viewportHeight * .35, opacity: .4, lock: false },
             playlist: { mode: 'bottom', visible: true, attach: 'right', bottomY: 0, width, height: viewportHeight * .35, opacity: .4 },
-            tracks: { mode: 'bottom', visible: true, attach: false, ratioX: .5, bottomY: viewportHeight * .08, width: width * 1.1, height: viewportHeight * .45, opacity: .4 }
+            tracks: { mode: 'bottom', visible: true, attach: false, ratioX: .5, bottomY: viewportHeight * .08, width: width * 1.1, height: viewportHeight * .45, opacity: .4, lock: false }
         };
     } else if (type === 'mobile') {
         if (viewportHeight < 580) {
             return {
-                picture: { mode: 'ratio', visible: false, x: .03, y: .03, width: .5, height: .3, opacity: .4, autoHide: true },
-                source: { mode: 'ratio', visible: false, attach: 'left', y: .1, width: 1, height: .3, opacity: .4 },
-                list: { mode: 'ratio', visible: true, attach: 'left', y: .05, width: 1, height: .45, opacity: .4 },
-                search: { mode: 'ratio', visible: false, attach: 'left', y: 0, width: 1, height: .4, opacity: .4 },
-                playlist: { mode: 'ratio', visible: false, attach: 'left', y: .42, width: 1, height: .28, opacity: .4 },
-                tracks: { mode: 'ratio', visible: true, attach: 'left', y: .5, width: 1, height: .5, opacity: .4 }
+                picture: { mode: 'ratio', visible: false, x: .03, y: .03, width: .5, height: .3, opacity: .4, autoHide: true, lock: false },
+                source: { mode: 'ratio', visible: false, attach: 'left', y: .1, width: 1, height: .3, opacity: .4, lock: false },
+                list: { mode: 'ratio', visible: true, attach: 'left', y: .05, width: 1, height: .45, opacity: .4, lock: false },
+                search: { mode: 'ratio', visible: false, attach: 'left', y: 0, width: 1, height: .4, opacity: .4, lock: false },
+                playlist: { mode: 'ratio', visible: false, attach: 'left', y: .42, width: 1, height: .28, opacity: .4, lock: false },
+                tracks: { mode: 'ratio', visible: true, attach: 'left', y: .5, width: 1, height: .5, opacity: .4, lock: false }
             };
         } else {
             return {
-                picture: { mode: 'ratio', visible: false, x: .03, y: .03, width: .5, height: .3, opacity: .4, autoHide: true },
-                source: { mode: 'ratio', visible: false, attach: 'left', y: .1, width: 1, height: .3, opacity: .4 },
-                list: { mode: 'ratio', visible: true, attach: 'left', y: .05, width: 1, height: .37, opacity: .4 },
-                search: { mode: 'ratio', visible: false, attach: 'left', y: 0, width: 1, height: .4, opacity: .4 },
-                playlist: { mode: 'ratio', visible: true, attach: 'left', y: .42, width: 1, height: .28, opacity: .4 },
-                tracks: { mode: 'ratio', visible: true, attach: 'left', y: .7, width: 1, height: .3, opacity: .4 }
+                picture: { mode: 'ratio', visible: false, x: .03, y: .03, width: .5, height: .3, opacity: .4, lock: false, autoHide: true },
+                source: { mode: 'ratio', visible: false, attach: 'left', y: .1, width: 1, height: .3, opacity: .4, lock: false },
+                list: { mode: 'ratio', visible: true, attach: 'left', y: .05, width: 1, height: .37, opacity: .4, lock: false },
+                search: { mode: 'ratio', visible: false, attach: 'left', y: 0, width: 1, height: .4, opacity: .4, lock: false },
+                playlist: { mode: 'ratio', visible: true, attach: 'left', y: .42, width: 1, height: .28, opacity: .4, lock: false },
+                tracks: { mode: 'ratio', visible: true, attach: 'left', y: .7, width: 1, height: .3, opacity: .4, lock: false }
             };
         }
     }

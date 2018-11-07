@@ -19,7 +19,7 @@ import '../styles/bootstrap';
 import '../styles/base';
 import '../styles/pretty-checkbox';
 
-import { ADD_SOURCES, UPDATE_SOURCE, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SET_ACTIVE_PANEL_INDEX_LOCK, SET_BACKGROUND_IMAGE, SET_LOCALE, SET_SHOW_SOURCE_ICON, INIT_VISUALIZATION, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
+import * as mutationTypes from '../scripts/mutation-types';
 
 import SourceGroup from './source/SourceGroup';
 import QueueGroup from './queue/QueueGroup';
@@ -31,6 +31,8 @@ import Artist from './Artist';
 import Player from './Player';
 import Background from './visualization/visual_controllers/Background';
 import Visualizer from './visualization/visual_controllers/Visualizer';
+
+import { generateLayout } from '../scripts/utils';
 
 import App from './app';
 
@@ -74,7 +76,12 @@ Vue.directive('interact', {
     //     }
     // },
     unbind(el) {
+        if (!interactables[+el.dataset.interactable]) {
+            return;
+        }
+
         interactables[+el.dataset.interactable].unset();
+
         delete interactables[+el.dataset.interactable];
     }
 });
@@ -105,6 +112,8 @@ const messages = {
         'Tracks': 'Tracks',
         'Panel': 'Panel',
         'Search': 'Search',
+        'Lock the panel': 'Lock the panel',
+        'Unlock the panel': 'Unlock the panel',
         'Search for music': 'Search for music',
         'Temp': 'Temp',
         'New Playlist': 'New Playlist',
@@ -165,6 +174,8 @@ const messages = {
         'Tracks': '播放音频',
         'Panel': '面板',
         'Search': '搜索',
+        'Lock the panel': '锁定面板',
+        'Unlock the panel': '解锁面板',
         'Search for music': '搜索音乐',
         'Temp': '临时播放列表',
         'New Playlist': '新建播放列表',
@@ -225,6 +236,8 @@ const messages = {
         'Tracks': 'プレーリスト',
         'Panel': 'パネル',
         'Search': '検索',
+        'Lock the panel': 'Lock the panel',
+        'Unlock the panel': 'Unlock the panel',
         'Search for music': '音楽検索',
         'Temp': '臨時プレーリスト',
         'New Playlist': '新規プレーリスト',
@@ -285,6 +298,8 @@ const messages = {
         'Tracks': '재생목록',
         'Panel': '패널',
         'Search': 'Search',
+        'Lock the panel': 'Lock the panel',
+        'Unlock the panel': 'Unlock the panel',
         'Search for music': 'Search for music',
         'Temp': 'Temp',
         'New Playlist': 'New Playlist',
@@ -347,34 +362,51 @@ const generalModule = {
     },
 
     mutations: {
-        [UPDATE_ACTIVE_PANEL_INDEX] (state, index) {
+        [mutationTypes.UPDATE_ACTIVE_PANEL_INDEX] (state, index) {
             state.activePanel.index = index;
         },
-        [SET_ACTIVE_PANEL_INDEX_LOCK] (state, boolean) {
+        [mutationTypes.SET_ACTIVE_PANEL_INDEX_LOCK] (state, boolean) {
             state.activePanel.lock = boolean;
         },
-        [SET_MODE] (state, mode) {
+        [mutationTypes.SET_MODE] (state, mode) {
             state.mode = mode;
         },
-        [LOAD_LAYOUT] (state, layout) {
+        [mutationTypes.LOAD_LAYOUT] (state, layout) {
             state.layout = layout;
         },
-        [SAVE_LAYOUT] (state, { index, layout }) {
+        [mutationTypes.SAVE_LAYOUT] (state, { index, layout }) {
             state.layout[index] = layout;
-            localStorage.setItem('kaiplayerlayout' + state.mode, JSON.stringify(state.layout));
         },
-        [SET_BACKGROUND_IMAGE] (state, url) {
+        [mutationTypes.SET_BACKGROUND_IMAGE] (state, url) {
             state.backgroundImage = url;
             localStorage.setItem('kaiplayerbackgroundimage', url);
         },
-        [SET_LOCALE] (state, locale) {
+        [mutationTypes.SET_LOCALE] (state, locale) {
             i18n.locale = locale;
             state.locale = locale;
             localStorage.setItem('kaiplayerlocale', locale);
         },
-        [SET_SHOW_SOURCE_ICON] (state, showSourceIcon) {
+        [mutationTypes.SET_SHOW_SOURCE_ICON] (state, showSourceIcon) {
             state.showSourceIcon = showSourceIcon;
             localStorage.setItem('kaiplayershowsouceicon', Number(showSourceIcon));
+        }
+    },
+    actions: {
+        loadLayout({ commit, state }, { mode = state.mode }) {
+            const layoutData = localStorage.getItem('kaiplayerlayout' + mode);
+
+            if (layoutData) {
+                commit(mutationTypes.LOAD_LAYOUT, JSON.parse(layoutData));
+            } else {
+                const viewportWidth = window.innerWidth,
+                    viewportHeight = window.innerHeight - document.querySelector('#control-bar').offsetHeight;
+
+                commit(mutationTypes.LOAD_LAYOUT, generateLayout(mode, viewportWidth, viewportHeight));
+            }
+        },
+        saveLayout({ commit, state }, { index, layout }) {
+            commit(mutationTypes.SAVE_LAYOUT, { index, layout });
+            localStorage.setItem('kaiplayerlayout' + state.mode, JSON.stringify(state.layout));
         }
     }
 };
@@ -386,10 +418,10 @@ const sourceModule = {
         sourceGroup
     },
     mutations: {
-        [ADD_SOURCES] (state, sources) {
+        [mutationTypes.ADD_SOURCES] (state, sources) {
             state.sourceGroup.add(...sources);
         },
-        [UPDATE_SOURCE] (state, { index, active }) {
+        [mutationTypes.UPDATE_SOURCE] (state, { index, active }) {
             state.sourceGroup.get(index).active = active;
             localStorage.setItem('kaiplayersourceactive', JSON.stringify((() => {
                 const data = {};
@@ -399,7 +431,7 @@ const sourceModule = {
                 });
 
                 return data;
-            })()))
+            })()));
         }
     }
 };
@@ -499,7 +531,7 @@ const queueModule = {
         playingQueueIndex: queueData.playingQueueIndex
     },
     mutations: {
-        [UPDATE_QUEUE_GROUP](state, { queues, active }) {
+        [mutationTypes.UPDATE_QUEUE_GROUP](state, { queues, active }) {
             queues && state.queueGroup.update(queues);
 
             if (typeof active === 'number') {
@@ -509,12 +541,12 @@ const queueModule = {
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
-        [INSERT_QUEUE](state, { index, queue }) {
+        [mutationTypes.INSERT_QUEUE](state, { index, queue }) {
             state.queueGroup.insert(index, queue);
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
-        [UPDATE_QUEUE](state, { index, name, tracks, active }) {
+        [mutationTypes.UPDATE_QUEUE](state, { index, name, tracks, active }) {
             const queue = state.queueGroup.get(index);
 
             name && (queue.name = name);
@@ -527,24 +559,24 @@ const queueModule = {
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
-        [UPDATE_PLAYING_QUEUE_INDEX](state, index) {
+        [mutationTypes.UPDATE_PLAYING_QUEUE_INDEX](state, index) {
             state.playingQueueIndex = index;
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
-        [ADD_TRACK](state, { track, queue = state.queueGroup.get(state.queueGroup.active) }) {
+        [mutationTypes.ADD_TRACK](state, { track, queue = state.queueGroup.get(state.queueGroup.active) }) {
             queue.add(track);
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
-        [UPDATE_TRACK](state, { index, duration, queue = state.queueGroup.get(state.queueGroup.active) }) {
+        [mutationTypes.UPDATE_TRACK](state, { index, duration, queue = state.queueGroup.get(state.queueGroup.active) }) {
             if (duration) {
                 queue.get(index).duration = duration;
                 saveQueueData(state.queueGroup, state.playingQueueIndex);
             }
         },
 
-        [SWITCH_QUEUE_MODE](state, { queue = state.queueGroup.get(state.queueGroup.active) } = {}) {
+        [mutationTypes.SWITCH_QUEUE_MODE](state, { queue = state.queueGroup.get(state.queueGroup.active) } = {}) {
             queue.switchMode();
         }
     }
@@ -567,12 +599,12 @@ const visualizationModule = {
         init: false
     },
     mutations: {
-        [INIT_VISUALIZATION](state, renderers) {
+        [mutationTypes.INIT_VISUALIZATION](state, renderers) {
             state.background = new Background( localStorage.getItem('kaisoftbackgroundtype') || 'three', renderers);
             state.visualizer = new Visualizer(localStorage.getItem('kaisoftvisualizertype') || 'random', renderers);
             state.init = true;
         },
-        [UPDATE_ACTIVE_BACKGROUND_TYPE](state, type) {
+        [mutationTypes.UPDATE_ACTIVE_BACKGROUND_TYPE](state, type) {
             const previousRenderer = state.background.activeRenderer,
                 playing = playerModule.state.playerController.player ? playerModule.state.playerController.player.playing : false;
 
@@ -592,7 +624,7 @@ const visualizationModule = {
             localStorage.setItem('kaisoftbackgroundtype', type);
         },
 
-        [UPDATE_ACTIVE_VISUALIZER_TYPE](state, type) {
+        [mutationTypes.UPDATE_ACTIVE_VISUALIZER_TYPE](state, type) {
             const previousRenderer = state.visualizer.activeRenderer,
                 playing = playerModule.state.playerController.player.playing;
 
@@ -612,7 +644,7 @@ const visualizationModule = {
             localStorage.setItem('kaisoftvisualizertype', type);
         },
 
-        [SWITCH_TO_BACKGROUND](state) {
+        [mutationTypes.SWITCH_TO_BACKGROUND](state) {
             if (state.background.activeRenderer !== state.visualizer.activeRenderer) {
                 state.visualizer.activeRenderer.hide();
                 state.background.activeRenderer.start();
@@ -626,7 +658,7 @@ const visualizationModule = {
             }
         },
 
-        async [SWITCH_TO_VISUALIZER](state) {
+        [mutationTypes.SWITCH_TO_VISUALIZER](state) {
             if (state.background.activeRenderer !== state.visualizer.activeRenderer) {
                 state.background.activeRenderer.hide();
                 state.visualizer.activeRenderer.start();
@@ -641,17 +673,17 @@ const visualizationModule = {
             }
         },
 
-        [VISUALIZER_LISTEN_TO](state, audioSource) {
+        [mutationTypes.VISUALIZER_LISTEN_TO](state, audioSource) {
             state.visualizer.listen(audioSource);
         },
 
-        [BACKGROUND_LOAD_RESOURCE](state, { picture } = {}) {
+        [mutationTypes.BACKGROUND_LOAD_RESOURCE](state, { picture } = {}) {
             if (state.background) {
                 state.background.loadResource({ picture });
             }
         },
 
-        [VISUALIZER_LOAD_RESOURCE](state, { picture } = {}) {
+        [mutationTypes.VISUALIZER_LOAD_RESOURCE](state, { picture } = {}) {
             if (state.visualizer) {
                 state.visualizer.loadResource({ picture });
             }
@@ -661,7 +693,7 @@ const visualizationModule = {
         async initVisualization({ commit }, mountPoint) {
             const renderers = await import('./visualization/renderers/renderers');
 
-            commit(INIT_VISUALIZATION, renderers);
+            commit(mutationTypes.INIT_VISUALIZATION, renderers);
 
             try {
                 renderers.threeRenderer.init(mountPoint);
@@ -676,7 +708,7 @@ const visualizationModule = {
                 track = queue ? queue.get(queue.active) : null;
 
             if (track) {
-                commit(BACKGROUND_LOAD_RESOURCE, { picture: track.picture });
+                commit(mutationTypes.BACKGROUND_LOAD_RESOURCE, { picture: track.picture });
             }
         },
         async triggerBackgroundEvent({ commit, state }, type) {

@@ -1,5 +1,5 @@
 <template lang="pug">
-    .panel-frame(:class="{ active: activePanelIndex === $el }")
+    .pane-frame(:class="{ active: activePanelIndex === $el }")
         .panel.panel-default(
             :style="{ backgroundColor }"
             :class="{ hide: autoHide }"
@@ -26,8 +26,27 @@
                     :process-style="{ backgroundColor: 'rgba(255, 255, 255, 0.9)', filter: 'drop-shadow(2px 2px 10px rgba(150, 150, 150, 1))' }"
                     :tooltip-style="{ backgroundColor: 'rgba(255, 255, 255, 0.6)', 'border-color': 'rgba(255, 255, 255, 0.6)', 'border-style': 'none' }"
                 )
+            tooltip(
+                v-interact:tap="() => lock = !lock"
+                effect="fadein"
+                placement="top"
+                :content="lock ? $t('Unlock the panel') : $t('Lock the panel')"
+            )
+                svg(
+                    width="21"
+                    height="21"
+                    viewBox="0 0 24 24"
+                )
+                    path(
+                        v-if="lock"
+                        d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"
+                    )
+                    path(
+                        v-else
+                        d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z"
+                    )
             svg(
-                v-interact:tap="() => { $emit('close'); }"
+                v-interact:tap="() => $emit('close')"
                 width="21"
                 height="21"
                 viewBox="0 0 24 24"
@@ -43,6 +62,7 @@
     import interact from 'interactjs';
     import { scaleLinear } from 'd3';
 
+    import tooltip from 'vue-strap/src/tooltip';
     import vueSlider from 'vue-slider-component';
 
     import { UPDATE_ACTIVE_PANEL_INDEX, SET_ACTIVE_PANEL_INDEX_LOCK } from '../scripts/mutation-types';
@@ -61,6 +81,7 @@
         },
 
         components: {
+            tooltip,
             vueSlider
         },
 
@@ -70,6 +91,7 @@
                 bottomY: 0, // distance between pane frame bottom and viewport bottom
                 attach: false, // Whether attached to a side.
                 opacity: 0,
+                lock: false,
                 autoHide: false,
                 viewportWidth: 0,
                 viewportHeight: 0,
@@ -89,7 +111,7 @@
 
             backgroundColor() {
                 const scaledOpacity = scale(this.opacity),
-                        colorComponent = Math.round(15 / scaledOpacity);
+                    colorComponent = Math.round(15 / scaledOpacity);
 
                 return 'rgba(' + colorComponent + ',' + colorComponent + ',' + colorComponent + ',' +  scaledOpacity + ')';
             },
@@ -102,6 +124,9 @@
         watch: {
             opacity() {
                 this.saveLayout();
+            },
+            lock() {
+                this.saveLayout();
             }
         },
 
@@ -110,14 +135,14 @@
                 const panel = this.$el;
 
                 if (panel.style.display !== 'none') {
-                    const controlBarHeight = document.querySelector('#control-bar').offsetHeight,
-                            layout = {
-                                mode: this.value.mode,
-                                visible: this.value.visible,
-                                attach: this.attach,
-                                opacity: this.opacity,
-                                autoHide: this.autoHide
-                            };
+                    const layout = {
+                        mode: this.value.mode,
+                        visible: this.value.visible,
+                        attach: this.attach,
+                        opacity: this.opacity,
+                        lock: this.lock,
+                        autoHide: this.autoHide
+                    };
 
                     switch (this.value.mode) {
                         case 'ratio':
@@ -149,7 +174,7 @@
                 }
             },
 
-            onWindowResize() {
+            handleWindowResize() {
                 if (this.$el !== 'none') {
                     const controlBarHeight = document.querySelector('#control-bar').offsetHeight,
                             panel = this.$el,
@@ -200,6 +225,7 @@
         mounted() {
             this.attach = this.value.attach;
             this.opacity = this.value.opacity;
+            this.lock = this.value.lock;
             this.autoHide = this.value.autoHide;
 
             const controlBarHeight = document.querySelector('#control-bar').offsetHeight;
@@ -267,14 +293,14 @@
             panel.style.width = width + 'px';
             panel.style.height = height + 'px';
 
-            window.addEventListener('resize', this.onWindowResize);
+            window.addEventListener('resize', this.handleWindowResize);
 
             const interactable = interact(panel)
                 .on('down', () => {
                     this.activate();
                 })
-
                 .draggable({
+                    enabled: !this.lock,
                     ignoreFrom: '.panel-body, .control',
                     restrict: {
                         restriction: 'parent',
@@ -356,6 +382,7 @@
                 })
 
                 .resizable({
+                    enabled: !this.lock,
                     ignoreFrom: '.panel-body, .control',
                     edges: { left: true, right: true, bottom: true, top: true },
                     restrictEdges: {
@@ -363,7 +390,7 @@
                         endOnly: true
                     },
                     restrictSize: {
-                        min: { width: 150, height: 150 }
+                        min: { width: 200, height: 150 }
                     },
                     inertia: true,
                     margin: 9
@@ -394,6 +421,11 @@
                     this.saveLayout();
                 });
 
+            this.$watch('lock', lock => {
+                interactable.options.drag.enabled = !lock;
+                interactable.options.resize.enabled = !lock;
+            });
+
             this.interactables.push(interactable);
 
             const activate = () => {
@@ -411,13 +443,13 @@
         destroyed() {
             this.interactables.forEach(interactable => interactable.unset());
 
-            window.removeEventListener('resize', this.onWindowResize);
+            window.removeEventListener('resize', this.handleWindowResize);
         }
     }
 </script>
 
 <style lang="scss" scoped>
-    .panel-frame {
+    .pane-frame {
         position: absolute;
         left: 0;
         top: 0;
@@ -425,102 +457,105 @@
         z-index: 1;
         touch-action: none;
 
+        .panel {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(110deg, rgba(255, 255, 255, .2) 0%, rgba(255, 255, 255, 0) 5%),
+            linear-gradient(110deg, rgba(255, 255, 255, 0) 95%, rgba(255, 255, 255, .1) 100%);
+            background-size: 500px, 250px;
+            background-position: 0 0, 100% 100%;
+            background-repeat: no-repeat;
+            box-shadow: inset 0 0 1px rgba(255, 255, 255, 0.5);
+            z-index: -1;
+        }
+
+        & .hide {
+            opacity: 0;
+        }
+
+        &:hover .hide {
+            opacity: 1;
+        }
+
+        &.active {
+             z-index: 2;
+             opacity: 1;
+
             .panel {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                background-image: linear-gradient(110deg, rgba(255, 255, 255, .2) 0%, rgba(255, 255, 255, 0) 5%),
-                linear-gradient(110deg, rgba(255, 255, 255, 0) 95%, rgba(255, 255, 255, .1) 100%);
-                background-size: 500px, 250px;
-                background-position: 0 0, 100% 100%;
-                background-repeat: no-repeat;
-                box-shadow: inset 0 0 1px rgba(255, 255, 255, 0.5);
-                z-index: -1;
+                box-shadow: inset 0 0 1px rgba(255, 255, 255, 0.6),
+                0 0 60px 8px rgba(255, 255, 255, 0.1),
+                0 0 25px rgba(0, 0, 0, 0.1),
+                inset 0 0 20px rgba(255, 255, 255, 0.1);
             }
+        }
 
-            & .hide {
-                opacity: 0;
-            }
+        .panel-heading {
+            display: flex;
+            justify-content: space-between;
+            background-color: transparent;
+            background-image: url(../assets/highlight.svg);
+            background-size: auto 100%;
+            background-repeat: no-repeat;
+            transition: background-position .1s;
+        }
 
-            &:hover .hide {
-                opacity: 1;
-            }
+        .control {
+            display: flex;
+            align-items: center;
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 50%;
+            max-width: 200px;
+            height: 25px;
+            margin: 6px 6px 6px 0;
 
-            &.active {
-                 z-index: 2;
-                 opacity: 1;
+            .opacity-control {
+                flex-grow: 1;
 
-                .panel {
-                    box-shadow: inset 0 0 1px rgba(255, 255, 255, 0.6),
-                    0 0 60px 8px rgba(255, 255, 255, 0.1),
-                    0 0 25px rgba(0, 0, 0, 0.1),
-                    inset 0 0 20px rgba(255, 255, 255, 0.1);
+                .vue-slider-component {
+                    opacity: .6;
                 }
             }
 
-            .panel-heading {
-                display: flex;
-                justify-content: space-between;
-                background-color: transparent;
-                background-image: url(../assets/highlight.svg);
-                background-size: auto 100%;
-                background-repeat: no-repeat;
-                transition: background-position .1s;
+
+            svg {
+                fill: rgba(255, 255, 255, 0.3);
             }
 
-            .control {
-                display: flex;
-                align-items: center;
-                position: absolute;
-                top: 2px;
-                right: 2px;
-                width: 50%;
-                max-width: 200px;
-                height: 37px;
-
-                .opacity-control {
-                    flex-grow: 1;
-
-                    .vue-slider-component {
-                        margin: 6px 0;
-                        opacity: .6;
-                    }
-                }
-
-
-                svg {
-                    margin: 6px 6px 6px 0;
-                    fill: rgba(255, 255, 255, 0.3);
-                }
-
-                svg:hover  {
-                     fill: rgba(255, 255, 255, 0.6);
-                     -webkit-filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
-                     filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
-                     -ms-filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
-                     filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
-                 }
+            svg:hover  {
+                fill: rgba(255, 255, 255, 0.6);
+                -webkit-filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
+                filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
+                -ms-filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
+                filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
             }
+        }
 
-            .panel-body {
-                position: absolute;
-                left: 0;
-                top: 0;
-                right: 0;
-                bottom: 0;
-                width: auto;
-                height: auto;
-                margin: 42px 8px 8px;
-                padding: 0;
-                background-color: rgba(255, 255, 255, .1);
-            }
+        .panel-body {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: auto;
+            height: auto;
+            margin: 42px 8px 8px;
+            padding: 0;
+            background-color: rgba(255, 255, 255, .1);
+        }
+
+        svg {
+             vertical-align: middle;
+        }
     }
 </style>
 
 <style lang="scss">
-    .panel-frame {
+    .pane-frame {
         .panel-heading, td, input, select {
             color: rgba(255, 255, 255, .7);
         }
