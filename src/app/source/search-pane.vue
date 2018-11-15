@@ -26,7 +26,7 @@
                     tr(
                         v-for="track in tracks"
                         v-interact:doubletap="() => { addToPlayback(track); }"
-                        @contextmenu.prevent="handleContextMenu(track);"
+                        @contextmenu.prevent="handleContextMenu($event, track);"
                     )
                         td(style="padding: 0;")
                         td {{ track.name }}
@@ -196,8 +196,8 @@
                 this[UPDATE_TRACK]({ index: this.queue.active, duration: this.player.duration * 1000 });
             },
 
-            handleContextMenu(track) {
-                this.$emit('contextMenu', type => {
+            handleContextMenu(e, track) {
+                this.$emit('contextMenu', e, type => {
                     if (type === 'add') {
                         this.addToPlayback(track);
                     }
