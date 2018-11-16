@@ -45,6 +45,7 @@ Vue.use(VueI18n);
 Vue.use(VueConfirm);
 
 const interactables = [];
+const bindingValues = [];
 
 Vue.directive('interact', {
     bind(el, bindings) {
@@ -52,37 +53,37 @@ Vue.directive('interact', {
 
         el.dataset.interactable = interactables.push(interactable) - 1;
 
+        const bindingValueIndex = bindingValues.push(bindings.value) - 1;
+
+        el.dataset.bindingValue = bindingValueIndex;
+
         switch (bindings.arg) {
             case 'doubletap':
-                interactable.on('doubletap', bindings.value);
+                interactable.on('doubletap', () => bindingValues[bindingValueIndex]());
                 break;
             case 'tap':
             default:
-                interactable.on('tap', bindings.value);
+                interactable.on('tap', () => bindingValues[bindingValueIndex]());
         }
     },
-    // update(el, bindings) {
-    //     const interactable = interactables[+el.dataset.interactable];
-    //
-    //     switch (bindings.arg) {
-    //         case 'doubletap':
-    //             interactable.off('doubletap');
-    //             interactable.on('doubletap', bindings.value);
-    //             break;
-    //         case 'tap':
-    //         default:
-    //             interactable.off('tap');
-    //             interactable.on('tap', bindings.value);
-    //     }
-    // },
-    unbind(el) {
-        if (!interactables[+el.dataset.interactable]) {
+    update(el, bindings) {
+        if (bindings.value === bindings.oldValue) {
             return;
         }
 
-        interactables[+el.dataset.interactable].unset();
+        const bindingValueIndex = +el.dataset.bindingValue;
 
-        delete interactables[+el.dataset.interactable];
+        bindingValues[bindingValueIndex] = bindings.value;
+    },
+    unbind(el) {
+        if (interactables[+el.dataset.interactable]) {
+            interactables[+el.dataset.interactable].unset();
+            delete interactables[+el.dataset.interactable];
+        }
+
+        if (bindingValues[+el.dataset.bindingValue]) {
+            delete bindingValues[+el.dataset.bindingValue];
+        }
     }
 });
 
