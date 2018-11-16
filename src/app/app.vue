@@ -26,7 +26,7 @@
                     heading="Chart"
                     @close="listOpen = false;"
                 )
-                    listPane(@contextMenu="listContextMenuCallback = $event; $refs.listContextMenu.open();")
+                    listPane(@contextMenu="(e, callback) => { listContextMenuCallback = callback; $refs.listContextMenu.open(e); }")
             transition(name="fade")
                 pane-frame(
                     v-show="searchOpen"
@@ -34,7 +34,7 @@
                     heading="Search"
                     @close="searchOpen = false;"
                 )
-                    searchPane(@contextMenu="searchContextMenuCallback = $event; $refs.searchContextMenu.open();")
+                    searchPane(@contextMenu="(e, callback) => { searchContextMenuCallback = callback; $refs.searchContextMenu.open(e); }")
             transition(name="fade")
                 pane-frame(
                     v-if="playlistOpen"
