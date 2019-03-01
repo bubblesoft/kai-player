@@ -23,12 +23,12 @@ export default class Set {
 
     /**
      *
-     * Add item to the set, return the index of the item.
+     * Add item to the set, return the new length.
      *
-     * @param {...Object} item
+     * @param {...Object} items
      * @returns {number}
      */
-    add(...item) {
+    add(...items) {
         if ([...arguments].filter(argument => argument === undefined).length) {
             throw 'No item passed.';
         }

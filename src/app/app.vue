@@ -81,7 +81,9 @@
 <script>
     import { mapState, mapMutations, mapActions } from 'vuex';
 
-    import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SWITCH_TO_BACKGROUND, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE } from '../scripts/mutation-types';
+    import interact from 'interactjs';
+
+    import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SWITCH_TO_BACKGROUND, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE } from '../scripts/mutation-types';
 
     import Source from './source/Source';
     import Channel from './source/Channel';
@@ -397,6 +399,16 @@
                 this[UPDATE_QUEUE_GROUP]({ active: 1 });
                 this[UPDATE_PLAYING_QUEUE_INDEX](1);
             }
+
+            const interactable = interact(document.body);
+
+            const resumeAudioContext = () => {
+                interactable.unset();
+
+                this.visualizer._clubber.context.resume();
+            };
+
+            interactable.on('tap', resumeAudioContext);
         },
 
         async mounted() {

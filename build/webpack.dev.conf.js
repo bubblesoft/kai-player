@@ -17,6 +17,7 @@ module.exports = {
     devServer: {
         contentBase: path.resolve(rootDir, 'build'),
         proxy: {
+            '/kaiplanet': 'http://localhost:3000',
             '/audio': 'http://localhost:3000',
             '/soundcloud': 'http://localhost:3000',
             '/netease': 'http://localhost:3000',

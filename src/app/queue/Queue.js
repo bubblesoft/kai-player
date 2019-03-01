@@ -2,30 +2,27 @@
  * Created by qhyang on 2017/12/7.
  */
 
-import Set from '../Set';
+import QueueGroup from './QueueGroup';
 
 const modes = ['repeat', 'repeatOne', 'shuffle'];
 
-export default class Queue extends Set {
+export default class extends QueueGroup {
     modeIndex;
 
     get mode() {
         return modes[this.modeIndex];
     }
 
-    constructor({ name }) {
-        super({ name });
-        this.modeIndex = 0;
+    add(...items) {
+        items.forEach((item) => item.loadStreamUrl());
+
+        return super.add(...items);
     }
 
     insert(index, ...items) {
-        this._items.splice(index, 0 , ...items);
+        items.forEach((item) => item.loadStreamUrl());
 
-        if (this.length === 1) {
-            this.active = index;
-        }
-
-        return index;
+        super.insert(index, ...items);
     }
 
     previous() {
@@ -63,10 +60,6 @@ export default class Queue extends Set {
         return this.active;
     }
 
-    goTo(index) {
-        return this.active = index;
-    }
-
     switchMode() {
         this.modeIndex++;
 
@@ -74,4 +67,4 @@ export default class Queue extends Set {
             this.modeIndex = 0;
         }
     }
-};
+}

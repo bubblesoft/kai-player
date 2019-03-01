@@ -452,19 +452,14 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                         }
                     })(),
                     name: queue.name,
-                    tracks: queue.get().map(track => {
-                        return {
-                            id: track.id,
-                            name: track.name,
-                            duration: track.duration,
-                            artists: track.artists.map(artist => {
-                                return {
-                                    name: artist.name
-                                }
-                            }),
-                            picture: track.picture
-                        }
-                    }),
+                    tracks: queue.get().map(track => ({
+                        id: track.id,
+                        name: track.name,
+                        duration: track.duration,
+                        streamUrl: track.streamUrl,
+                        artists: track.artists.map(artist => ({ name: artist.name })),
+                        picture: track.picture
+                    })),
                     active: queue.active
                 }
             }),
@@ -496,19 +491,18 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                 queue.active = queueData.active;
 
                 if (queueData.tracks.length) {
-                    queue.add(...queueData.tracks.map(trackData => {
-                        return new Track({
-                            id: trackData.id,
-                            name: trackData.name,
-                            duration: trackData.duration,
-                            artists: trackData.artists.map(artistData => {
-                                return new Artist({
-                                    name: artistData.name
-                                })
-                            }),
-                            picture: trackData.picture
-                        });
-                    }));
+                    queue.add(...queueData.tracks.map(trackData => new Track({
+                        id: trackData.id,
+                        name: trackData.name,
+                        duration: trackData.duration,
+                        streamUrl: trackData.streamUrl,
+                        artists: trackData.artists.map(artistData => {
+                            return new Artist({
+                                name: artistData.name
+                            })
+                        }),
+                        picture: trackData.picture
+                    })));
                 }
 
                 return queue;

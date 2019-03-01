@@ -22,19 +22,19 @@ export default class PlayerController {
 
                 playTrackPromiseReject = reject;
 
-                const url = new URL(await track.getStreamUrl());
+                const url = new URL(track.streamUrl || ((await track.loadStreamUrl()) || track.streamUrl));
 
                 try {
                     await this.player.load(`/${track.id.split('_')[0]}${url.pathname}${url.search}`);
-                    resolve();
                     playTrackPromiseReject = null;
                 } catch (e) {
                     await this.player.load(url.href);
-                    resolve();
                     playTrackPromiseReject = null;
                 }
 
                 this.player.play();
+
+                resolve();
             } catch (e) {
                 reject(e);
             }

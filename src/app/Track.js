@@ -4,10 +4,11 @@
 
 export default class Track {
     duration;
-    _id;
-    _name;
+    streamUrl;
     _artists;
     _getStreamUrl;
+    _id;
+    _name;
     _picture;
 
     get id() {
@@ -27,6 +28,7 @@ export default class Track {
     }
 
     constructor({id, name, duration, artists, getStreamUrl, picture }) {
+        this.streamUrl = null;
         this._id = id;
         this._name = name;
         this.duration = duration;
@@ -35,14 +37,13 @@ export default class Track {
         this._picture = picture;
     }
 
-    // Return a promise
-    getStreamUrl() {
+    loadStreamUrl() {
         if (typeof this._getStreamUrl === 'function') {
             return this._getStreamUrl(this);
         }
 
         return (async() => {
-            return (await (await fetch('/audio/streamurl', {
+            this.streamUrl = (await (await fetch('/audio/streamurl', {
                 method: 'POST',
                 body: JSON.stringify({
                     id: this.id.split('_')[1],
