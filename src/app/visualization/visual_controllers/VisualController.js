@@ -21,6 +21,7 @@ export default class VisualController {
     _mountPoint;
     _root;
     _active;
+    _picture;
 
     get types() {
         return Object.keys(this._renderers).map(type => {
@@ -63,6 +64,7 @@ export default class VisualController {
     }
 
     loadResource({ picture } = {}) {
-        this.activeRenderer._picture = picture;
+        this._picture = picture;
+        this.activeRenderer.renderPicture(picture);
     }
 };

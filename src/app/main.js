@@ -583,112 +583,65 @@ playerController.connect(new Player);
 
 const playerModule = {
     state: {
-        playerController
+        playerController,
+        get playing() {
+            return this.playerController.player.playing
+        }
     }
 };
 
+const backgroundType = localStorage.getItem('kaisoftbackgroundtype'),
+    visualizerType = localStorage.getItem('kaisoftvisualizertype');
+
 const visualizationModule = {
     state: {
-        background: null,
-        visualizer: null,
-        init: false
+        backgroundType,
+        visualizerType,
+        init: false,
+        _background: null,
+        _visualizer: null,
+        _audioSouce: null
     },
     mutations: {
         [mutationTypes.INIT_VISUALIZATION](state, renderers) {
-            state.background = new Background( localStorage.getItem('kaisoftbackgroundtype') || 'three', renderers);
-            state.visualizer = new Visualizer(localStorage.getItem('kaisoftvisualizertype') || 'random', renderers);
+            state._background = new Background(backgroundType || 'three', renderers);
+            state._visualizer = new Visualizer(visualizerType || 'random', renderers);
             state.init = true;
         },
+
         [mutationTypes.UPDATE_ACTIVE_BACKGROUND_TYPE](state, type) {
-            const previousRenderer = state.background.activeRenderer,
-                playing = playerModule.state.playerController.player ? playerModule.state.playerController.player.playing : false;
-
-            state.background.activeType = type;
-
-            const background = state.background;
-
-            if (!playing && background.activeRenderer !== previousRenderer) {
-                previousRenderer.hide();
-                previousRenderer.pause();
-                background.activeRenderer.start();
-                background.activeRenderer.show();
-            }
-
-            state.background = null;
-            state.background = background;
+            state.backgroundType = type;
             localStorage.setItem('kaisoftbackgroundtype', type);
         },
 
         [mutationTypes.UPDATE_ACTIVE_VISUALIZER_TYPE](state, type) {
-            const previousRenderer = state.visualizer.activeRenderer,
-                playing = playerModule.state.playerController.player.playing;
-
-            state.visualizer.activeType = type;
-
-            const visualizer = state.visualizer;
-
-            if (playing && visualizer.activeRenderer !== previousRenderer) {
-                previousRenderer.hide();
-                previousRenderer.pause();
-                visualizer.activeRenderer.start();
-                visualizer.activeRenderer.show();
-            }
-
-            state.visualizer = null;
-            state.visualizer = visualizer;
+            state.visualizerType = type;
             localStorage.setItem('kaisoftvisualizertype', type);
         },
 
-        [mutationTypes.SWITCH_TO_BACKGROUND](state) {
-            if (state.background.activeRenderer !== state.visualizer.activeRenderer) {
-                state.visualizer.activeRenderer.hide();
-                state.background.activeRenderer.start();
-                state.background.start();
-                state.background.activeRenderer.show();
-                state.visualizer.stop();
-                state.visualizer.activeRenderer.pause();
-            } else {
-                state.visualizer.stop();
-                state.background.start();
-            }
-        },
-
-        [mutationTypes.SWITCH_TO_VISUALIZER](state) {
-            if (state.background.activeRenderer !== state.visualizer.activeRenderer) {
-                state.background.activeRenderer.hide();
-                state.visualizer.activeRenderer.start();
-                state.visualizer.start();
-                state.visualizer.activeRenderer.show();
-                state.background.stop();
-                state.background.activeRenderer.pause();
-                state.background.event('reset');
-            } else {
-                state.background.stop();
-                state.visualizer.start();
-            }
-        },
-
         [mutationTypes.VISUALIZER_LISTEN_TO](state, audioSource) {
-            state.visualizer.listen(audioSource);
+            if (state._visualizer) {
+                state._visualizer.listen(audioSource);
+            }
+
+            state._audioSouce = audioSource;
         },
 
         [mutationTypes.BACKGROUND_LOAD_RESOURCE](state, { picture } = {}) {
-            if (state.background) {
-                state.background.loadResource({ picture });
+            if (state._background) {
+                state._background.loadResource({ picture });
             }
         },
 
         [mutationTypes.VISUALIZER_LOAD_RESOURCE](state, { picture } = {}) {
-            if (state.visualizer) {
-                state.visualizer.loadResource({ picture });
+            if (state._visualizer) {
+                state._visualizer.loadResource({ picture });
             }
         }
     },
     actions: {
-        async initVisualization({ commit }, mountPoint) {
+        async initVisualization({ commit, state }, mountPoint) {
             const renderers = await import('./visualization/renderers/renderers');
-
-            commit(mutationTypes.INIT_VISUALIZATION, renderers);
 
             try {
                 renderers.threeRenderer.init(mountPoint);
@@ -697,6 +650,21 @@ const visualizationModule = {
             renderers.histogramRenderer.init(mountPoint);
             renderers.electricArcRenderer.init(mountPoint);
             renderers.artworkRenderer.init(mountPoint);
+
+            commit(mutationTypes.INIT_VISUALIZATION, renderers);
+
+            const playing = playerModule.state.playing;
+
+            if (playing && state._audioSource) {
+                state._visualizer.listen(state._audioSource);
+                state._visualizer.activeRenderer.start();
+                state._visualizer.start();
+                state._visualizer.activeRenderer.show();
+            } else if (!playing) {
+                state._background.activeRenderer.start();
+                state._background.start();
+                state._background.activeRenderer.show();
+            }
 
             const queueGroup = queueModule.state.queueGroup,
                 queue = queueGroup.get(queueGroup.active),
@@ -707,7 +675,7 @@ const visualizationModule = {
             }
         },
         async triggerBackgroundEvent({ commit, state }, type) {
-            await state.background.event(type);
+            await state._background.event(type);
         }
     }
 };
@@ -722,9 +690,114 @@ const store = new Vuex.Store({
     }
 });
 
-new Vue({
+const vm = new Vue({
     el: 'app',
     store,
     i18n,
     render: createElement => createElement(App)
+});
+
+let cancelVisualizationChange = null;
+
+vm.$watch(() => ([
+    visualizationModule.state.backgroundType,
+    visualizationModule.state.visualizerType,
+    playerModule.state.playing
+]), async ([newBackground, newVisualization, newPlaying], [oldBackground, oldVisualization, oldPlaying]) => {
+    if (newBackground === oldBackground && newVisualization === oldVisualization && newPlaying === oldPlaying) {
+        return;
+    }
+
+    if (cancelVisualizationChange) {
+        cancelVisualizationChange();
+    }
+
+    const state = visualizationModule.state;
+
+    if (!oldPlaying && state._background.animating) {
+        try {
+            await new Promise((resolve, reject) => {
+                cancelVisualizationChange = reject;
+
+                const unwatch = vm.$watch('$store.state.visualizationModule._background.animating', (animating) => {
+                    if (animating) {
+                        return;
+                    }
+
+                    unwatch();
+                    cancelVisualizationChange = null;
+                    resolve();
+                });
+            });
+        } catch (e) {
+            return;
+        }
+    }
+
+    const background = state._background,
+        oldBackgroundRenderer = background.activeRenderer;
+
+    background.activeType = newBackground;
+
+    const newBackgroundRenderer = background.activeRenderer;
+
+    if (newBackground !== oldBackground) {
+        if (!newPlaying && !oldPlaying && newBackgroundRenderer !== oldBackgroundRenderer) {
+            oldBackgroundRenderer.hide();
+            oldBackgroundRenderer.pause();
+            newBackgroundRenderer.start();
+            newBackgroundRenderer.show();
+        }
+
+        state._background = null;
+        state._background = background;
+    }
+
+    const visualizer = state._visualizer,
+        oldVisualizerRenderer = visualizer.activeRenderer;
+
+    visualizer.activeType = newVisualization;
+
+    const newVisualizerRenderer = visualizer.activeRenderer;
+
+    if (newVisualization !== oldVisualization || newVisualization === 'random') {
+        if (newPlaying && oldPlaying && newVisualizerRenderer !== oldVisualizerRenderer) {
+            oldVisualizerRenderer.hide();
+            oldVisualizerRenderer.pause();
+            newVisualizerRenderer.start();
+            newVisualizerRenderer.show();
+        }
+
+        state._visualizer = null;
+        state._visualizer = visualizer;
+    }
+
+    if (newPlaying !== oldPlaying) {
+        if (newPlaying && !oldPlaying) {
+            if (oldBackgroundRenderer !== newVisualizerRenderer) {
+                oldBackgroundRenderer.hide();
+                newVisualizerRenderer.start();
+                visualizer.start();
+                newVisualizerRenderer.show();
+                background.stop();
+                oldBackgroundRenderer.pause();
+                background.event('reset');
+            } else {
+                background.stop();
+                visualizer.start();
+            }
+        } else if (!newPlaying && oldPlaying) {
+            if (newBackgroundRenderer !== oldVisualizerRenderer) {
+                oldVisualizerRenderer.hide();
+                newBackgroundRenderer.start();
+                background.start();
+                newBackgroundRenderer.show();
+                visualizer.stop();
+                oldVisualizerRenderer.pause();
+            } else {
+                visualizer.stop();
+                background.start();
+            }
+        }
+    }
 });

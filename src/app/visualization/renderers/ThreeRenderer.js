@@ -150,6 +150,7 @@ export default class ThreeRenderer extends Renderer {
             this.threeAudioVisualization._currentLayout = layout;
 
             try {
+                this.mode = 'basic';
                 await this.threeAudioVisualization.switchMode('basic');
             } catch (e) { }
 

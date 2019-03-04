@@ -194,7 +194,7 @@
 
     import RandomQueue from './RandomQueue';
 
-    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, VISUALIZER_LISTEN_TO, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
+    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
 
     import draggable from 'vuedraggable';
     import tooltip from 'vue-strap/src/tooltip';
@@ -336,12 +336,8 @@
                 this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
                 this[UPDATE_TRACK]({ index, duration: this.player.duration * 1000 });
 
-                if (!playing) {
-                    if (this.activeBackgroundType !== 'three' || this.activeVisualizerType !== 'three') {
-                        await this.triggerBackgroundEvent('play');
-                    }
-
-                    this[SWITCH_TO_VISUALIZER]();
+                if (!playing && (this.activeBackgroundType !== 'three' || this.activeVisualizerType !== 'three')) {
+                    await this.triggerBackgroundEvent('play');
                 }
             },
 
@@ -349,7 +345,6 @@
                 if (index === this.activeIndex) {
                     this.player.unload();
                     index > 0 && this.activeIndex--;
-                    this[SWITCH_TO_BACKGROUND]();
                 } else if (index < this.activeIndex) {
                     this.activeIndex--;
                 }
@@ -509,8 +504,6 @@
                 UPDATE_TRACK,
                 SWITCH_QUEUE_MODE,
                 VISUALIZER_LISTEN_TO,
-                SWITCH_TO_BACKGROUND,
-                SWITCH_TO_VISUALIZER,
                 VISUALIZER_LOAD_RESOURCE
             ]),
 

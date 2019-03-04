@@ -40,7 +40,7 @@ export default class Visualizer extends VisualController {
             super.activeType = type;
         }
 
-        this.activeRenderer._picture && this.activeRenderer.renderPicture(this.activeRenderer._picture);
+        this._picture && this.activeRenderer.renderPicture(this._picture);
 
         if (this._active) {
             this.stop();
@@ -123,14 +123,5 @@ export default class Visualizer extends VisualController {
             render();
         });
 
-    }
-
-    stop() {
-        super.stop();
-    }
-
-    loadResource({ picture } = {}) {
-        super.loadResource({ picture });
-        this.activeRenderer.renderPicture(picture);
     }
 }

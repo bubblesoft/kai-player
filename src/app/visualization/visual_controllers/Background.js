@@ -5,6 +5,8 @@
 import VisualController from './VisualController';
 
 export default class Background extends VisualController {
+    animating = false;
+
     get activeType() {
         return super.activeType;
     }
@@ -17,7 +19,7 @@ export default class Background extends VisualController {
         }
 
         super.activeType = type;
-        this.activeRenderer._picture && this.activeRenderer.renderPicture(this.activeRenderer._picture);
+        this._picture && this.activeRenderer.renderPicture(this._picture);
 
         if (this._active) {
             this.activeRenderer.start();
@@ -55,13 +57,9 @@ export default class Background extends VisualController {
         this.activeRenderer.stopAnimate();
     }
 
-    loadResource({ picture } = {}) {
-        super.loadResource({ picture });
-        this.activeRenderer.renderPicture(picture);
-
-    }
-
     async event(type) {
+        this.animating = true;
         await this.activeRenderer.event(type);
+        this.animating = false;
     }
 };

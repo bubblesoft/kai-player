@@ -225,7 +225,7 @@
 
     import RandomQueue from './queue/RandomQueue';
 
-    import { ADD_TRACK, SWITCH_QUEUE_MODE, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_BACKGROUND, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
+    import { ADD_TRACK, SWITCH_QUEUE_MODE, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
 
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
@@ -275,7 +275,7 @@
 
             activeBackgroundType: {
                 get() {
-                    return this.background.activeType;
+                    return this.$store.state.visualizationModule.backgroundType;
                 },
                 set(type) {
                     this[UPDATE_ACTIVE_BACKGROUND_TYPE](type);
@@ -404,8 +404,8 @@
                 playerController: state => state.playerModule.playerController,
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 visualizationInit: state => state.visualizationModule.init,
-                background: state => state.visualizationModule.background,
-                visualizer: state => state.visualizationModule.visualizer,
+                background: state => state.visualizationModule._background,
+                visualizer: state => state.visualizationModule._visualizer,
                 layout: state => state.generalModule.layout
             })
         },
@@ -468,13 +468,11 @@
                 }
 
                 await this.triggerBackgroundEvent('play');
-                this[SWITCH_TO_VISUALIZER]();
             },
 
             async pause() {
                 this.player.pause();
                 this.visualizer.stop();
-                this[SWITCH_TO_BACKGROUND]();
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
                 await this.triggerBackgroundEvent('pause');
                 await this.triggerBackgroundEvent('reset');
@@ -488,7 +486,6 @@
                 this.player.stop();
                 this.progress = 0;
                 this.visualizer.stop();
-                this[SWITCH_TO_BACKGROUND]();
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
                 await this.triggerBackgroundEvent('stop');
                 await this.triggerBackgroundEvent('reset');
@@ -503,10 +500,6 @@
 
                 await this._playTrack(this.queue.get(this.queue.previous()));
                 await this.triggerBackgroundEvent('previousTrack');
-
-                if (!playing) {
-                    this[SWITCH_TO_VISUALIZER]();
-                }
             },
 
             async next() {
@@ -522,10 +515,6 @@
 
                 await this._playTrack(this.queue.get(this.queue.next()));
                 await this.triggerBackgroundEvent('nextTrack');
-
-                if (!playing) {
-                    this[SWITCH_TO_VISUALIZER]();
-                }
             },
 
             toggleSettingsModal() {
@@ -537,8 +526,6 @@
                 SWITCH_QUEUE_MODE,
                 UPDATE_ACTIVE_BACKGROUND_TYPE,
                 UPDATE_ACTIVE_VISUALIZER_TYPE,
-                SWITCH_TO_VISUALIZER,
-                SWITCH_TO_BACKGROUND,
                 TRIGGER_BACKGROUND_EVENT,
                 VISUALIZER_LISTEN_TO,
                 BACKGROUND_LOAD_RESOURCE,

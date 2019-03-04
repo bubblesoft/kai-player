@@ -345,8 +345,8 @@
                 lockActivePanelIndex: state => state.generalModule.activePanel.lock,
                 player: state => state.playerModule.playerController.player,
                 queueGroup: state => state.queueModule.queueGroup,
-                background: state => state.visualizationModule.background,
-                visualizer: state => state.visualizationModule.visualizer,
+                background: state => state.visualizationModule._background,
+                visualizer: state => state.visualizationModule._visualizer,
                 mode: state => state.generalModule.mode,
                 layout: state => state.generalModule.layout,
                 backgroundImage: state => state.generalModule.backgroundImage
@@ -414,18 +414,15 @@
         async mounted() {
             this[SET_MODE](window.innerWidth < 600 ? 'mobile' : 'desktop');
             this.loadLayout({ mode: this.mode });
-
             document.body.addEventListener('click', this.blur);
+            this.initVisualization(this.$el);
 
-            const initVisualizationPromise = this.initVisualization(this.$el),
-                fetchPromise = fetch('/audio/sources', {
-                    method: 'POST',
-                    headers: new Headers({
-                        'Content-Type': 'application/json'
-                    })
-                });
-
-            await initVisualizationPromise;
+            const fetchPromise = fetch('/audio/sources', {
+                method: 'POST',
+                headers: new Headers({
+                    'Content-Type': 'application/json'
+                })
+            });
 
             const sources = (await (await fetchPromise).json()).data.map(source => {
                 const _source = new Source({
@@ -453,19 +450,6 @@
             });
 
             this[ADD_SOURCES](sources);
-
-            if (this.player.playing) {
-                this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
-                this.visualizer.activeRenderer.start();
-                this.visualizer.start();
-                this.visualizer.activeRenderer.show();
-
-                return;
-            }
-
-            this.background.activeRenderer.start();
-            this.background.start();
-            this.background.activeRenderer.show();
 
             if (this.queue && this.queue.constructor === RandomQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
                 const track = await getRecommendedTrack(null, sources);

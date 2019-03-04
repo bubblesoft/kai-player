@@ -72,7 +72,7 @@
 
     import { formatDuration } from '../../scripts/utils';
 
-    import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK ,UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_VISUALIZER, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
+    import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK ,UPDATE_ACTIVE_VISUALIZER_TYPE, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
 
     import Queue from '../queue/Queue';
 
@@ -118,7 +118,7 @@
 
             activeVisualizerType: {
                 get() {
-                    return this.visualizer.activeType;
+                    return this.visualizerType;
                 },
                 set(type) {
                     this[UPDATE_ACTIVE_VISUALIZER_TYPE](type);
@@ -129,7 +129,7 @@
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 queueGroup: state => state.queueModule.queueGroup,
                 playerController: state => state.playerModule.playerController,
-                visualizer: state => state.visualizationModule.visualizer
+                visualizerType: state => state.visualizationModule.visualizerType
             })
         },
 
@@ -152,11 +152,6 @@
 
                 this[VISUALIZER_LISTEN_TO](this.player._sound._sounds[0]._node, track.picture);
                 this[VISUALIZER_LOAD_RESOURCE]({ picture: track.picture });
-
-                if (!playing) {
-                    this[SWITCH_TO_VISUALIZER]();
-                }
-
                 this[UPDATE_TRACK]({ index: this.queue.active, duration: this.player.duration * 1000 });
             },
 
@@ -196,7 +191,6 @@
                 ADD_TRACK,
                 UPDATE_TRACK,
                 UPDATE_ACTIVE_VISUALIZER_TYPE,
-                SWITCH_TO_VISUALIZER,
                 TRIGGER_BACKGROUND_EVENT,
                 VISUALIZER_LISTEN_TO,
                 VISUALIZER_LOAD_RESOURCE
