@@ -99,6 +99,6 @@ module.exports = {
         }
     },
     resolve: {
-        extensions: [ '.vue', '.scss', '.less', '.js', '.css' ]
+        extensions: [ '.vue', '.scss', '.js', '.json', '.less', '.css' ]
     }
 };
