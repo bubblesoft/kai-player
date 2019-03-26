@@ -388,7 +388,7 @@ store._vm.$watch(() => ([
             await new Promise((resolve, reject) => {
                 cancelVisualizationChange = reject;
 
-                const unwatch = vm.$watch('$store.state.visualizationModule._background.animating', (animating) => {
+                const unwatch = store._vm.$watch(() => state._background.animating, (animating) => {
                     if (animating) {
                         return;
                     }

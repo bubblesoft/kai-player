@@ -141,8 +141,6 @@
                     active: this.queue.length - 1
                 });
 
-                const playing = this.player.playing;
-
                 await this.playerController.playTrack(track);
                 this.playingQueueIndex = this.queueGroup.active;
 

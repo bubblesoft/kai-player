@@ -446,6 +446,8 @@
             },
 
             async play() {
+                const eventPromise = this.triggerBackgroundEvent('play');
+
                 if (this.player.progress) {
                     this.player.play();
                 } else {
@@ -467,7 +469,7 @@
                     this.loading = false;
                 }
 
-                await this.triggerBackgroundEvent('play');
+                await eventPromise;
             },
 
             async pause() {
@@ -496,14 +498,14 @@
             },
 
             async previous() {
-                const playing = this.player.playing;
+                const eventPromise = this.triggerBackgroundEvent('previousTrack');
 
                 await this._playTrack(this.queue.get(this.queue.previous()));
-                await this.triggerBackgroundEvent('previousTrack');
+                await eventPromise;
             },
 
             async next() {
-                const playing = this.player.playing;
+                const eventPromise = this.triggerBackgroundEvent('nextTrack');
 
                 this.player.stop();
 
@@ -514,7 +516,7 @@
                 }
 
                 await this._playTrack(this.queue.get(this.queue.next()));
-                await this.triggerBackgroundEvent('nextTrack');
+                await eventPromise;
             },
 
             toggleSettingsModal() {

@@ -311,6 +311,12 @@
 
         methods: {
             async playTrack(index) {
+                let eventPromise;
+
+                if (!playing && (this.activeBackgroundType !== 'three' || this.activeVisualizerType !== 'three')) {
+                    eventPromise =  this.triggerBackgroundEvent('play');
+                }
+
                 this.player.stop();
 
                 const playing = this.playing,
@@ -336,8 +342,8 @@
                 this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
                 this[UPDATE_TRACK]({ index, duration: this.player.duration * 1000 });
 
-                if (!playing && (this.activeBackgroundType !== 'three' || this.activeVisualizerType !== 'three')) {
-                    await this.triggerBackgroundEvent('play');
+                if (eventPromise) {
+                    await eventPromise;
                 }
             },
 
