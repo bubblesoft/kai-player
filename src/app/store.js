@@ -266,8 +266,8 @@ const playerModule = {
     }
 };
 
-const backgroundType = localStorage.getItem('kaisoftbackgroundtype'),
-    visualizerType = localStorage.getItem('kaisoftvisualizertype');
+const backgroundType = localStorage.getItem('kaisoftbackgroundtype') || 'three',
+    visualizerType = localStorage.getItem('kaisoftvisualizertype') || 'random';
 
 const visualizationModule = {
     state: {
@@ -280,8 +280,8 @@ const visualizationModule = {
     },
     mutations: {
         [mutationTypes.INIT_VISUALIZATION](state, renderers) {
-            state._background = new Background(backgroundType || 'three', renderers);
-            state._visualizer = new Visualizer(visualizerType || 'random', renderers);
+            state._background = new Background(backgroundType, renderers);
+            state._visualizer = new Visualizer(visualizerType, renderers);
             state.init = true;
         },
 
