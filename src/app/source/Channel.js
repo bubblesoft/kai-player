@@ -61,9 +61,7 @@ export default class Channel {
                         return null;
                     }
 
-                    const url = new URL(trackData.picture);
-
-                    return `/proxy/${url.hostname}${url.pathname}`;
+                    return `/proxy/${trackData.picture}`;
 
                 })()
             })
