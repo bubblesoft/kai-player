@@ -42,6 +42,17 @@ module.exports = {
                 loader: 'vue-loader'
             },
             {
+                test: /\.ts$/,
+                loader: 'ts-loader',
+                exclude: /node_modules/
+            },
+            {
+                test: /\.ts$/,
+                loader: 'tslint-loader',
+                enforce: 'pre',
+                exclude: /node_modules/
+            },
+            {
                 test: /\.js$/,
                 loader: 'babel-loader',
                 exclude: /node_modules/
@@ -99,6 +110,6 @@ module.exports = {
         }
     },
     resolve: {
-        extensions: [ '.vue', '.scss', '.js', '.json', '.less', '.css' ]
+        extensions: [ '.vue', '.ts', '.js', '.scss', '.json', '.less', '.css' ]
     }
 };
