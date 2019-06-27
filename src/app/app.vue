@@ -87,8 +87,8 @@
 
     import Source from './source/Source';
     import Channel from './source/Channel';
-    import Queue from './queue/Queue';
-    import RandomQueue from './queue/RandomQueue';
+    import TrackQueue from './queue/TrackQueue';
+    import RandomTrackQueue from './queue/RandomTrackQueue';
 
     import { getRecommendedTrack } from '../scripts/utils';
 
@@ -384,14 +384,14 @@
             if (!this.queueGroup.length) {
                 this[INSERT_QUEUE]({
                     index: 0,
-                    queue: new Queue({
+                    queue: new TrackQueue({
                         name: this.$t('Temp')
                     })
                 });
 
                 this[INSERT_QUEUE]({
                     index: 0,
-                    queue: new RandomQueue({
+                    queue: new RandomTrackQueue({
                         name: this.$t('Listen Randomly')
                     })
                 });
@@ -451,7 +451,7 @@
 
             this[ADD_SOURCES](sources);
 
-            if (this.queue && this.queue.constructor === RandomQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
+            if (this.queue && this.queue.constructor === RandomTrackQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
                 const track = await getRecommendedTrack(null, sources);
 
                 this[ADD_TRACK]({ track });

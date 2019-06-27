@@ -6,11 +6,11 @@ import * as mutationTypes from '../scripts/mutation-types';
 import { loadLocale } from './i18n';
 import { generateLayout } from '../scripts/utils';
 
+import Queue from "./Queue";
 import SourceGroup from './source/SourceGroup';
-import QueueGroup from './queue/QueueGroup';
 import PlayerController from './PlayerController';
-import Queue from './queue/Queue';
-import RandomQueue from './queue/RandomQueue';
+import TrackQueue from './queue/TrackQueue';
+import RandomTrackQueue from './queue/RandomTrackQueue';
 import Track from './Track';
 import Artist from './Artist';
 import Player from './Player';
@@ -119,10 +119,10 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                 return {
                     type: (() => {
                         switch (queue.constructor) {
-                            case RandomQueue:
+                            case RandomTrackQueue:
                                 return 'random';
 
-                            case Queue:
+                            case TrackQueue:
                             default:
                                 return 'basic';
                         }
@@ -145,22 +145,22 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
     },
 
     restoreQueueData = () => {
-        const queueGroup = new QueueGroup({ name: 'Global' });
+        const queueGroup = new Queue();
 
         let playingQueueIndex = null;
 
         const queueGroupData = JSON.parse(localStorage.getItem('kaiplayerplayingqueues'));
 
         if (queueGroupData && queueGroupData.queues.length) {
-            queueGroup.add(...queueGroupData.queues.map(queueData => {
+            queueGroup.add(queueGroupData.queues.map(queueData => {
                 const queue = (() => {
                     switch (queueData.type) {
                         case 'random':
-                            return new RandomQueue({ name: queueData.name });
+                            return new RandomTrackQueue({ name: queueData.name });
 
                         case 'basic':
                         default:
-                            return new Queue({ name: queueData.name });
+                            return new TrackQueue({ name: queueData.name });
                     }
                 })();
 
@@ -170,8 +170,8 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                     queue.add(...queueData.tracks.map(trackData => new Track({
                         id: trackData.id,
                         name: trackData.name,
-                        duration: trackData.duration,
                         streamUrl: trackData.streamUrl,
+                        duration: trackData.duration,
                         artists: trackData.artists.map(artistData => {
                             return new Artist({
                                 name: artistData.name
@@ -203,7 +203,7 @@ const queueModule = {
     },
     mutations: {
         [mutationTypes.UPDATE_QUEUE_GROUP](state, { queues, active }) {
-            queues && state.queueGroup.update(queues);
+            queues && state.queueGroup.load(queues);
 
             if (typeof active === 'number') {
                 state.queueGroup.active = active;
@@ -221,7 +221,7 @@ const queueModule = {
             const queue = state.queueGroup.get(index);
 
             name && (queue.name = name);
-            tracks && queue.update(tracks);
+            tracks && queue.load(tracks);
 
             if (typeof active === 'number' || active === null) {
                 queue.active = active;
@@ -319,13 +319,11 @@ const visualizationModule = {
         async initVisualization({ commit, state }, mountPoint) {
             const renderers = await import('./visualization/renderers/renderers');
 
-            try {
-                renderers.threeRenderer.init(mountPoint);
-            } catch (e) { }
-
-            renderers.histogramRenderer.init(mountPoint);
-            renderers.electricArcRenderer.init(mountPoint);
-            renderers.artworkRenderer.init(mountPoint);
+            Object.values(renderers).forEach((renderer) => {
+                try {
+                    renderer.init(mountPoint);
+                } catch (e) { }
+            });
 
             commit(mutationTypes.INIT_VISUALIZATION, renderers);
 

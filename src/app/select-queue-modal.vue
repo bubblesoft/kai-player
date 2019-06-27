@@ -29,7 +29,7 @@
 <script>
     import { mapState } from 'vuex';
 
-    import RandomQueue from './queue/RandomQueue';
+    import RandomTrackQueue from './queue/RandomTrackQueue';
 
     import modal from 'vue-strap/src/modal';
 
@@ -65,7 +65,7 @@
             },
 
             ...mapState({
-                queues: state => state.queueModule.queueGroup.get().filter(queue => queue.constructor !== RandomQueue),
+                queues: state => state.queueModule.queueGroup.get().filter(queue => queue.constructor !== RandomTrackQueue),
             })
         },
 

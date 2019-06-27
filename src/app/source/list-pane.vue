@@ -74,7 +74,7 @@
 
     import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK ,UPDATE_ACTIVE_VISUALIZER_TYPE, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
 
-    import Queue from '../queue/Queue';
+    import TrackQueue from '../queue/TrackQueue';
 
     import draggable from 'vuedraggable';
     import vueLoading from 'vue-loading-template';
@@ -160,7 +160,7 @@
                     } else if ( type === 'import') {
                         this[INSERT_QUEUE]({
                             index: this.queueGroup.length,
-                            queue: new Queue({ name: `${this.channelSelected.name}(${moment().format('YYYY-MM-DD')})` })
+                            queue: new TrackQueue({ name: `${this.channelSelected.name}(${moment().format('YYYY-MM-DD')})` })
                         });
 
                         this[UPDATE_QUEUE_GROUP]({ active: this.queueGroup.length - 1 });

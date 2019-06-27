@@ -223,7 +223,7 @@
     import scale from '../scripts/scale';
     import applyCanvasMask from '../scripts/canvasMask';
 
-    import RandomQueue from './queue/RandomQueue';
+    import RandomTrackQueue from './queue/RandomTrackQueue';
 
     import { ADD_TRACK, SWITCH_QUEUE_MODE, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
 
@@ -509,7 +509,7 @@
 
                 this.player.stop();
 
-                if (this.queue.constructor === RandomQueue) {
+                if (this.queue.constructor === RandomTrackQueue) {
                     this.loading = true;
                     this[ADD_TRACK]({ track: await getRecommendedTrack(this.track, this.sources.filter(source => source.active)) });
                     this.loading = false;

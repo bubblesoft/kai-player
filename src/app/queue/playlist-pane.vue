@@ -79,7 +79,7 @@
                                 :editable="editMode"
                                 :height="30"
                             )
-                        td(v-if="queue.constructor === RandomQueue") ∞
+                        td(v-if="queue.constructor === RandomTrackQueue") ∞
                         td(v-else) {{ queue.length }}
                         td.drag-handle(v-if="editMode")
                             svg(
@@ -95,8 +95,8 @@
 
     import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX } from '../../scripts/mutation-types';
 
-    import Queue from './Queue';
-    import RandomQueue from './RandomQueue';
+    import Queue from './TrackQueue';
+    import RandomTrackQueue from './RandomTrackQueue';
 
     import draggable from 'vuedraggable';
     import tooltip from 'vue-strap/src/tooltip';
@@ -119,7 +119,7 @@
                     data: []
                 },
                 dragging: false,
-                RandomQueue
+                RandomTrackQueue
             }
         },
 
@@ -207,7 +207,7 @@
 //                    }
 
                     this.trashCan.data.forEach((queue, index) => {
-                        if (queue.constructor === RandomQueue) {
+                        if (queue.constructor === RandomTrackQueue) {
                             this.queueGroup.add(this.trashCan.data.splice(index, 1)[0]);
                         }
                     });

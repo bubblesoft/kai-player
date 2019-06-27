@@ -2,7 +2,7 @@
     .tracks-pane
         .toolbar
             template(v-if="queue")
-                template(v-if="queue.constructor === RandomQueue")
+                template(v-if="queue.constructor === RandomTrackQueue")
                     tooltip(
                         effect="fadein"
                         placement="top"
@@ -107,7 +107,7 @@
                             )
                                 path(d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z")
         .list-wrap(v-if="queue")
-            .random-queue-box(v-if="queue.constructor === RandomQueue")
+            .random-queue-box(v-if="queue.constructor === RandomTrackQueue")
                 draggable.draggable(
                     v-model="tracks"
                     :options="{ group: 'tracks', draggable: '' }"
@@ -192,7 +192,7 @@
 
     import { getRecommendedTrack, formatDuration, mapMediaSourceIcon, mapMediaSourceName } from '../../scripts/utils';
 
-    import RandomQueue from './RandomQueue';
+    import RandomTrackQueue from './RandomTrackQueue';
 
     import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
 
@@ -221,7 +221,7 @@
                   data: []
               },
               dragging: false,
-              RandomQueue
+              RandomTrackQueue
           };
         },
 
@@ -327,7 +327,7 @@
                     await this.playerController.playTrack(track);
                 } catch (e) {
                     if (e.name === 'TypeError') {
-                        if (this.queue.constructor === RandomQueue) {
+                        if (this.queue.constructor === RandomTrackQueue) {
                             this[ADD_TRACK]({ track: await getRecommendedTrack(this.track, this.sources.filter(source => source.active)) });
                         }
 

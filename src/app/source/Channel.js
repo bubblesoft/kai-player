@@ -5,8 +5,6 @@
 import Track from '../Track';
 import Artist from '../Artist';
 
-import { urlBase } from '../../scripts/utils';
-
 export default class Channel {
 
     /**
