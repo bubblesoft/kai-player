@@ -2,6 +2,7 @@
  * Created by qhyang on 2017/12/15.
  */
 
+import { timer } from "d3";
 import Clubber from 'clubber';
 
 import VisualController from './VisualController';
@@ -109,19 +110,17 @@ export default class Visualizer extends VisualController {
             });
         }
 
-        const render = () => {
+        let lastElapsed;
+
+        const t = timer((elapsed => {
             if (!this._active) {
-                return;
+                return t.stop();
             }
 
             this._clubber.update();
-            this.activeRenderer.renderAudio(bands);
-            requestAnimationFrame(render);
-        };
-
-        requestAnimationFrame(() => {
-            render();
-        });
+            this.activeRenderer.renderAudio(bands, (elapsed - lastElapsed) || 0);
+            lastElapsed = elapsed;
+        }));
 
     }
 }
