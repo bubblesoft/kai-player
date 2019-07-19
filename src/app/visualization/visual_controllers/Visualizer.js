@@ -50,11 +50,13 @@ export default class Visualizer extends VisualController {
     }
 
     constructor(type, renderers) {
-        const { threeRenderer, histogramRenderer, electricArcRenderer, artworkRenderer } = renderers;
+        const { threeRenderer, histogramRenderer, wavingRibbonRenderer, electricArcRenderer,
+            artworkRenderer } = renderers;
 
         const _renderers = {
             three: threeRenderer,
             histogram: histogramRenderer,
+            ribbon: wavingRibbonRenderer,
             electricArc: electricArcRenderer,
             artwork: artworkRenderer
         };

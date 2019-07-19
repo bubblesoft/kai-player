@@ -8,6 +8,8 @@ const mapTypeName = type => {
             return 'Tiles';
         case 'histogram':
             return 'Histogram';
+        case 'ribbon':
+            return 'Waving Ribbon';
         case 'electricArc':
             return 'Electric Arc';
         case 'artwork':
@@ -24,12 +26,10 @@ export default class VisualController {
     _picture;
 
     get types() {
-        return Object.keys(this._renderers).map(type => {
-            return {
-                name: mapTypeName(type),
-                value: type
-            };
-        });
+        return Reflect.ownKeys(this._renderers).map(type => ({
+            name: mapTypeName(type),
+            value: type
+        }));
     }
 
     get activeType() {

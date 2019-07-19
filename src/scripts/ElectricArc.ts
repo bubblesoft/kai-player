@@ -80,7 +80,7 @@ export default class {
         if (delta) {
             if (this.phasesTop.length === data.length) {
                 this.phasesTop = this.phasesTop.map((phase) => {
-                    phase -= this.spinSpeed + 1.2 * delta;
+                    phase -= this.spinSpeed * 1.2 * delta;
 
                     if (phase < 0) {
                         phase = phase % 1 + 1;
@@ -157,7 +157,7 @@ export default class {
 
                 setTimeout(() => {
                     this.svg.append("path")
-                        .style("stroke", this.color || "#fff")
+                        .style("stroke", this.color)
                         .style("stroke-width", 2)
                         .style("fill", "none")
                         .attr("d", getPath(points, timeout))
