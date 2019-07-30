@@ -96,7 +96,7 @@ const sourceModule = {
     },
     mutations: {
         [mutationTypes.ADD_SOURCES] (state, sources) {
-            state.sourceGroup.add(...sources);
+            state.sourceGroup.add(sources);
         },
         [mutationTypes.UPDATE_SOURCE] (state, { index, active }) {
             state.sourceGroup.get(index).active = active;
