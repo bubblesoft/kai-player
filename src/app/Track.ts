@@ -5,6 +5,7 @@
 import ITrack from "./ITrack";
 
 import Artist from "./Artist";
+import Status from "./Status";
 
 interface IOptions {
     id: string;
@@ -13,46 +14,33 @@ interface IOptions {
     duration: number|null;
     artists: Artist[];
     picture: string;
+    status: Status;
     getStreamUrl?: (track: Track) => Promise<string>;
 }
 
 export default class Track implements ITrack {
     public duration: number|null;
     public streamUrl: string|null;
-    private pId: string;
-    private pName: string;
-    private pArtists: Artist[];
-    private pPicture: string;
-    private getStreamUrl: (() => Promise<string>)|null = null;
+    public status: Status;
+    public readonly id: string;
+    public readonly name: string;
+    public readonly artists: Artist[];
+    public readonly picture: string;
+    private readonly getStreamUrl: (() => Promise<string>)|null = null;
 
-    get id() {
-        return this.pId;
-    }
-
-    get name() {
-        return this.pName;
-    }
-
-    get artists() {
-        return this.pArtists;
-    }
-
-    get picture() {
-        return this.pPicture;
-    }
-
-    constructor({ id, name, streamUrl, duration, artists, picture, getStreamUrl }: IOptions) {
+    constructor({ id, name, streamUrl, duration, artists, picture, status, getStreamUrl }: IOptions) {
         this.streamUrl = null;
-        this.pId = id;
-        this.pName = name;
+        this.id = id;
+        this.name = name;
 
         if (streamUrl) {
             this.streamUrl = streamUrl;
         }
 
         this.duration = duration;
-        this.pArtists = artists;
-        this.pPicture = picture;
+        this.artists = artists;
+        this.picture = picture;
+        this.status = status || Status.Ok;
 
         if (getStreamUrl) {
             this.getStreamUrl = async () => await getStreamUrl(this);

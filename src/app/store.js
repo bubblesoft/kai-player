@@ -2,6 +2,7 @@ import Vue from 'vue';
 import Vuex from "vuex";
 
 import * as mutationTypes from '../scripts/mutation-types';
+import * as actionTypes from '../scripts/action-types';
 
 import { loadLocale } from './i18n';
 import { generateLayout } from '../scripts/utils';
@@ -16,6 +17,7 @@ import Artist from './Artist';
 import Player from './Player';
 import Background from './visualization/visual_controllers/Background';
 import Visualizer from './visualization/visual_controllers/Visualizer';
+import Status from "./Status";
 
 Vue.use(Vuex);
 
@@ -134,7 +136,8 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                         duration: track.duration,
                         streamUrl: track.streamUrl,
                         artists: track.artists.map(artist => ({ name: artist.name })),
-                        picture: track.picture
+                        picture: track.picture,
+                        status: track.status.id,
                     })),
                     active: queue.active
                 }
@@ -167,7 +170,7 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                 queue.active = queueData.active;
 
                 if (queueData.tracks.length) {
-                    queue.add(...queueData.tracks.map(trackData => new Track({
+                    queue.add(queueData.tracks.map(trackData => new Track({
                         id: trackData.id,
                         name: trackData.name,
                         streamUrl: trackData.streamUrl,
@@ -177,7 +180,8 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                                 name: artistData.name
                             })
                         }),
-                        picture: trackData.picture
+                        picture: trackData.picture,
+                        status: Status.fromId(trackData.status),
                     })));
                 }
 
@@ -240,9 +244,16 @@ const queueModule = {
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
-        [mutationTypes.UPDATE_TRACK](state, { index, duration, queue = state.queueGroup.get(state.queueGroup.active) }) {
-            if (duration) {
+        [mutationTypes.UPDATE_TRACK](state, { index, duration, status, queue = state.queueGroup.get(state.queueGroup.active) }) {
+            if (duration !== undefined) {
                 queue.get(index).duration = duration;
+            }
+
+            if (status !== undefined) {
+                queue.get(index).status = status;
+            }
+
+            if (duration !== undefined || status !== undefined) {
                 saveQueueData(state.queueGroup, state.playingQueueIndex);
             }
         },
@@ -262,6 +273,31 @@ const playerModule = {
         playerController,
         get playing() {
             return this.playerController.player.playing
+        }
+    },
+    actions: {
+        async [actionTypes.PLAY_TRACK]({ commit, rootState: { queueModule : { queueGroup } } }, { index = queueGroup.get(queueGroup.active).active, queue = queueGroup.get(queueGroup.active) }) {
+            commit(mutationTypes.UPDATE_QUEUE, { active: index });
+
+            const track = queue.get(index);
+
+            if (track) {
+                try {
+                    await playerController.playTrack(track);
+                    commit(mutationTypes.UPDATE_TRACK, { index: queue.active, status: Status.Ok });
+                } catch(e) {
+                    commit(mutationTypes.UPDATE_TRACK, { index: queue.active, status: Status.Error });
+                    throw e;
+                }
+
+                if (this.activeVisualizerType === 'random') {
+                    this.activeVisualizerType = 'random';
+                }
+
+                commit(mutationTypes.VISUALIZER_LISTEN_TO, playerController.player._sound._sounds[0]._node);
+                commit(mutationTypes.VISUALIZER_LOAD_RESOURCE, { picture: track.picture });
+
+            }
         }
     }
 };

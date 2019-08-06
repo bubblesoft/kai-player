@@ -11,9 +11,9 @@
                         disabled
                     ) {{ $t('Select a background') }}
                     option(
-                        v-for="tpe in background.types"
-                        :value="tpe.value"
-                    ) {{ $t(tpe.name) }}
+                        v-for="type in background.types"
+                        :value="type.value"
+                    ) {{ $t(type.name) }}
                 select.form-control(
                     v-if="visualizationInit"
                     v-model="activeVisualizerType"
@@ -98,10 +98,28 @@
                         path(d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65A.488.488 0 0 0 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z")
             .track-name
                 yoyoMarquee(
+                    ref="trackName"
                     v-if="track"
                     :title="track.name + '-' + (track.artists && track.artists.map(artist => artist.name).join(', '))"
                 )
-                    span(style="color: #fff;") {{ track.name }} - {{ track.artists && track.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist') }}
+                    span.track-name-content(ref="trackNameContent")
+                        span(style="color: #fff;") {{ track.name }} - {{ track.artists && track.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist') }}
+                span.track-notifications
+                    span.control-button(v-if="track.status === Status.Error")
+                        svg.error(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z")
+                    span.control-button(v-if="track.status === Status.Error")
+                        svg.info(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,11A1,1 0 0,1 13,12A1,1 0 0,1 12,13A1,1 0 0,1 11,12A1,1 0 0,1 12,11M12,8C14.63,8 17,9.57 18,12C16.62,15.31 12.81,16.88 9.5,15.5C7.92,14.84 6.66,13.58 6,12C7,9.57 9.37,8 12,8M12,9.5A2.5,2.5 0 0,0 9.5,12A2.5,2.5 0 0,0 12,14.5A2.5,2.5 0 0,0 14.5,12A2.5,2.5 0 0,0 12,9.5")
+
         .audio-control
             .control-button.control-button_small(v-interact:tap="previous")
                 svg(
@@ -224,8 +242,10 @@
     import applyCanvasMask from '../scripts/canvasMask';
 
     import RandomTrackQueue from './queue/RandomTrackQueue';
+    import Status from "./Status";
 
-    import { ADD_TRACK, SWITCH_QUEUE_MODE, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
+    import { ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
+    import { PLAY_TRACK } from "../scripts/action-types"
 
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
@@ -248,7 +268,9 @@
                 progress: 0,
                 volume: .5,
                 pic: '',
-                loading: false
+                loading: false,
+                inlineError: false,
+                Status
             }
         },
 
@@ -417,10 +439,16 @@
 
             async track(to) {
                 if (to && to.picture) {
-                    this.pic = applyCanvasMask(scale({ width: 200, height: 200 }, await loadImage(to.picture)), await loadImage(require('../assets/mask.png')), 200, 200, true);
+                    try {
+                        this.pic = applyCanvasMask(scale({ width: 200, height: 200 }, await loadImage(to.picture)), await loadImage(require('../assets/mask.png')), 200, 200, true);
+                    } catch (e) {
+                        this.pic = '';
+                    }
                 } else {
                     this.pic = '';
                 }
+
+                this.inlineError = this.$refs.trackNameContent.offsetWidth < this.$refs.trackName.$el.offsetWidth;
             }
         },
 
@@ -429,20 +457,6 @@
 
             ready() {
                 return this.player.ready;
-            },
-
-            async _playTrack(track) {
-                if (track) {
-                    await this.playerController.playTrack(track);
-
-                    if (this.activeVisualizerType === 'random') {
-                        this.activeVisualizerType = 'random';
-                    }
-
-                    this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
-                    this[VISUALIZER_LOAD_RESOURCE]({ picture: track.picture });
-
-                }
             },
 
             async play() {
@@ -455,18 +469,20 @@
 
                     try {
                         if (this.queue.active !== null) {
-                            await this._playTrack(this.queue.get(this.queue.active));
+                            await this[PLAY_TRACK](this.queue.get(this.queue.active));
                         } else {
-                            await this._playTrack(await new Promise(resolve => {
+                            await this[PLAY_TRACK](await new Promise(resolve => {
                                 const unwatch = this.$watch('track', (to) => {
                                     unwatch();
                                     resolve(to);
                                 });
                             }));
                         }
-                    } catch (e) { }
 
-                    this.loading = false;
+                        this.loading = false;
+                    } catch (e) {
+                        this.next();
+                    }
                 }
 
                 await eventPromise;
@@ -500,7 +516,7 @@
             async previous() {
                 const eventPromise = this.triggerBackgroundEvent('previousTrack');
 
-                await this._playTrack(this.queue.get(this.queue.previous()));
+                await this[PLAY_TRACK](this.queue.get(this.queue.previous()));
                 await eventPromise;
             },
 
@@ -515,7 +531,7 @@
                     this.loading = false;
                 }
 
-                await this._playTrack(this.queue.get(this.queue.next()));
+                await this[PLAY_TRACK](this.queue.get(this.queue.next()));
                 await eventPromise;
             },
 
@@ -525,6 +541,7 @@
 
             ...mapMutations([
                 ADD_TRACK,
+                UPDATE_TRACK,
                 SWITCH_QUEUE_MODE,
                 UPDATE_ACTIVE_BACKGROUND_TYPE,
                 UPDATE_ACTIVE_VISUALIZER_TYPE,
@@ -535,6 +552,7 @@
             ]),
 
             ...mapActions([
+                PLAY_TRACK,
                 'triggerBackgroundEvent',
                 'saveLayout'
             ])
@@ -550,8 +568,14 @@
             });
 
             if (this.track) {
-                this.pic = applyCanvasMask(scale({ width: 200, height: 200 }, await loadImage(this.track.picture)), await loadImage(require('../assets/mask.png')), 200, 200, true);
+                try {
+                    this.pic = applyCanvasMask(scale({ width: 200, height: 200 }, await loadImage(this.track.picture)), await loadImage(require('../assets/mask.png')), 200, 200, true);
+                } catch (e) { }
             }
+        },
+
+        mounted() {
+            this.inlineError = this.$refs.trackNameContent.offsetWidth < this.$refs.trackName.$el.offsetWidth;
         },
 
         destroyed() {
@@ -602,6 +626,8 @@
             }
 
             .track-name {
+                display: flex;
+                align-items: center;
                 width: 50%;
                 height: 20px;
                 margin-left: calc(30% - 9vh - 55px);
@@ -619,12 +645,9 @@
                 }
 
                 @media (max-width: 629px) {
+                    justify-content: center;
                     width: auto;
                     margin: 0 calc(30% - 9vh - 72px);
-
-                    .yoyo-marquee {
-                        text-align: center;
-                    }
                 }
 
                 @media (max-width: 516px) {
@@ -637,6 +660,16 @@
 
                 @media (max-width: 377px) {
                     margin: 8px;
+                }
+
+                .track-name-content {
+                    display: inline-flex;
+                    align-items: center;
+                }
+
+                .track-notifications {
+                    display: flex;
+                    margin-left: 5px;
                 }
             }
 
@@ -728,7 +761,15 @@
             cursor: pointer;
 
             svg {
-                fill: rgba(255, 255, 255, 0.6);
+                fill: rgba(255, 255, 255, .6);
+
+                &.error {
+                    fill: rgba(211, 101, 98, .6);
+                }
+
+                &.info {
+                    fill: rgba(89, 192, 255, .6);
+                }
             }
 
             &:hover svg {
@@ -737,6 +778,14 @@
                 filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
                 -ms-filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
                 filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
+
+                &.error {
+                    fill: rgba(211, 101, 98, .9);
+                }
+
+                &.info {
+                    fill: rgba(89, 192, 255, .9);
+                }
             }
         }
 

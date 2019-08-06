@@ -106,7 +106,26 @@ export default class Player {
             });
 
             this._sound.once('loaderror', (id, err) => {
-                reject(err);
+                for (const sound of this._sound._sounds) {
+                    if (sound._node && sound._node.error && sound._node.error.code === err) {
+                        return reject(sound._node.error);
+                    }
+                }
+
+                for (const sound in this._sound._sounds) {
+                    if (sound._node && sound._node.error) {
+                        return reject(sound._node.error);
+                    }
+                }
+
+                const errorMessages = [
+                    "MEDIA_ELEMENT_ERROR: Aborted",
+                    "MEDIA_ELEMENT_ERROR: Network error",
+                    "MEDIA_ELEMENT_ERROR: Decode error",
+                    "MEDIA_ELEMENT_ERROR: Format error",
+                ];
+
+                reject(new Error(typeof err === "number" ? errorMessages[err - 1] : err));
             });
         });
     }

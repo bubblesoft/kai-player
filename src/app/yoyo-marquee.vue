@@ -1,6 +1,6 @@
 <template lang="pug">
-    .yoyo-marquee
-        .content(
+    div.yoyo-marquee
+        span.content(
             ref="content"
             :class="{ animated: contentWidth > width }"
             :style="{ animationDuration: (contentWidth - width) / 10 + 's' }"
@@ -19,30 +19,34 @@
           }
         },
 
-        mounted() {
-            const contentDomElement = this.$refs.content;
+        methods: {
+            updateWidth() {
+                const contentDomElement = this.$refs.content;
 
-            this.$nextTick(() => {
                 this.width = this.$el.offsetWidth;
                 contentDomElement.style.setProperty("--parent-width", this.width + 'px');
-            });
-
-            mutationObserver = new MutationObserver(() => {
                 this.contentWidth = this.$refs.content.offsetWidth;
                 contentDomElement.style.setProperty("--width", this.contentWidth + 'px');
-            });
+            }
+        },
 
+        mounted() {
+            this.$nextTick(this.updateWidth);
+            mutationObserver = new MutationObserver(this.updateWidth);
             mutationObserver.observe(this.$el, { attributes: true });
 
-            mutationObserver.observe(contentDomElement, {
+            mutationObserver.observe(this.$refs.content, {
                 childList: true,
                 subtree: true
             });
+
+            window.addEventListener('resize', this.updateWidth);
         },
 
         destroyed() {
             mutationObserver.disconnect();
-        }
+            window.removeEventListener('resize', this.updateWidth);
+        },
     }
 </script>
 

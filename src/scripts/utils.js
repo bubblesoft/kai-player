@@ -130,13 +130,17 @@ const generateLayout = (type, viewportWidth, viewportHeight) => {
     }
 };
 
-const loadImage = url => {
+const loadImage = (url) => {
     return new Promise((resolve, reject) => {
         try {
             const image = new Image();
 
-            image.onload = function() {
+            image.onload = () => {
                 resolve(image);
+            };
+
+            image.onerror = (e) => {
+                reject(e)
             };
 
             image.src = url;

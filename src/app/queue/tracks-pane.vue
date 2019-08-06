@@ -154,12 +154,27 @@
                                     viewBox="0 0 24 24"
                                 )
                                     path(d="M6 19h4V5H6v14zm8-14v14h4V5h-4z")
-                        td(style="padding: 0;")
-                            editableBox(
-                                v-model="track.name"
-                                :editable="editMode"
-                                :height="30"
-                            )
+                        td
+                            .track-name
+                                editableBox(
+                                    v-model="track.name"
+                                    :editable="editMode"
+                                )
+                                .track-notifications
+                                    svg.error(
+                                        v-if="track.status === Status.Error"
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                    )
+                                        path(d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z")
+                                    svg.info(
+                                        v-if="track.status === Status.Error"
+                                        width="16"
+                                        height="16"
+                                        viewBox="0 0 24 24"
+                                    )
+                                        path(d="M12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,11A1,1 0 0,1 13,12A1,1 0 0,1 12,13A1,1 0 0,1 11,12A1,1 0 0,1 12,11M12,8C14.63,8 17,9.57 18,12C16.62,15.31 12.81,16.88 9.5,15.5C7.92,14.84 6.66,13.58 6,12C7,9.57 9.37,8 12,8M12,9.5A2.5,2.5 0 0,0 9.5,12A2.5,2.5 0 0,0 12,14.5A2.5,2.5 0 0,0 14.5,12A2.5,2.5 0 0,0 12,9.5")
                         td {{ track.artists.map(artist => artist.name).join(', ') }}
                         td(
                             v-if="track.duration"
@@ -193,6 +208,7 @@
     import { getRecommendedTrack, formatDuration, mapMediaSourceIcon, mapMediaSourceName } from '../../scripts/utils';
 
     import RandomTrackQueue from './RandomTrackQueue';
+    import Status from "../Status";
 
     import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
 
@@ -221,7 +237,8 @@
                   data: []
               },
               dragging: false,
-              RandomTrackQueue
+              RandomTrackQueue,
+              Status
           };
         },
 
@@ -629,6 +646,46 @@
             height: 15px;
             margin-top: -2px;
             vertical-align: middle;
+        }
+
+        .track-name {
+            display: flex;
+            align-items: center;
+
+            .track-notifications {
+                display: flex;
+                flex-wrap: wrap;
+
+                svg {
+                    width: 16px;
+                    height: 16px;
+                    cursor: pointer;
+
+                    &.error {
+                        fill: rgba(211, 101, 98, .6);
+                    }
+
+                    &.info {
+                        fill: rgba(89, 192, 255, .6);
+                    }
+
+                    &:hover {
+                        fill: rgba(255, 255, 255, 0.9);
+                        -webkit-filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
+                        filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
+                        -ms-filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
+                        filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
+
+                        &.error {
+                            fill: rgba(211, 101, 98, .9);
+                        }
+
+                        &.info {
+                            fill: rgba(89, 192, 255, .9);
+                        }
+                    }
+                }
+            }
         }
 
         .drag-handle {

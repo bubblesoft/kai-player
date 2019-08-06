@@ -66,7 +66,6 @@
 <style lang="scss" scoped>
     .editable-box {
         position: relative;
-        overflow: hidden;
 
         input {
             display: block;

@@ -42,11 +42,11 @@ Vue.use(VueConfirm);
 
             switch (bindings.arg) {
                 case 'doubletap':
-                    interactable.on('doubletap', () => bindingValues[bindingValueIndex]());
+                    interactable.on('doubletap', (e) => bindingValues[bindingValueIndex](e));
                     break;
                 case 'tap':
                 default:
-                    interactable.on('tap', () => bindingValues[bindingValueIndex]());
+                    interactable.on('tap', (e) => bindingValues[bindingValueIndex](e));
             }
         },
         update(el, bindings) {
