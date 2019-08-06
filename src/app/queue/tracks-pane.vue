@@ -16,96 +16,83 @@
                             )
                                 path(d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5a2 2 0 0 0-2 2v4h2V5h14v14H5v-4H3v4a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z")
                 template(v-else)
-                    tooltip(
+                    .tool-button(
                         v-if="mode === 'shuffle'"
-                        effect="fadein"
-                        placement="top"
-                        :content="$t('Shuffle')"
+                        v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
+                        v-tooltip="$t('Shuffle')"
                     )
-                        .tool-button(v-interact:tap="() => { SWITCH_QUEUE_MODE(); }")
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z")
-                    tooltip(
-                        v-else-if="mode === 'repeatOne'"
-                        effect="fadein"
-                        placement="top"
-                        :content="$t('Repeat one')"
-                    )
-                        .tool-button(v-interact:tap="() => { SWITCH_QUEUE_MODE(); }")
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z")
-                    tooltip(
-                        v-else
-                        effect="fadein"
-                        placement="top"
-                        :content="$t('Repeat all')"
-                    )
-                        .tool-button(v-interact:tap="() => { SWITCH_QUEUE_MODE(); }")
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z")
-                    tooltip(
-                        effect="fadein"
-                        placement="top"
-                        :content="$t('Remove duplicated tracks')"
-                    )
-                        .tool-button(v-interact:tap="() => { removeDuplicated(); }")
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z")
-                    tooltip(
-                        v-if="editMode"
-                        effect="fadein"
-                        placement="top"
-                        :content="$t('Drag a track here to remove it')"
-                    )
-                        draggable.tool-button(
-                            v-model="trashCan.data"
-                            :options="{ group: 'tracks', draggable: '' }"
-                            @pointerover.native="trashCan.hover = true"
-                            @pointerleave.native="trashCan.hover = false"
-                            :class="{ active: dragging && trashCan.hover }"
+                        svg(
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z")
+                    div(v-else-if="mode === 'repeatOne'")
+                        .tool-button(
+                            v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
+                            v-tooltip="$t('Repeat one')"
                         )
                             svg(
                                 width="20"
                                 height="20"
                                 viewBox="0 0 24 24"
                             )
-                                path(d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z")
-                    tooltip(
-                        effect="fadein"
-                        placement="top"
-                        :content="editMode ? $t('Exit edit mode') : $t('Enter edit mode')"
+                                path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z")
+                    div(v-else)
+                        div
+                            .tool-button(
+                                v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
+                                v-tooltip="$t('Repeat all')"
+                            )
+                                svg(
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                )
+                                    path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z")
+                    .tool-button(
+                        v-interact:tap="() => { removeDuplicated(); }"
+                        v-tooltip="$t('Remove duplicated tracks')"
                     )
-                        .tool-button(v-interact:tap="() => { editMode = !editMode; }")
-                            svg(
-                                v-if="editMode"
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z")
-                            svg(
-                                v-else
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z")
+                        svg(
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z")
+                    draggable.tool-button(
+                        v-if="editMode"
+                        v-model="trashCan.data"
+                        :options="{ group: 'tracks', draggable: '' }"
+                        @pointerover.native="trashCan.hover = true"
+                        @pointerleave.native="trashCan.hover = false"
+                        :class="{ active: dragging && trashCan.hover }"
+                        v-tooltip="$t('Drag a track here to remove it')"
+                    )
+                        svg(
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z")
+                    .tool-button(
+                        v-interact:tap="() => { editMode = !editMode; }"
+                        v-tooltip="editMode ? $t('Exit edit mode') : $t('Enter edit mode')"
+                    )
+                        svg(
+                            v-if="editMode"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z")
+                        svg(
+                            v-else
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z")
         .list-wrap(v-if="queue")
             .random-queue-box(v-if="queue.constructor === RandomTrackQueue")
                 draggable.draggable(

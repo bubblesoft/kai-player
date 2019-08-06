@@ -1,0 +1,26 @@
+@path: "~bootstrap/less";
+
+@import "@{path}/variables.less";
+
+.vue-tooltip-theme {
+  opacity: .9;
+
+  .tooltip-arrow {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border: solid transparent;
+  }
+
+  &[x-placement^="top"] {
+    margin-top:  -3px; padding: @tooltip-arrow-width 0;
+
+    .tooltip-arrow {
+      bottom: 0;
+      left: 50%;
+      margin-left: -@tooltip-arrow-width;
+      border-width: @tooltip-arrow-width @tooltip-arrow-width 0;
+      border-top-color: @tooltip-arrow-color;
+    }
+  }
+}

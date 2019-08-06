@@ -105,14 +105,14 @@
                     span.track-name-content(ref="trackNameContent")
                         span(style="color: #fff;") {{ track.name }} - {{ track.artists && track.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist') }}
                 span.track-notifications
-                    span.control-button(v-if="track.status === Status.Error")
+                    span.control-button(v-if="track && track.status === Status.Error")
                         svg.error(
                             width="16"
                             height="16"
                             viewBox="0 0 24 24"
                         )
                             path(d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z")
-                    span.control-button(v-if="track.status === Status.Error")
+                    span.control-button(v-if="track && track.status === Status.Error")
                         svg.info(
                             width="16"
                             height="16"

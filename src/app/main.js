@@ -8,6 +8,7 @@ import 'url-polyfill';
 
 import Vue from 'vue';
 
+import VTooltip from "v-tooltip";
 import VueConfirm from '../scripts/vue-confirm';
 
 import interact from 'interactjs';
@@ -15,11 +16,13 @@ import interact from 'interactjs';
 import '../styles/bootstrap';
 import '../styles/base';
 import '../styles/pretty-checkbox';
+import '../styles/v-tooltip';
 
 import { i18n, loadLocale } from './i18n';
 
 import App from './app';
 
+Vue.use(VTooltip);
 Vue.use(VueConfirm);
 
 (async () => {
