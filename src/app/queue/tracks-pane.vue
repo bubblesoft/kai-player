@@ -3,23 +3,21 @@
         .toolbar
             template(v-if="queue")
                 template(v-if="queue.constructor === RandomTrackQueue")
-                    tooltip(
-                        effect="fadein"
-                        placement="top"
-                        :content="$t('Add to a playlist')"
+                    .tool-button(
+                        @click="copyToQueue(activeTrack)"
+                        v-tooltip="Object.assign({}, { content: $t('Add to a playlist') }, tooltipConfig)"
                     )
-                        .tool-button(@click="copyToQueue(activeTrack)")
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5a2 2 0 0 0-2 2v4h2V5h14v14H5v-4H3v4a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z")
+                        svg(
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5a2 2 0 0 0-2 2v4h2V5h14v14H5v-4H3v4a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z")
                 template(v-else)
                     .tool-button(
                         v-if="mode === 'shuffle'"
                         v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
-                        v-tooltip="$t('Shuffle')"
+                        v-tooltip="Object.assign({}, { content: $t('Shuffle') }, tooltipConfig)"
                     )
                         svg(
                             width="20"
@@ -30,7 +28,7 @@
                     div(v-else-if="mode === 'repeatOne'")
                         .tool-button(
                             v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
-                            v-tooltip="$t('Repeat one')"
+                            v-tooltip="Object.assign({}, { content: $t('Repeat one') }, tooltipConfig)"
                         )
                             svg(
                                 width="20"
@@ -42,7 +40,7 @@
                         div
                             .tool-button(
                                 v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
-                                v-tooltip="$t('Repeat all')"
+                                v-tooltip="Object.assign({}, { content: $t('Repeat all') }, tooltipConfig)"
                             )
                                 svg(
                                     width="20"
@@ -52,7 +50,7 @@
                                     path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z")
                     .tool-button(
                         v-interact:tap="() => { removeDuplicated(); }"
-                        v-tooltip="$t('Remove duplicated tracks')"
+                        v-tooltip="Object.assign({}, { content: $t('Remove duplicated tracks') }, tooltipConfig)"
                     )
                         svg(
                             width="20"
@@ -67,7 +65,7 @@
                         @pointerover.native="trashCan.hover = true"
                         @pointerleave.native="trashCan.hover = false"
                         :class="{ active: dragging && trashCan.hover }"
-                        v-tooltip="$t('Drag a track here to remove it')"
+                        v-tooltip="Object.assign({}, { content: $t('Drag a track here to remove it') }, tooltipConfig)"
                     )
                         svg(
                             width="20"
@@ -77,7 +75,7 @@
                             path(d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z")
                     .tool-button(
                         v-interact:tap="() => { editMode = !editMode; }"
-                        v-tooltip="editMode ? $t('Exit edit mode') : $t('Enter edit mode')"
+                        v-tooltip="Object.assign({}, { content: editMode ? $t('Exit edit mode') : $t('Enter edit mode') }, tooltipConfig)"
                     )
                         svg(
                             v-if="editMode"
@@ -148,13 +146,22 @@
                                     :editable="editMode"
                                 )
                                 .track-notifications
-                                    svg.error(
+                                    v-popover(
                                         v-if="track.status === Status.Error"
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 24 24"
+                                        delay="300"
+                                        placement="top"
+                                        trigger="hover click focus"
                                     )
-                                        path(d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z")
+                                        svg.error(
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                        )
+                                            path(d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z")
+                                        .error-messages(
+                                            slot="popover"
+                                            v-for="message of Array.from(track.messages)"
+                                        ) {{ $t(message.text) }}
                                     svg.info(
                                         v-if="track.status === Status.Error"
                                         width="16"
@@ -224,8 +231,12 @@
                   data: []
               },
               dragging: false,
+              tooltipConfig: {
+                  delay: 500,
+                  trigger: "hover click focus",
+              },
               RandomTrackQueue,
-              Status
+              Status,
           };
         },
 
@@ -644,6 +655,7 @@
                 flex-wrap: wrap;
 
                 svg {
+                    diplay: block;
                     width: 16px;
                     height: 16px;
                     cursor: pointer;
@@ -696,5 +708,9 @@
                 transform: translateY(4px);
             }
         }
+    }
+
+    .error-messages {
+        text-align: left;
     }
 </style>

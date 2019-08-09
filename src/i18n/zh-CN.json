@@ -60,6 +60,10 @@
     "Upload": "上传图片",
     "Language": "语言",
     "Drag & Drop you files or Browse": "拖动文件到这里或者点击浏览文件",
-    "Select a language": "选择语言"
+    "Select a language": "选择语言",
+    "The audio source doesn't provide a playback URL for this track.": "音频源未提供此音频的播放URL。",
+    "The playback URL provided by the audio source is not valid/reachable.": "音频源提供的播放URL无效或无法连接。",
+    "The audio format of the playback source is not supported.": "播放源的音频格式不受支持。",
+    "Unknown error.": "未知错误."
   }
 }

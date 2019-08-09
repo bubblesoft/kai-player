@@ -105,13 +105,23 @@
                     span.track-name-content(ref="trackNameContent")
                         span(style="color: #fff;") {{ track.name }} - {{ track.artists && track.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist') }}
                 span.track-notifications
-                    span.control-button(v-if="track && track.status === Status.Error")
-                        svg.error(
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                        )
-                            path(d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z")
+                    v-popover(
+                        v-if="track && track.status === Status.Error"
+                        delay="300"
+                        placement="top"
+                        trigger="hover click focus"
+                    )
+                        span.control-button
+                            svg.error(
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M11,15H13V17H11V15M11,7H13V13H11V7M12,2C6.47,2 2,6.5 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z")
+                        .error-messages(
+                            slot="popover"
+                            v-for="message of Array.from(track.messages)"
+                        ) {{ $t(message.text) }}
                     span.control-button(v-if="track && track.status === Status.Error")
                         svg.info(
                             width="16"
@@ -194,45 +204,39 @@
                 :process-style="{ 'background-color': 'rgba(255, 255, 255, 0.9)', filter: 'drop-shadow(2px 2px 10px rgba(150, 150, 150, 1))' }"
                 :tooltip-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)', 'border-color': 'rgba(255, 255, 255, 0.6)', 'border-style': 'none' }"
             )
-            tooltip.mode-switch(
+            .mode-switch.control-button(
                 v-if="mode === 'shuffle'"
-                effect="fadein"
-                placement="top"
-                :content="$t('Shuffle')"
+                v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
+                v-tooltip="Object.assign({}, { content: $t('Shuffle') }, tooltipConfig)"
             )
-                .control-button(v-interact:tap="() => { SWITCH_QUEUE_MODE(); }")
-                    svg(
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                    )
-                        path(d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z")
-            tooltip.mode-switch(
+                svg(
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                )
+                    path(d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z")
+            .mode-switch.control-button(
                 v-else-if="mode === 'repeatOne'"
-                effect="fadein"
-                placement="top"
-                :content="$t('Repeat one')"
+                v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
+                v-tooltip="Object.assign({}, { content: $t('Repeat one') }, tooltipConfig)"
             )
-                .control-button(v-interact:tap="() => { SWITCH_QUEUE_MODE(); }")
-                    svg(
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                    )
-                        path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z")
-            tooltip.mode-switch(
+                svg(
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                )
+                    path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z")
+            .mode-switch.control-button(
                 v-else
-                effect="fadein"
-                placement="top"
-                :content="$t('Repeat all')"
+                v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
+                v-tooltip="Object.assign({}, { content: $t('Repeat all') }, tooltipConfig)"
             )
-                .control-button(v-interact:tap="() => { SWITCH_QUEUE_MODE(); }")
-                    svg(
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                    )
-                        path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z")
+                svg(
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                )
+                    path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z")
 </template>
 
 <script>
@@ -245,11 +249,10 @@
     import Status from "./Status";
 
     import { ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
-    import { PLAY_TRACK } from "../scripts/action-types"
+    import { PLAY_TRACK, RESUME_PLAYBACK } from "../scripts/action-types"
 
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
-    import tooltip from 'vue-strap/src/tooltip';
 
     import yoyoMarquee from './yoyo-marquee';
 
@@ -259,7 +262,6 @@
         components: {
             vueSlider,
             checkbox,
-            tooltip,
             yoyoMarquee
         },
 
@@ -270,6 +272,10 @@
                 pic: '',
                 loading: false,
                 inlineError: false,
+                tooltipConfig: {
+                    delay: 500,
+                    trigger: "hover click focus",
+                },
                 Status
             }
         },
@@ -463,7 +469,7 @@
                 const eventPromise = this.triggerBackgroundEvent('play');
 
                 if (this.player.progress) {
-                    this.player.play();
+                    this[RESUME_PLAYBACK]();
                 } else {
                     this.loading = true;
 
@@ -553,6 +559,7 @@
 
             ...mapActions([
                 PLAY_TRACK,
+                RESUME_PLAYBACK,
                 'triggerBackgroundEvent',
                 'saveLayout'
             ])
@@ -841,5 +848,9 @@
         .loading {
             animation: loading .5s cubic-bezier(.5, .1, .5,.9) infinite alternate;
         }
+    }
+
+    .error-messages {
+        text-align: left;
     }
 </style>

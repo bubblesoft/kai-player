@@ -18,6 +18,8 @@ import Player from './Player';
 import Background from './visualization/visual_controllers/Background';
 import Visualizer from './visualization/visual_controllers/Visualizer';
 import Status from "./Status";
+import TrackError from "./TrackError";
+import TrackInfo from "./TrackInfo";
 
 Vue.use(Vuex);
 
@@ -138,6 +140,16 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                         artists: track.artists.map(artist => ({ name: artist.name })),
                         picture: track.picture,
                         status: track.status.id,
+                        messages: track.messages && Array.from(track.messages).map((message) => ({
+                            level: ((message) => {
+                                if (message instanceof TrackError) {
+                                    return "error";
+                                } else {
+                                    return "unknown";
+                                }
+                            })(message),
+                            code: message.code,
+                        })),
                     })),
                     active: queue.active
                 }
@@ -175,13 +187,16 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                         name: trackData.name,
                         streamUrl: trackData.streamUrl,
                         duration: trackData.duration,
-                        artists: trackData.artists.map(artistData => {
-                            return new Artist({
-                                name: artistData.name
-                            })
-                        }),
+                        artists: trackData.artists.map(artistData => new Artist({ name: artistData.name })),
                         picture: trackData.picture,
                         status: Status.fromId(trackData.status),
+                        messages: trackData.messages && trackData.messages.map((messageData) => {
+                            if (messageData.level === "error") {
+                                return TrackError.fromCode(messageData.code);
+                            }
+
+                            return TrackInfo.fromCode(messageData.code);
+                        }),
                     })));
                 }
 
@@ -244,16 +259,22 @@ const queueModule = {
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
-        [mutationTypes.UPDATE_TRACK](state, { index, duration, status, queue = state.queueGroup.get(state.queueGroup.active) }) {
+        [mutationTypes.UPDATE_TRACK](state, { index, duration, status, messages, queue = state.queueGroup.get(state.queueGroup.active) }) {
+            const track = queue.get(index);
+
             if (duration !== undefined) {
-                queue.get(index).duration = duration;
+                track.duration = duration;
             }
 
-            if (status !== undefined) {
-                queue.get(index).status = status;
+            if (status) {
+                track.status = status;
             }
 
-            if (duration !== undefined || status !== undefined) {
+            if (messages) {
+                track.messages = new Set(messages);
+            }
+
+            if (duration !== undefined || status || messages) {
                 saveQueueData(state.queueGroup, state.playingQueueIndex);
             }
         },
@@ -271,12 +292,13 @@ playerController.connect(new Player);
 const playerModule = {
     state: {
         playerController,
+
         get playing() {
             return this.playerController.player.playing
         }
     },
     actions: {
-        async [actionTypes.PLAY_TRACK]({ commit, rootState: { queueModule : { queueGroup } } }, { index = queueGroup.get(queueGroup.active).active, queue = queueGroup.get(queueGroup.active) }) {
+        async [actionTypes.PLAY_TRACK]({ commit, state, rootState, rootState: { queueModule : { queueGroup } } }, { index = queueGroup.get(queueGroup.active).active, queue = queueGroup.get(queueGroup.active) }) {
             commit(mutationTypes.UPDATE_QUEUE, { active: index });
 
             const track = queue.get(index);
@@ -286,17 +308,23 @@ const playerModule = {
                     await playerController.playTrack(track);
                     commit(mutationTypes.UPDATE_TRACK, { index: queue.active, status: Status.Ok });
                 } catch(e) {
-                    commit(mutationTypes.UPDATE_TRACK, { index: queue.active, status: Status.Error });
+                    commit(mutationTypes.UPDATE_TRACK, { index: queue.active, status: Status.Error, messages: [TrackError.SOURCE_NOT_VALID] });
                     throw e;
                 }
 
-                if (this.activeVisualizerType === 'random') {
-                    this.activeVisualizerType = 'random';
+                if (rootState.visualizationModule._visualizer.activeType === "random") {
+                    commit(mutationTypes.UPDATE_ACTIVE_VISUALIZER_TYPE, "random");
+                    commit(mutationTypes.BACKGROUND_LOAD_RESOURCE, { picture: track.picture });
                 }
 
                 commit(mutationTypes.VISUALIZER_LISTEN_TO, playerController.player._sound._sounds[0]._node);
                 commit(mutationTypes.VISUALIZER_LOAD_RESOURCE, { picture: track.picture });
 
+            }
+        },
+        [actionTypes.RESUME_PLAYBACK]() {
+            if (state.playerController.player.state !== "unloaded") {
+                state.playerController.player.play();
             }
         }
     }
@@ -400,109 +428,129 @@ const store = new Vuex.Store({
     }
 });
 
-let cancelVisualizationChange = null;
+let cancelVisualizationChangeBlockedByAnimation = null;
+let cancelVisualizationChangeLastMutation = null;
+let lastOldState = null;
 
 store._vm.$watch(() => ([
     visualizationModule.state.backgroundType,
     visualizationModule.state.visualizerType,
     playerModule.state.playing
-]), async ([newBackground, newVisualization, newPlaying], [oldBackground, oldVisualization, oldPlaying]) => {
-    if (newBackground === oldBackground && newVisualization === oldVisualization && newPlaying === oldPlaying) {
-        return;
+]), ([newBackground, newVisualization, newPlaying], oldState) => {
+    let [oldBackground, oldVisualization, oldPlaying] = oldState;
+
+    if (cancelVisualizationChangeLastMutation) {
+        cancelVisualizationChangeLastMutation();
+
+        if (lastOldState) {
+            [oldBackground, oldVisualization, oldPlaying] = lastOldState;
+        }
     }
 
-    if (cancelVisualizationChange) {
-        cancelVisualizationChange();
-    }
+    lastOldState = [oldBackground, oldVisualization, oldPlaying];
+    const timeout = setTimeout(async () => {
+        cancelVisualizationChangeLastMutation = null;
+        lastOldState = null;
 
-    const state = visualizationModule.state;
-
-    if (!oldPlaying && state._background.animating) {
-        try {
-            await new Promise((resolve, reject) => {
-                cancelVisualizationChange = reject;
-
-                const unwatch = store._vm.$watch(() => state._background.animating, (animating) => {
-                    if (animating) {
-                        return;
-                    }
-
-                    unwatch();
-                    cancelVisualizationChange = null;
-                    resolve();
-                });
-            });
-        } catch (e) {
+        if (newBackground === oldBackground && newVisualization === oldVisualization && newPlaying === oldPlaying) {
             return;
         }
-    }
 
-    const background = state._background,
-        oldBackgroundRenderer = background.activeRenderer;
-
-    background.activeType = newBackground;
-
-    const newBackgroundRenderer = background.activeRenderer;
-
-    if (newBackground !== oldBackground) {
-        if (!newPlaying && !oldPlaying && newBackgroundRenderer !== oldBackgroundRenderer) {
-            oldBackgroundRenderer.hide();
-            oldBackgroundRenderer.pause();
-            newBackgroundRenderer.start();
-            newBackgroundRenderer.show();
+        if (cancelVisualizationChangeBlockedByAnimation) {
+            cancelVisualizationChangeBlockedByAnimation();
         }
 
-        state._background = null;
-        state._background = background;
-    }
+        const state = visualizationModule.state;
 
-    const visualizer = state._visualizer,
-        oldVisualizerRenderer = visualizer.activeRenderer;
+        if (!oldPlaying && state._background.animating) {
+            try {
+                await new Promise((resolve, reject) => {
+                    cancelVisualizationChangeBlockedByAnimation = reject;
 
-    visualizer.activeType = newVisualization;
+                    const unwatch = store._vm.$watch(() => state._background.animating, (animating) => {
+                        if (animating) {
+                            return;
+                        }
 
-    const newVisualizerRenderer = visualizer.activeRenderer;
-
-    if (newVisualization !== oldVisualization || newVisualization === 'random') {
-        if (newPlaying && oldPlaying && newVisualizerRenderer !== oldVisualizerRenderer) {
-            oldVisualizerRenderer.hide();
-            oldVisualizerRenderer.pause();
-            newVisualizerRenderer.start();
-            newVisualizerRenderer.show();
+                        unwatch();
+                        cancelVisualizationChangeBlockedByAnimation = null;
+                        resolve();
+                    });
+                });
+            } catch (e) {
+                return;
+            }
         }
 
-        state._visualizer = null;
-        state._visualizer = visualizer;
-    }
+        const background = state._background,
+            oldBackgroundRenderer = background.activeRenderer;
 
-    if (newPlaying !== oldPlaying) {
-        if (newPlaying && !oldPlaying) {
-            if (oldBackgroundRenderer !== newVisualizerRenderer) {
+        background.activeType = newBackground;
+
+        const newBackgroundRenderer = background.activeRenderer;
+
+        if (newBackground !== oldBackground) {
+            if (!newPlaying && !oldPlaying && newBackgroundRenderer !== oldBackgroundRenderer) {
                 oldBackgroundRenderer.hide();
-                newVisualizerRenderer.start();
-                visualizer.start();
-                newVisualizerRenderer.show();
-                background.stop();
                 oldBackgroundRenderer.pause();
-                background.event('reset');
-            } else {
-                background.stop();
-                visualizer.start();
-            }
-        } else if (!newPlaying && oldPlaying) {
-            if (newBackgroundRenderer !== oldVisualizerRenderer) {
-                oldVisualizerRenderer.hide();
                 newBackgroundRenderer.start();
-                background.start();
                 newBackgroundRenderer.show();
-                visualizer.stop();
+            }
+
+            state._background = null;
+            state._background = background;
+        }
+
+        const visualizer = state._visualizer,
+            oldVisualizerRenderer = visualizer.activeRenderer;
+
+        visualizer.activeType = newVisualization;
+
+        const newVisualizerRenderer = visualizer.activeRenderer;
+
+        if (newVisualization !== oldVisualization || newVisualization === 'random') {
+            if (newPlaying && oldPlaying && newVisualizerRenderer !== oldVisualizerRenderer) {
+                oldVisualizerRenderer.hide();
                 oldVisualizerRenderer.pause();
-            } else {
-                visualizer.stop();
-                background.start();
+                newVisualizerRenderer.start();
+                newVisualizerRenderer.show();
+            }
+
+            state._visualizer = null;
+            state._visualizer = visualizer;
+        }
+
+        if (newPlaying !== oldPlaying) {
+            if (newPlaying && !oldPlaying) {
+                if (oldBackgroundRenderer !== newVisualizerRenderer) {
+                    oldBackgroundRenderer.hide();
+                    newVisualizerRenderer.start();
+                    visualizer.start();
+                    newVisualizerRenderer.show();
+                    background.stop();
+                    oldBackgroundRenderer.pause();
+                    background.event('reset');
+                } else {
+                    background.stop();
+                    visualizer.start();
+                }
+            } else if (!newPlaying && oldPlaying) {
+                if (newBackgroundRenderer !== oldVisualizerRenderer) {
+                    oldVisualizerRenderer.hide();
+                    newBackgroundRenderer.start();
+                    background.start();
+                    newBackgroundRenderer.show();
+                    visualizer.stop();
+                    oldVisualizerRenderer.pause();
+                } else {
+                    visualizer.stop();
+                    background.start();
+                }
             }
         }
-    }
+    }, 0);
+
+    cancelVisualizationChangeLastMutation = () => clearTimeout(timeout);
 });
 
 export default store;

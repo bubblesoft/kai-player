@@ -60,6 +60,10 @@
     "Upload": "Upload",
     "Language": "Language",
     "Drag & Drop you files or Browse": "Drag & Drop you files or Browse",
-    "Select a language": "Select a language"
+    "Select a language": "Select a language",
+    "The audio source doesn't provide a playback URL for this track.": "The audio source doesn't provide a playback URL for this track.",
+    "The playback URL provided by the audio source is not valid/reachable.": "The playback URL provided by the audio source is not valid/reachable.",
+    "The audio format of the playback source is not supported.": "The audio format of the playback source is not supported.",
+    "Unknown error.": "Unknown error."
   }
 }

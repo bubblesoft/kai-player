@@ -16,7 +16,7 @@ export default class Status {
             const status = (Status as any)[key];
 
             if (status instanceof Status && status.id === id) {
-                return (Status as any)[key];
+                return status;
             }
         }
 

@@ -60,6 +60,10 @@
     "Upload": "アップロード",
     "Language": "言語",
     "Drag & Drop you files or Browse": "ファイルをここに置いてください、或いはクリックして選択してください",
-    "Select a language": "言語選択"
+    "Select a language": "言語選択",
+    "The audio source doesn't provide a playback URL for this track.": "媒体源はこのトラック再生URLを提供していません。",
+    "The playback URL provided by the audio source is not valid/reachable.": "媒体源によって提供した再生URLは無効または接続できませんでした。",
+    "The audio format of the playback source is not supported.": "再生ソースのオーディオ形式はサポートされていません。",
+    "Unknown error.": "未確認エラー."
   }
 }
