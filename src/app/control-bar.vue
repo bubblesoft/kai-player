@@ -103,7 +103,7 @@
                     :title="track.name + '-' + (track.artists && track.artists.map(artist => artist.name).join(', '))"
                 )
                     span.track-name-content(ref="trackNameContent")
-                        span(style="color: #fff;") {{ track.name }} - {{ track.artists && track.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist') }}
+                        span(:style="{ color: usingAltTrack ? 'rgb(89, 192, 255)' : '#fff' }") {{ track.name || $t('Unknown Track') }} - {{ track.artists && track.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist') }}
                 span.track-notifications
                     v-popover(
                         v-if="track && track.status === Status.Error"
@@ -139,9 +139,9 @@
                 )
                     path(d="M6 6h2v12H6zm3.5 6l8.5 6V6z")
             .control-button.control-button_big(
-                v-if="!playing"
+                v-if="!playing()"
                 v-interact:tap="async () => { play(); }"
-                :class="{ loading: loading || player.state === 'loading' }"
+                :class="{ loading: loading || playerController.status === PlayerStatus.Loading || playerController.status === PlayerStatus.Streaming }"
                 key="play"
             )
                 svg(
@@ -153,7 +153,7 @@
             .control-button.control-button_big(
                 v-else
                 v-interact:tap="pause"
-                :class="{ loading: loading || player.state === 'loading' }"
+                :class="{ loading: loading || playerController.status === PlayerStatus.Loading || playerController.status === PlayerStatus.Streaming }"
                 key="pause"
             )
                 svg(
@@ -178,7 +178,7 @@
                     path(d="M6 6h12v12H6z")
             vue-slider.progress(
                 @callback="changeProgress($event)"
-                v-model="progress"
+                :value="progress"
                 width="30%"
                 :max="duration"
                 :speed=".2"
@@ -197,7 +197,6 @@
                 :max="1"
                 :interval=".01"
                 tooltip="hover"
-                :value=".5"
                 :formatter="(v) => `${(v * 100).toFixed(0)}`"
                 :bg-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)' }"
                 :slider-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)' }"
@@ -245,11 +244,12 @@
     import scale from '../scripts/scale';
     import applyCanvasMask from '../scripts/canvasMask';
 
-    import RandomTrackQueue from './queue/RandomTrackQueue';
     import Status from "./Status";
+    import PlayerStatus from "./PlayerStatus";
+    import RandomTrackQueue from "./queue/RandomTrackQueue";
 
-    import { ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
-    import { PLAY_TRACK, RESUME_PLAYBACK } from "../scripts/action-types"
+    import { UPDATE_PROGRESS, UPDATE_PROGRESS_STATE, PAUSE_PLAYBACK, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
+    import { PLAY_TRACK, STOP_PLAYBACK, RESUME_PLAYBACK, TRIGGER_BACKGROUND_EVENT } from "../scripts/action-types";
 
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
@@ -267,7 +267,6 @@
 
         data: () => {
             return {
-                progress: 0,
                 volume: .5,
                 pic: '',
                 loading: false,
@@ -276,35 +275,44 @@
                     delay: 500,
                     trigger: "hover click focus",
                 },
-                Status
+                Status,
+                PlayerStatus,
             }
         },
 
         computed: {
             track() {
-                return this.queue ? this.queue.get(this.queue.active) : [];
+                return this.queue ? this.queue.get(this.queue.activeIndex || 0) : null;
             },
 
-            player() {
-                return this.playerController.player;
-            },
+            progress: {
+                get() {
+                    return this.$store.state.playerModule.progress;
+                },
 
-            playing() {
-                return this.player.playing
+                set(progress) {
+                    this[UPDATE_PROGRESS](progress);
+                    this[UPDATE_PROGRESS_STATE](progress);
+                }
             },
 
             duration() {
-                return this.player.duration;
+                return this.playerController.duration || Math.round((this.track.duration || 0) / 1000);
+            },
+
+            usingAltTrack() {
+                return this.playerController.usingAltTrack;
             },
 
             mode() {
-                return this.queue.mode;
+                return this.queue && this.queue.mode;
             },
 
             activeBackgroundType: {
                 get() {
                     return this.$store.state.visualizationModule.backgroundType;
                 },
+
                 set(type) {
                     this[UPDATE_ACTIVE_BACKGROUND_TYPE](type);
                     this.track && this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
@@ -315,6 +323,7 @@
                 get() {
                     return this.visualizer.activeType;
                 },
+
                 set(type) {
                     this[UPDATE_ACTIVE_VISUALIZER_TYPE](type);
                     this.track && this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
@@ -424,11 +433,11 @@
             },
 
             sources() {
-                return this.sourceGroup.get()
+                return this.sourceGroup.get();
             },
 
             ...mapState({
-                queue: state => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex),
+                queue: state => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex || 0),
                 playerController: state => state.playerModule.playerController,
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 visualizationInit: state => state.visualizationModule.init,
@@ -439,8 +448,8 @@
         },
 
         watch: {
-            volume(to) {
-                this.player.volume = to;
+            volume(volume) {
+                this.playerController.volume = volume;
             },
 
             async track(to) {
@@ -454,82 +463,74 @@
                     this.pic = '';
                 }
 
-                this.inlineError = this.$refs.trackNameContent.offsetWidth < this.$refs.trackName.$el.offsetWidth;
+                if (this.$refs.trackNameContent) {
+                    this.inlineError = this.$refs.trackNameContent.offsetWidth < this.$refs.trackName.$el.offsetWidth;
+                }
             }
         },
 
         methods: {
             formatDuration,
 
+            playing() {
+                return this.playerController.status === PlayerStatus.Playing
+                    || this.playerController.status === PlayerStatus.Streaming;
+            },
+
             ready() {
-                return this.player.ready;
+                return this.playerController.status === PlayerStatus.Loaded
+                    || this.playerController.status === PlayerStatus.Playing
+                    || this.playerController.status === PlayerStatus.Paused
+                    || this.playerController.status === PlayerStatus.Streaming;
             },
 
             async play() {
-                const eventPromise = this.triggerBackgroundEvent('play');
-
-                if (this.player.progress) {
+                if (this.playerController.status === PlayerStatus.Paused) {
                     this[RESUME_PLAYBACK]();
                 } else {
-                    this.loading = true;
+                    if (this.queue.activeIndex !== null) {
+                        await this[PLAY_TRACK]({ index: this.queue.activeIndex });
+                    } else {
+                        this.loading = true;
 
-                    try {
-                        if (this.queue.active !== null) {
-                            await this[PLAY_TRACK](this.queue.get(this.queue.active));
-                        } else {
-                            await this[PLAY_TRACK](await new Promise(resolve => {
-                                const unwatch = this.$watch('track', (to) => {
+                        await this[PLAY_TRACK]({
+                            index: await new Promise((resolve) => {
+                                const unwatch = this.$watch("track", () => {
                                     unwatch();
-                                    resolve(to);
-                                });
-                            }));
-                        }
+                                    this.loading = false;
 
-                        this.loading = false;
-                    } catch (e) {
-                        this.next();
+                                    resolve(this.queue.activeIndex);
+                                });
+                            })
+                        });
                     }
                 }
-
-                await eventPromise;
             },
 
-            async pause() {
-                this.player.pause();
-                this.visualizer.stop();
-                this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
-                await this.triggerBackgroundEvent('pause');
-                await this.triggerBackgroundEvent('reset');
+            pause() {
+                this[PAUSE_PLAYBACK]();
             },
 
-            async stop() {
-                if (!this.player.playing) {
-                    return;
-                }
-
-                this.player.stop();
-                this.progress = 0;
-                this.visualizer.stop();
-                this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
-                await this.triggerBackgroundEvent('stop');
-                await this.triggerBackgroundEvent('reset');
+            stop() {
+                this.loading = false;
+                this[STOP_PLAYBACK]();
             },
 
             changeProgress(progress) {
-                this.player.progress = progress;
+                this.progress = progress;
             },
 
             async previous() {
-                const eventPromise = this.triggerBackgroundEvent('previousTrack');
+                const eventPromise = this[TRIGGER_BACKGROUND_EVENT]("previousTrack");
 
-                await this[PLAY_TRACK](this.queue.get(this.queue.previous()));
+                await this[PLAY_TRACK]({ index: this.queue.previous() });
                 await eventPromise;
             },
 
             async next() {
-                const eventPromise = this.triggerBackgroundEvent('nextTrack');
+                const eventPromise = this[TRIGGER_BACKGROUND_EVENT]("nextTrack");
 
-                this.player.stop();
+                this.playerController.stop();
 
                 if (this.queue.constructor === RandomTrackQueue) {
                     this.loading = true;
@@ -537,7 +538,7 @@
                     this.loading = false;
                 }
 
-                await this[PLAY_TRACK](this.queue.get(this.queue.next()));
+                await this[PLAY_TRACK]({ index: this.queue.next() });
                 await eventPromise;
             },
 
@@ -546,35 +547,29 @@
             },
 
             ...mapMutations([
+                UPDATE_PROGRESS,
+                UPDATE_PROGRESS_STATE,
+                PAUSE_PLAYBACK,
                 ADD_TRACK,
                 UPDATE_TRACK,
                 SWITCH_QUEUE_MODE,
                 UPDATE_ACTIVE_BACKGROUND_TYPE,
                 UPDATE_ACTIVE_VISUALIZER_TYPE,
-                TRIGGER_BACKGROUND_EVENT,
-                VISUALIZER_LISTEN_TO,
                 BACKGROUND_LOAD_RESOURCE,
                 VISUALIZER_LOAD_RESOURCE
             ]),
 
             ...mapActions([
                 PLAY_TRACK,
+                STOP_PLAYBACK,
                 RESUME_PLAYBACK,
-                'triggerBackgroundEvent',
+                TRIGGER_BACKGROUND_EVENT,
                 'saveLayout'
             ])
         },
 
         async created() {
-            this.player.on('progress', (soundId, progress) => {
-                this.progress = progress;
-            });
-
-            this.player.on('end', () => {
-                this.next();
-            });
-
-            if (this.track) {
+            if (this.track && this.track.picture) {
                 try {
                     this.pic = applyCanvasMask(scale({ width: 200, height: 200 }, await loadImage(this.track.picture)), await loadImage(require('../assets/mask.png')), 200, 200, true);
                 } catch (e) { }
@@ -582,13 +577,10 @@
         },
 
         mounted() {
-            this.inlineError = this.$refs.trackNameContent.offsetWidth < this.$refs.trackName.$el.offsetWidth;
+            if (this.$refs.trackNameContent) {
+                this.inlineError = this.$refs.trackNameContent.offsetWidth < this.$refs.trackName.$el.offsetWidth;
+            }
         },
-
-        destroyed() {
-            this.player.off('progress');
-            this.player.off('end');
-        }
     }
 </script>
 
@@ -613,7 +605,7 @@
         @media (max-width: 768px) {
             background-position: 30% 0, center, 100% center;
         }
-    
+
         @media (min-width: 992px) {
             background-position: 30% 0, center, 2% center;
         }
@@ -638,7 +630,7 @@
                 width: 50%;
                 height: 20px;
                 margin-left: calc(30% - 9vh - 55px);
-            
+
                 @media (max-width: 987px) {
                     width: 40%;
                 }
@@ -646,7 +638,7 @@
                 @media (max-width: 795px) {
                     margin-left: calc(30% - 9vh - 72px);
                 }
-    
+
                 @media (max-width: 707px) {
                     width: 30%;
                 }

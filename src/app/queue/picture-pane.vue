@@ -8,11 +8,11 @@
     export default {
         computed: {
             track() {
-                return this.queue.get(this.queue.active);
+                return this.queue && this.queue.get(this.queue.activeIndex);
             },
 
             ...mapState({
-                queue: state => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex),
+                queue: state => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex || 0),
             })
         }
     }

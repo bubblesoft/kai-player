@@ -23,7 +23,7 @@ export default class Status {
         return null;
     }
 
-    public id: number;
+    public readonly id: number;
 
     private constructor(id: number) {
         this.id = id;

@@ -83,10 +83,9 @@
 
     import interact from 'interactjs';
 
-    import { ADD_SOURCES, UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SAVE_LAYOUT, SWITCH_TO_BACKGROUND, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE } from '../scripts/mutation-types';
+    import { INIT_PLAYER_MODULE, INIT_QUEUE_MODULE, FETCH_SOURCES } from "../scripts/action-types";
+    import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SWITCH_TO_BACKGROUND, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE } from "../scripts/mutation-types";
 
-    import Source from './source/Source';
-    import Channel from './source/Channel';
     import TrackQueue from './queue/TrackQueue';
     import RandomTrackQueue from './queue/RandomTrackQueue';
 
@@ -164,7 +163,7 @@
 
         computed: {
             track() {
-                return this.queue ? this.queue.get(this.queue.active) : null;
+                return this.queue ? this.queue.get(this.queue.activeIndex) : null;
             },
 
             pictureLayout: {
@@ -337,7 +336,7 @@
             },
 
             queue() {
-                return this.queueGroup.get(this.queueGroup.active);
+                return this.queueGroup.get(this.queueGroup.activeIndex || 0);
             },
 
             ...mapState({
@@ -361,7 +360,6 @@
             },
 
             ...mapMutations([
-                ADD_SOURCES,
                 UPDATE_QUEUE_GROUP,
                 INSERT_QUEUE,
                 UPDATE_PLAYING_QUEUE_INDEX,
@@ -374,13 +372,44 @@
                 BACKGROUND_LOAD_RESOURCE
             ]),
             ...mapActions([
+                INIT_PLAYER_MODULE,
+                INIT_QUEUE_MODULE,
+                FETCH_SOURCES,
                 'initVisualization',
                 'loadLayout',
-                'saveLayout'
+                'saveLayout',
             ])
         },
 
-        created() {
+        async created() {
+            this[INIT_PLAYER_MODULE]();
+
+            const initQueueModulePromise = this[INIT_QUEUE_MODULE]();
+            const fetchSourcesPromises = this[FETCH_SOURCES]();
+            const interactable = interact(document.body);
+
+            if (this.visualizer) {
+                interactable.on("tap", () => {
+                    interactable.unset();
+
+                    this.visualizer._clubber.context.resume();
+                });
+            } else {
+                const unwatch = this.$watch("visualizer", () => {
+                    if (this.visualizer) {
+                        unwatch();
+
+                        interactable.on("tap", () => {
+                            interactable.unset();
+
+                            this.visualizer._clubber.context.resume();
+                        });
+                    }
+                });
+            }
+
+            await initQueueModulePromise;
+
             if (!this.queueGroup.length) {
                 this[INSERT_QUEUE]({
                     index: 0,
@@ -396,69 +425,25 @@
                     })
                 });
 
-                this[UPDATE_QUEUE_GROUP]({ active: 1 });
+                this[UPDATE_QUEUE_GROUP]({ activeIndex: 1 });
                 this[UPDATE_PLAYING_QUEUE_INDEX](1);
             }
 
-            const interactable = interact(document.body);
-
-            const resumeAudioContext = () => {
-                interactable.unset();
-
-                this.visualizer._clubber.context.resume();
-            };
-
-            interactable.on('tap', resumeAudioContext);
-        },
-
-        async mounted() {
-            this[SET_MODE](window.innerWidth < 600 ? 'mobile' : 'desktop');
-            this.loadLayout({ mode: this.mode });
-            document.body.addEventListener('click', this.blur);
-            this.initVisualization(this.$el);
-
-            const fetchPromise = fetch('/audio/sources', {
-                method: 'POST',
-                headers: new Headers({
-                    'Content-Type': 'application/json'
-                })
-            });
-
-            const sources = (await (await fetchPromise).json()).data.map(source => {
-                const _source = new Source({
-                    id: source.id,
-                    name: source.name
-                });
-
-                source.channels.forEach(channel => {
-                    _source.add(new Channel({
-                        source: source.id,
-                        type: channel.type,
-                        name: channel.name
-                    }));
-                });
-
-                const sourceActiveMap = JSON.parse(localStorage.getItem('kaiplayersourceactive')) || { hearthis: false };
-
-                if (sourceActiveMap.hasOwnProperty(source.id)) {
-                    _source.active = sourceActiveMap[source.id];
-                } else {
-                    _source.active = true;
-                }
-
-                return _source;
-            });
-
-            this[ADD_SOURCES](sources);
-
-            if (this.queue && this.queue.constructor === RandomTrackQueue || !this.queue.length && this.queue.name === this.$t('Temp')) {
-                const track = await getRecommendedTrack(null, sources);
+            if (this.queue && this.queue.constructor === RandomTrackQueue || !this.queue.length && this.queue.name === this.$t("Temp")) {
+                const track = await getRecommendedTrack(null, await fetchSourcesPromises);
 
                 this[ADD_TRACK]({ track });
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: track.picture });
             } else {
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
             }
+        },
+
+        mounted() {
+            this[SET_MODE](window.innerWidth < 600 ? "mobile" : "desktop");
+            this.loadLayout({ mode: this.mode });
+            document.body.addEventListener("click", this.blur);
+            this.initVisualization(this.$el);
         },
 
         destroyed() {

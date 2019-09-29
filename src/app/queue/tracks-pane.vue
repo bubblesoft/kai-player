@@ -103,7 +103,7 @@
                     style="width: 90%;"
                     :title="activeTrack.name + '-' + (activeTrack.artists && activeTrack.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist'))"
                 )
-                    h5(v-if="playingQueueIndex === queueGroup.active && activeTrack") {{ activeTrack.name + ' - ' + (activeTrack.artists && activeTrack.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist')) }}
+                    h5(v-if="playingQueueIndex === queueGroup.activeIndex && activeTrack") {{ activeTrack.name + ' - ' + (activeTrack.artists && activeTrack.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist')) }}
                 .tips.text-muted {{ $t('Drag a track here and start random listening') }}
             table.table-condensed.table.table-hover(v-else)
                 draggable(
@@ -124,7 +124,7 @@
                         ref="tracks"
                     )
                         td(style="width: 18px;")
-                            template(v-if="queueGroup.active === playingQueueIndex && index === activeIndex")
+                            template(v-if="queueGroup.activeIndex === playingQueueIndex && index === activeIndex")
                                 svg(
                                     v-if="playing"
                                     width="20"
@@ -177,9 +177,9 @@
                         td(v-else)
                         td(v-if="showSourceIcon")
                             img(
-                                :src="mapMediaSourceIcon(track.id.split('_')[0])"
-                                :alt="mapMediaSourceName(track.id.split('_')[0])"
-                                :title="mapMediaSourceName(track.id.split('_')[0])"
+                                :src="track.source.icons[0] || defaultIcon"
+                                :alt="track.source.name"
+                                :title="track.source.name"
                             )
                         td.drag-handle(v-if="editMode")
                             svg(
@@ -199,16 +199,19 @@
 <script>
     import { mapState, mapMutations, mapActions } from 'vuex';
 
-    import { getRecommendedTrack, formatDuration, mapMediaSourceIcon, mapMediaSourceName } from '../../scripts/utils';
+    import draggable from "vuedraggable";
+    import tooltip from "vue-strap/src/tooltip";
+    import modal from "vue-strap/src/modal";
+
+    import config from "../../config";
+
+    import { formatDuration } from "../../scripts/utils";
 
     import RandomTrackQueue from './RandomTrackQueue';
     import Status from "../Status";
 
-    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
-
-    import draggable from 'vuedraggable';
-    import tooltip from 'vue-strap/src/tooltip';
-    import modal from 'vue-strap/src/modal';
+    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, VISUALIZER_LOAD_RESOURCE } from "../../scripts/mutation-types";
+    import { PLAY_TRACK } from "../../scripts/action-types";
 
     import yoyoMarquee from '../yoyo-marquee';
     import editableBox from '../editable-box';
@@ -237,12 +240,13 @@
               },
               RandomTrackQueue,
               Status,
+              defaultIcon: config.defaultIcon,
           };
         },
 
         computed: {
             queue() {
-                return this.queueGroup.get(this.queueGroup.active);
+                return this.queueGroup.get(this.queueGroup.activeIndex || 0);
             },
 
             mode() {
@@ -256,7 +260,7 @@
 
                 set(tracks) {
                     this[UPDATE_QUEUE]({
-                        index: this.queueGroup.active,
+                        index: this.queueGroup.activeIndex,
                         tracks
                     });
                 }
@@ -268,19 +272,19 @@
 
             activeIndex: {
                 get() {
-                    return this.queue ? this.queue.active : null;
+                    return this.queue ? this.queue.activeIndex : null;
                 },
 
                 set(active) {
                     this[UPDATE_QUEUE]({
-                        index: this.queueGroup.active,
+                        index: this.queueGroup.activeIndex,
                         active
                     });
                 }
             },
 
             activeTrack() {
-                return this.queue.get(this.activeIndex);
+                return this.queue && this.queue.get(this.activeIndex);
             },
 
             playing() {
@@ -326,40 +330,10 @@
 
         methods: {
             async playTrack(index) {
-                let eventPromise;
-
-                if (!playing && (this.activeBackgroundType !== 'three' || this.activeVisualizerType !== 'three')) {
-                    eventPromise =  this.triggerBackgroundEvent('play');
-                }
-
-                this.player.stop();
-
-                const playing = this.playing,
-                    track = this.queue.get(this.queue.goTo(index));
-
-                try {
-                    this[VISUALIZER_LOAD_RESOURCE]({ picture: track.picture });
-                    await this.playerController.playTrack(track);
-                } catch (e) {
-                    if (e.name === 'TypeError') {
-                        if (this.queue.constructor === RandomTrackQueue) {
-                            this[ADD_TRACK]({ track: await getRecommendedTrack(this.track, this.sources.filter(source => source.active)) });
-                        }
-
-                        const track = this.queue.get(this.queue.next());
-
-                        this[VISUALIZER_LOAD_RESOURCE]({ picture: track.picture });
-                        await this.playerController.playTrack(track);
-                    }
-                }
-
-                this.playingQueueIndex = this.queueGroup.active;
-                this[VISUALIZER_LISTEN_TO]((this.player._sound._sounds[0]._node));
-                this[UPDATE_TRACK]({ index, duration: this.player.duration * 1000 });
-
-                if (eventPromise) {
-                    await eventPromise;
-                }
+                this[PLAY_TRACK]({
+                    index: this.queue.goTo(index),
+                    queueIndex: this.queueGroup.activeIndex,
+                });
             },
 
             handleTrackRemove(index) {
@@ -515,21 +489,17 @@
                 this.selectedIndex = null;
             },
 
-            mapMediaSourceIcon,
-            mapMediaSourceName,
-
             ...mapMutations([
                 UPDATE_QUEUE,
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
                 UPDATE_TRACK,
                 SWITCH_QUEUE_MODE,
-                VISUALIZER_LISTEN_TO,
                 VISUALIZER_LOAD_RESOURCE
             ]),
 
             ...mapActions([
-                'triggerBackgroundEvent'
+                PLAY_TRACK,
             ])
         },
 

@@ -27,42 +27,42 @@ export default class<T> extends Set<T> implements IQueue<T> {
         }
 
         if (this.length === 1) {
-            this.active = index;
+            this.activeIndex = index;
         }
 
         return this.length;
     }
 
     public goTo(index: number) {
-        return this.active = index;
+        return this.activeIndex = index;
     }
 
     public previous() {
-        if (this.active === null) {
+        if (this.activeIndex === null) {
             return null;
         }
 
-        if (this.active > 0) {
-            this.active--;
+        if (this.activeIndex > 0) {
+            this.activeIndex--;
         } else {
-            this.active = this.length - 1;
+            this.activeIndex = this.length - 1;
         }
 
-        return this.active;
+        return this.activeIndex;
     }
 
     public next() {
-        if (this.active === null) {
+        if (this.activeIndex === null) {
             return null;
         }
 
         switch (this.mode) {
             case "repeat":
             default:
-                if (this.active < this.length - 1) {
-                    this.active++;
+                if (this.activeIndex < this.length - 1) {
+                    this.activeIndex++;
                 } else {
-                    this.active = 0;
+                    this.activeIndex = 0;
                 }
 
                 break;
@@ -71,12 +71,12 @@ export default class<T> extends Set<T> implements IQueue<T> {
                 break;
 
             case "shuffle":
-                this.active = Math.floor(Math.random() * this.length);
+                this.activeIndex = Math.floor(Math.random() * this.length);
 
                 break;
         }
 
-        return this.active;
+        return this.activeIndex;
     }
 
     public switchMode() {

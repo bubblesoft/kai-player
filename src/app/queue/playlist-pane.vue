@@ -135,10 +135,10 @@
 
             activeIndex: {
                 get() {
-                    return this.queueGroup.active;
+                    return this.queueGroup.activeIndex;
                 },
-                set(active) {
-                    this[UPDATE_QUEUE_GROUP]({ active });
+                set(activeIndex) {
+                    this[UPDATE_QUEUE_GROUP]({ activeIndex });
                 }
             },
 

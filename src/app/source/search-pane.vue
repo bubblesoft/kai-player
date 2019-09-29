@@ -1,5 +1,5 @@
 <template lang="pug">
-    .search-pane
+    .search-pane(v-if="sources.length")
         .tool-bar
             .input-group.input-group-sm
                 input.form-control(
@@ -38,9 +38,9 @@
                         td(v-else)
                         td(v-if="showSourceIcon")
                             img(
-                                :src="mapMediaSourceIcon(track.id.split('_')[0])"
-                                :alt="mapMediaSourceName(track.id.split('_')[0])"
-                                :title="mapMediaSourceName(track.id.split('_')[0])"
+                                :src="track.source.icons[0]"
+                                :alt="track.source.name"
+                                :title="track.source.name"
                             )
                         td.drag-handle
                             svg(
@@ -54,17 +54,23 @@
             type="cylon"
             color="#fff"
         )
+    vueLoading(
+        v-else
+        type="cylon"
+        color="#fff"
+    )
 </template>
 
 <script>
-    import { mapState, mapMutations } from 'vuex';
+    import { mapState, mapMutations, mapActions } from "vuex";
 
-    import { formatDuration, mapMediaSourceIcon, mapMediaSourceName } from '../../scripts/utils';
+    import { getSourceById, formatDuration } from "../../scripts/utils";
 
     import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
+    import { PLAY_TRACK } from "../../scripts/action-types";
 
-    import Track from '../Track';
-    import Artist from '../Artist';
+    import Track from "../Track";
+    import Artist from "../Artist";
 
     import draggable from 'vuedraggable';
     import vueLoading from 'vue-loading-template';
@@ -89,7 +95,7 @@
             },
 
             queue() {
-                this.queueGroup.get(this.queueGroup.active)
+                return this.queueGroup.get(this.queueGroup.activeIndex);
             },
 
             player() {
@@ -125,15 +131,16 @@
         },
         methods: {
             async search(keywords) {
-                const activeSources = this.sources.filter(source => source.active)
+                const sources = this.sources;
+
+                const activeSources = sources.filter(source => source.active)
                     .map(source => source.id);
 
+                controller.abort();
+                controller = new AbortController;
                 this.loading = true;
 
                 try {
-                    controller.abort();
-                    controller = new AbortController;
-
                     this.tracks = (await (await fetch('/audio/search', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -144,10 +151,8 @@
                             'Content-Type': 'application/json'
                         }),
                         signal: controller.signal
-                    })).json()).data.map(trackData => {
-                        return new Track({
-                            id: trackData.source + '_' + trackData.id,
-                            name: trackData.name,
+                    })).json()).data.map((trackData) => {
+                        return new Track(trackData.id, trackData.name, getSourceById(trackData.source, sources), {
                             duration: trackData.duration || null,
                             artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
                             picture: (() => {
@@ -160,38 +165,24 @@
                             })()
                         });
                     });
+
+                    this.$refs.list.scrollTop = 0;
                 } catch (e) {
                     console.log(e);
                 }
 
-                this.$refs.list.scrollTop = 0;
                 this.loading = false;
             },
 
             async addToPlayback(track) {
                 this[ADD_TRACK]({ track });
+
                 this[UPDATE_QUEUE]({
-                    index: this.queueGroup.active,
-                    active: this.queue.length - 1
+                    index: this.queueGroup.activeIndex,
+                    activeIndex: this.queue.length - 1,
                 });
 
-                const playing = this.player.playing;
-
-                await this.playerController.playTrack(track);
-                this.playingQueueIndex = this.queueGroup.active;
-
-                if (this.activeVisualizerType === 'random') {
-                    this.activeVisualizerType = 'random';
-                }
-
-                this[VISUALIZER_LISTEN_TO](this.player._sound._sounds[0]._node, track.picture);
-                this[VISUALIZER_LOAD_RESOURCE]({ picture: track.picture });
-
-                if (!playing) {
-                    this[SWITCH_TO_VISUALIZER]();
-                }
-
-                this[UPDATE_TRACK]({ index: this.queue.active, duration: this.player.duration * 1000 });
+                this[PLAY_TRACK]({ index: this.queue.activeIndex });
             },
 
             handleContextMenu(e, track) {
@@ -209,9 +200,6 @@
                 }
             },
 
-            mapMediaSourceIcon,
-            mapMediaSourceName,
-
             ...mapMutations([
                 UPDATE_QUEUE,
                 UPDATE_PLAYING_QUEUE_INDEX,
@@ -221,7 +209,9 @@
                 SWITCH_TO_VISUALIZER,
                 VISUALIZER_LISTEN_TO,
                 VISUALIZER_LOAD_RESOURCE
-            ])
+            ]),
+
+            ...mapActions([PLAY_TRACK]),
         },
         filters: {
             formatDuration
@@ -251,11 +241,7 @@
         }
 
         .vue-loading {
-            position: absolute;
-            left: 0;
             top: 36px;
-            right: 0;
-            bottom: 0;
         }
     }
 
@@ -301,5 +287,13 @@
         td {
             padding: 5px;
         }
+    }
+
+    .vue-loading {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
     }
 </style>

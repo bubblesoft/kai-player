@@ -19,8 +19,8 @@ export default class extends TrackQueue {
     }
 
     public next() {
-        this.active = this.length - 1;
+        this.activeIndex = this.length - 1;
 
-        return this.active;
+        return this.activeIndex;
     }
 }

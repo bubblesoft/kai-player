@@ -5,25 +5,136 @@ import * as mutationTypes from '../scripts/mutation-types';
 import * as actionTypes from '../scripts/action-types';
 
 import { loadLocale } from './i18n';
-import { generateLayout } from '../scripts/utils';
+import { getSourceById, getRecommendedTrack, generateLayout, fetchData } from "../scripts/utils";
 
-import Queue from "./Queue";
-import SourceGroup from './source/SourceGroup';
-import PlayerController from './PlayerController';
-import TrackQueue from './queue/TrackQueue';
-import RandomTrackQueue from './queue/RandomTrackQueue';
-import Track from './Track';
-import Artist from './Artist';
-import Player from './Player';
-import Background from './visualization/visual_controllers/Background';
-import Visualizer from './visualization/visual_controllers/Visualizer';
 import Status from "./Status";
+import PlayerStatus from "./PlayerStatus";
+import Player from "./Player";
+import PlayerController from "./PlayerController";
 import TrackError from "./TrackError";
 import TrackInfo from "./TrackInfo";
+import Artist from "./Artist";
+import Track from "./Track";
+import Queue from "./Queue";
+import Source from "./source/Source";
+import SourceGroup from './source/SourceGroup';
+import TrackQueue from './queue/TrackQueue';
+import RandomTrackQueue from './queue/RandomTrackQueue';
+import TrackList from "./source/TrackList";
+import Background from './visualization/visual_controllers/Background';
+import Visualizer from './visualization/visual_controllers/Visualizer';
 
 Vue.use(Vuex);
 
 const locale = localStorage.getItem('kaiplayerlocale') || window.navigator.language || 'en-US';
+
+const playerController = new PlayerController;
+
+playerController.player = new Player;
+
+let onProgress;
+
+const playerModule = {
+    state: {
+        playerController,
+
+        get playing() {
+            return this.playerController.status === PlayerStatus.Playing
+                || this.playerController.status === PlayerStatus.Streaming;
+        },
+
+        progress: 0,
+        _updateVisualiztionTrigger: false,
+    },
+    mutations: {
+        [mutationTypes.UPDATE_PROGRESS](state, progress) {
+            state.playerController.progress = progress;
+        },
+
+        [mutationTypes.UPDATE_PROGRESS_STATE](state, progress) {
+            state.progress = progress;
+        },
+
+        [mutationTypes.STOP_PLAYBACK](state) {
+            if (state.playerController.status !== PlayerStatus.Unloaded) {
+                state.playerController.stop();
+            }
+
+            state._updateVisualiztionTrigger = true;
+            state._updateVisualiztionTrigger = false;
+        },
+
+        [mutationTypes.PAUSE_PLAYBACK](state) {
+            state.playerController.pause();
+
+            const progress = state.progress;
+
+            state.progress = 0;
+            state.progress = progress;
+            state._updateVisualiztionTrigger = true;
+            state._updateVisualiztionTrigger = false;
+        }
+    },
+    actions: {
+        async [actionTypes.INIT_PLAYER_MODULE]({ dispatch }) {
+            dispatch(actionTypes.REGISTER_ON_PROGRESS_HANDLER);
+        },
+
+        [actionTypes.REGISTER_ON_PROGRESS_HANDLER]({ commit, state }) {
+            if (!onProgress) {
+                onProgress = (soundId, seek) => {
+                    if (typeof seek === "number") {
+                        commit(mutationTypes.UPDATE_PROGRESS_STATE, seek);
+                    }
+                };
+            }
+
+            state.playerController.player.off("progress", onProgress);
+            state.playerController.player.on("progress", onProgress);
+        },
+
+        async [actionTypes.PLAY_TRACK]({ dispatch, commit, state, rootState, rootState: { queueModule : { queueGroup, playingQueueIndex } }, rootGetters: { sources } }, { index = queueGroup.get(playingQueueIndex).activeIndex, queueIndex = playingQueueIndex }) {
+            const queue = queueGroup.get(queueIndex);
+            const track = queue.get(index);
+
+            if (track) {
+                dispatch(mutationTypes.STOP_PLAYBACK);
+
+                commit(mutationTypes.UPDATE_PLAYING_QUEUE_INDEX, queueIndex);
+                commit(mutationTypes.UPDATE_PROGRESS, 0);
+                commit(mutationTypes.UPDATE_PROGRESS_STATE, 0);
+
+                try {
+                    await playerController.playTrack(track);
+                } catch(e) {
+                    console.log(e);
+
+                    if (queue.constructor === RandomTrackQueue) {
+                        commit(mutationTypes.ADD_TRACK, { track: await getRecommendedTrack(track, sources && sources.filter(source => source.active)) });
+                    }
+
+                    dispatch(actionTypes.PLAY_TRACK, { index: commit(mutationTypes.NEXT_TRACK) });
+                }
+
+                if (rootState.visualizationModule._visualizer.activeType === "random") {
+                    commit(mutationTypes.UPDATE_ACTIVE_VISUALIZER_TYPE, "random");
+                }
+            }
+        },
+
+        [actionTypes.STOP_PLAYBACK]({ commit }) {
+            commit(mutationTypes.STOP_PLAYBACK);
+            commit(mutationTypes.UPDATE_PROGRESS, 0);
+            commit(mutationTypes.UPDATE_PROGRESS_STATE, 0);
+        },
+
+        [actionTypes.RESUME_PLAYBACK]({ state }) {
+            if (state.playerController.player.status !== PlayerStatus.Unloaded) {
+                state.playerController.player.play();
+            }
+        },
+    }
+};
 
 const generalModule = {
     state: {
@@ -92,18 +203,23 @@ const generalModule = {
     }
 };
 
-const sourceGroup = new SourceGroup({ name: 'Global' });
+const sourceGroup = new SourceGroup({ name: "Global" });
 
 const sourceModule = {
     state: {
-        sourceGroup
+        sourceGroup,
+    },
+    getters: {
+        sources: (state) => state.sourceGroup.get(),
     },
     mutations: {
         [mutationTypes.ADD_SOURCES] (state, sources) {
             state.sourceGroup.add(sources);
+            playerController.sources = sources;
         },
         [mutationTypes.UPDATE_SOURCE] (state, { index, active }) {
             state.sourceGroup.get(index).active = active;
+
             localStorage.setItem('kaiplayersourceactive', JSON.stringify((() => {
                 const data = {};
 
@@ -114,118 +230,155 @@ const sourceModule = {
                 return data;
             })()));
         }
+    },
+    actions: {
+        async [actionTypes.FETCH_SOURCES] ({ dispatch, commit }) {
+            try {
+                const sources = await Promise.all((await fetchData("/audio/sources")).map(async (source) => {
+                    const _source = new Source(source.id, {
+                        name: source.name,
+                        icons: source.icons,
+                    });
+
+                    try {
+                        const listsData = await fetchData("/audio/lists", { body: { source: source.id } });
+
+                        if (listsData) {
+                            listsData.forEach((listData) => _source.add(new TrackList(listData.id, listData.name, _source)));
+                        }
+                    } catch (e) {
+                        console.log(e);
+                    }
+
+                    const sourceActiveMap = JSON.parse(localStorage.getItem("kaiplayersourceactive")) || { hearthis: false };
+
+                    if (sourceActiveMap.hasOwnProperty(source.id)) {
+                        _source.active = sourceActiveMap[source.id];
+                    } else {
+                        _source.active = true;
+                    }
+
+                    return _source;
+                }));
+
+                commit(mutationTypes.ADD_SOURCES, sources);
+                dispatch(actionTypes.UPDATE_TRACK_SOURCE);
+
+                return sources;
+            } catch (e) {
+                await new Promise((resolve) => setTimeout(resolve, 100));
+                return await dispatch(actionTypes.FETCH_SOURCES);
+            }
+        }
     }
 };
 
 const saveQueueData = (queueGroup, playingQueueIndex) => {
-        localStorage.setItem('kaiplayerplayingqueues', JSON.stringify({
-            queues: queueGroup.get().map(queue => {
-                return {
-                    type: (() => {
-                        switch (queue.constructor) {
-                            case RandomTrackQueue:
-                                return 'random';
+    localStorage.setItem('kaiplayerplayingqueues', JSON.stringify({
+        queues: queueGroup.get().map(queue => {
+            return {
+                type: (() => {
+                    switch (queue.constructor) {
+                        case RandomTrackQueue:
+                            return 'random';
 
-                            case TrackQueue:
-                            default:
-                                return 'basic';
-                        }
-                    })(),
-                    name: queue.name,
-                    tracks: queue.get().map(track => ({
-                        id: track.id,
-                        name: track.name,
-                        duration: track.duration,
-                        streamUrl: track.streamUrl,
-                        artists: track.artists.map(artist => ({ name: artist.name })),
-                        picture: track.picture,
-                        status: track.status.id,
-                        messages: track.messages && Array.from(track.messages).map((message) => ({
-                            level: ((message) => {
-                                if (message instanceof TrackError) {
-                                    return "error";
-                                } else {
-                                    return "unknown";
-                                }
-                            })(message),
-                            code: message.code,
-                        })),
-                    })),
-                    active: queue.active
-                }
-            }),
-            active: queueGroup.active,
-            playing: playingQueueIndex
-        }));
-    },
-
-    restoreQueueData = () => {
-        const queueGroup = new Queue();
-
-        let playingQueueIndex = null;
-
-        const queueGroupData = JSON.parse(localStorage.getItem('kaiplayerplayingqueues'));
-
-        if (queueGroupData && queueGroupData.queues.length) {
-            queueGroup.add(queueGroupData.queues.map(queueData => {
-                const queue = (() => {
-                    switch (queueData.type) {
-                        case 'random':
-                            return new RandomTrackQueue({ name: queueData.name });
-
-                        case 'basic':
+                        case TrackQueue:
                         default:
-                            return new TrackQueue({ name: queueData.name });
+                            return 'basic';
                     }
-                })();
-
-                queue.active = queueData.active;
-
-                if (queueData.tracks.length) {
-                    queue.add(queueData.tracks.map(trackData => new Track({
-                        id: trackData.id,
-                        name: trackData.name,
-                        streamUrl: trackData.streamUrl,
-                        duration: trackData.duration,
-                        artists: trackData.artists.map(artistData => new Artist({ name: artistData.name })),
-                        picture: trackData.picture,
-                        status: Status.fromId(trackData.status),
-                        messages: trackData.messages && trackData.messages.map((messageData) => {
-                            if (messageData.level === "error") {
-                                return TrackError.fromCode(messageData.code);
+                })(),
+                name: queue.name,
+                tracks: queue.get().map(track => ({
+                    id: track.id,
+                    name: track.name,
+                    source: track.source.id,
+                    artists: track.artists.map(artist => ({ name: artist.name })),
+                    duration: track.duration,
+                    streamUrls: track.streamUrls,
+                    picture: track.picture,
+                    status: track.status.id,
+                    messages: track.messages && Array.from(track.messages).map((message) => ({
+                        level: ((message) => {
+                            if (message instanceof TrackError) {
+                                return "error";
+                            } else {
+                                return "unknown";
                             }
+                        })(message),
+                        code: message.code,
+                    })),
+                })),
+                activeIndex: queue.activeIndex
+            }
+        }),
+        activeIndex: queueGroup.activeIndex,
+        playingQueueIndex
+    }));
+};
 
-                            return TrackInfo.fromCode(messageData.code);
-                        }),
-                    })));
+const restoreQueueData = () => {
+    const queueGroup = new Queue();
+
+    let playingQueueIndex = null;
+
+    const queueGroupData = JSON.parse(localStorage.getItem('kaiplayerplayingqueues'));
+
+    if (queueGroupData && queueGroupData.queues.length) {
+        queueGroup.add(queueGroupData.queues.map((queueData) => {
+            const queue = (() => {
+                switch (queueData.type) {
+                    case 'random':
+                        return new RandomTrackQueue({ name: queueData.name });
+
+                    case 'basic':
+                    default:
+                        return new TrackQueue({ name: queueData.name });
                 }
+            })();
 
-                return queue;
-            }));
+            queue.activeIndex = queueData.activeIndex;
 
-            queueGroup.active = queueGroupData.active;
-            playingQueueIndex = queueGroupData.playing;
-        }
+            if (queueData.tracks.length) {
+                queue.add(queueData.tracks.map((trackData) => new Track(trackData.id, trackData.name, new Source(trackData.source, { name: trackData.source }), {
+                    artists: trackData.artists.map(artistData => new Artist({ name: artistData.name })),
+                    duration: trackData.duration,
+                    picture: trackData.picture,
+                    streamUrls: trackData.streamUrls,
+                    status: Status.fromId(trackData.status),
+                    messages: trackData.messages && trackData.messages.map((messageData) => {
+                        if (messageData.level === "error") {
+                            return TrackError.fromCode(messageData.code);
+                        }
 
-        return {
-            queueGroup,
-            playingQueueIndex
-        }
-    };
+                        return TrackInfo.fromCode(messageData.code);
+                    }),
+                })));
+            }
 
-const queueData = restoreQueueData();
+            return queue;
+        }));
+
+        queueGroup.activeIndex = queueGroupData.activeIndex;
+        playingQueueIndex = queueGroupData.playingQueueIndex || 0;
+    }
+
+    return {
+        queueGroup,
+        playingQueueIndex,
+    }
+};
 
 const queueModule = {
     state: {
-        queueGroup: queueData.queueGroup,
-        playingQueueIndex: queueData.playingQueueIndex
+        queueGroup: new Queue(),
+        playingQueueIndex: 0,
     },
     mutations: {
-        [mutationTypes.UPDATE_QUEUE_GROUP](state, { queues, active }) {
+        [mutationTypes.UPDATE_QUEUE_GROUP](state, { queues, activeIndex }) {
             queues && state.queueGroup.load(queues);
 
-            if (typeof active === 'number') {
-                state.queueGroup.active = active;
+            if (typeof activeIndex === 'number') {
+                state.queueGroup.activeIndex = activeIndex;
             }
 
             saveQueueData(state.queueGroup, state.playingQueueIndex);
@@ -236,14 +389,14 @@ const queueModule = {
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
-        [mutationTypes.UPDATE_QUEUE](state, { index, name, tracks, active }) {
+        [mutationTypes.UPDATE_QUEUE](state, { index, name, tracks, activeIndex }) {
             const queue = state.queueGroup.get(index);
 
             name && (queue.name = name);
             tracks && queue.load(tracks);
 
-            if (typeof active === 'number' || active === null) {
-                queue.active = active;
+            if (typeof activeIndex === "number" || activeIndex === null) {
+                queue.activeIndex = activeIndex;
             }
 
             saveQueueData(state.queueGroup, state.playingQueueIndex);
@@ -254,13 +407,26 @@ const queueModule = {
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
-        [mutationTypes.ADD_TRACK](state, { track, queue = state.queueGroup.get(state.queueGroup.active) }) {
+        [mutationTypes.ADD_TRACK](state, { track, queueIndex = state.playingQueueIndex }) {
+            const queue = state.queueGroup.get(queueIndex);
+
             queue.add(track);
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
-        [mutationTypes.UPDATE_TRACK](state, { index, duration, status, messages, queue = state.queueGroup.get(state.queueGroup.active) }) {
+        [mutationTypes.NEXT_TRACK](state, { queueIndex = state.playingQueueIndex } = {}) {
+            const queue = state.queueGroup.get(queueIndex);
+
+            return queue.next();
+        },
+
+        [mutationTypes.UPDATE_TRACK](state, { index, source, duration, status, messages, queueIndex = state.queueGroup.activeIndex }) {
+            const queue = state.queueGroup.get(queueIndex);
             const track = queue.get(index);
+
+            if (source) {
+                track.source = source;
+            }
 
             if (duration !== undefined) {
                 track.duration = duration;
@@ -279,55 +445,60 @@ const queueModule = {
             }
         },
 
-        [mutationTypes.SWITCH_QUEUE_MODE](state, { queue = state.queueGroup.get(state.queueGroup.active) } = {}) {
+        [mutationTypes.SWITCH_QUEUE_MODE](state, { queue = state.queueGroup.get(state.queueGroup.activeIndex) } = {}) {
             queue.switchMode();
-        }
-    }
-};
-
-const playerController = new PlayerController;
-
-playerController.connect(new Player);
-
-const playerModule = {
-    state: {
-        playerController,
-
-        get playing() {
-            return this.playerController.player.playing
-        }
+        },
     },
     actions: {
-        async [actionTypes.PLAY_TRACK]({ commit, state, rootState, rootState: { queueModule : { queueGroup } } }, { index = queueGroup.get(queueGroup.active).active, queue = queueGroup.get(queueGroup.active) }) {
-            commit(mutationTypes.UPDATE_QUEUE, { active: index });
+        async [actionTypes.INIT_QUEUE_MODULE]({ commit }) {
+            const { queueGroup, playingQueueIndex } = restoreQueueData();
 
-            const track = queue.get(index);
+            commit(mutationTypes.UPDATE_PLAYING_QUEUE_INDEX, playingQueueIndex);
 
-            if (track) {
-                try {
-                    await playerController.playTrack(track);
-                    commit(mutationTypes.UPDATE_TRACK, { index: queue.active, status: Status.Ok });
-                } catch(e) {
-                    commit(mutationTypes.UPDATE_TRACK, { index: queue.active, status: Status.Error, messages: [TrackError.SOURCE_NOT_VALID] });
-                    throw e;
-                }
-
-                if (rootState.visualizationModule._visualizer.activeType === "random") {
-                    commit(mutationTypes.UPDATE_ACTIVE_VISUALIZER_TYPE, "random");
-                    commit(mutationTypes.BACKGROUND_LOAD_RESOURCE, { picture: track.picture });
-                }
-
-                commit(mutationTypes.VISUALIZER_LISTEN_TO, playerController.player._sound._sounds[0]._node);
-                commit(mutationTypes.VISUALIZER_LOAD_RESOURCE, { picture: track.picture });
-
-            }
+            commit(mutationTypes.UPDATE_QUEUE_GROUP, {
+                queues: queueGroup.get(),
+                activeIndex: queueGroup.activeIndex,
+            });
         },
-        [actionTypes.RESUME_PLAYBACK]() {
-            if (state.playerController.player.state !== "unloaded") {
-                state.playerController.player.play();
-            }
-        }
-    }
+
+        async [actionTypes.UPDATE_TRACK_SOURCE]({ state, commit, rootState }, { queueIndex, trackIndex } = {}) {
+            const sourceMap = (() => {
+                const map = {};
+
+                rootState.sourceModule.sourceGroup.get().forEach((source) => {
+                    map[source.id] = source;
+                });
+
+                return map;
+            })();
+
+            const queues = (() => {
+                if (typeof queueIndex === "number") {
+                    return [state.queueGroup.get(queueIndex)];
+                }
+
+                return state.queueGroup.get();
+            })();
+
+            queues.forEach((queue, currentQueueIndex) => {
+                const tracks = (() => {
+                    if (typeof trackIndex === "number" && queue.get(trackIndex)) {
+                        return [queue.get(trackIndex)];
+                    }
+
+                    return queue.get();
+                })();
+
+                tracks.forEach((track, currentIndex) => {
+                    commit(mutationTypes.UPDATE_TRACK, {
+                        index: currentIndex,
+                        queueIndex: currentQueueIndex,
+                        source: sourceMap[track.source.id],
+                    })
+                });
+            });
+        },
+    },
 };
 
 const backgroundType = localStorage.getItem('kaisoftbackgroundtype') || 'three',
@@ -346,6 +517,8 @@ const visualizationModule = {
         [mutationTypes.INIT_VISUALIZATION](state, renderers) {
             state._background = new Background(backgroundType, renderers);
             state._visualizer = new Visualizer(visualizerType, renderers);
+            playerModule.state.playerController.visualizer = state._visualizer;
+            playerModule.state.playerController.background = state._background;
             state.init = true;
         },
 
@@ -357,14 +530,6 @@ const visualizationModule = {
         [mutationTypes.UPDATE_ACTIVE_VISUALIZER_TYPE](state, type) {
             state.visualizerType = type;
             localStorage.setItem('kaisoftvisualizertype', type);
-        },
-
-        [mutationTypes.VISUALIZER_LISTEN_TO](state, audioSource) {
-            if (state._visualizer) {
-                state._visualizer.listen(audioSource);
-            }
-
-            state._audioSouce = audioSource;
         },
 
         [mutationTypes.BACKGROUND_LOAD_RESOURCE](state, { picture } = {}) {
@@ -405,14 +570,15 @@ const visualizationModule = {
             }
 
             const queueGroup = queueModule.state.queueGroup,
-                queue = queueGroup.get(queueGroup.active),
-                track = queue ? queue.get(queue.active) : null;
+                queue = queueGroup.get(queueGroup.activeIndex || 0),
+                track = queue ? queue.get(queue.activeIndex) : null;
 
             if (track) {
                 commit(mutationTypes.BACKGROUND_LOAD_RESOURCE, { picture: track.picture });
             }
         },
-        async triggerBackgroundEvent({ commit, state }, type) {
+
+        async [actionTypes.TRIGGER_BACKGROUND_EVENT]({ commit, state }, type) {
             await state._background.event(type);
         }
     }
@@ -420,11 +586,11 @@ const visualizationModule = {
 
 const store = new Vuex.Store({
     modules: {
+        playerModule,
         generalModule,
         sourceModule,
         queueModule,
-        playerModule,
-        visualizationModule
+        visualizationModule,
     }
 });
 
@@ -435,7 +601,8 @@ let lastOldState = null;
 store._vm.$watch(() => ([
     visualizationModule.state.backgroundType,
     visualizationModule.state.visualizerType,
-    playerModule.state.playing
+    playerModule.state.playing,
+    playerModule.state._updateVisualiztionTrigger,
 ]), ([newBackground, newVisualization, newPlaying], oldState) => {
     let [oldBackground, oldVisualization, oldPlaying] = oldState;
 
@@ -448,6 +615,7 @@ store._vm.$watch(() => ([
     }
 
     lastOldState = [oldBackground, oldVisualization, oldPlaying];
+
     const timeout = setTimeout(async () => {
         cancelVisualizationChangeLastMutation = null;
         lastOldState = null;

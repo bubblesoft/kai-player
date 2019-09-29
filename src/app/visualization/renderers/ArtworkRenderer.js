@@ -2,6 +2,8 @@
  * Created by qhyang on 2018/5/8.
  */
 
+import config from "../../../config";
+
 import scale from '../../../scripts/scale';
 import applyCanvasMask from '../../../scripts/canvasMask';
 
@@ -29,7 +31,21 @@ export default class ArtworkRenderer extends Renderer {
     }
 
     async renderPicture(url) {
-        url = applyCanvasMask(scale({ width: 200, height: 200 }, await loadImage(url)), await loadImage(require('../../../assets/mask.png')), 200, 200, true);
+        url = applyCanvasMask(scale({ width: 200, height: 200 }, await (async () => {
+            try {
+                return await loadImage(url);
+            } catch (e) {
+                console.log(e);
+
+                try {
+                    return await loadImage(`/proxy/${config.defaultImage}`);
+                } catch (e) {
+                    console.log(e);
+
+                    return await loadImage(config.defaultImage);
+                }
+            }
+        })()), await loadImage(require('../../../assets/mask.png')), 200, 200, true);
 
         this.root.style.backgroundImage = `url("${url}")`;
     }

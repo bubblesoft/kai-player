@@ -12,7 +12,7 @@
                 ) {{ source.name }}
             select.form-control.input-sm(
                 v-if="sourceSelected"
-                v-model="channelSelected"
+                v-model="trackListSelected"
             )
                 option(
                     value=""
@@ -66,13 +66,14 @@
 </template>
 
 <script>
-    import { mapState, mapMutations } from 'vuex';
+    import { mapState, mapMutations, mapActions } from "vuex";
 
     import moment from 'moment';
 
     import { formatDuration } from '../../scripts/utils';
 
-    import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK ,UPDATE_ACTIVE_VISUALIZER_TYPE, TRIGGER_BACKGROUND_EVENT, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
+    import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK ,UPDATE_ACTIVE_VISUALIZER_TYPE, VISUALIZER_LOAD_RESOURCE } from "../../scripts/mutation-types";
+    import { PLAY_TRACK } from "../../scripts/action-types";
 
     import TrackQueue from '../queue/TrackQueue';
 
@@ -82,15 +83,15 @@
     export default {
         components: {
             draggable,
-            vueLoading
+            vueLoading,
         },
 
         data() {
             return {
                 sourceSelected: null,
-                channelSelected: null,
+                trackListSelected: null,
                 tracks: [],
-                loading: false
+                loading: false,
             }
         },
 
@@ -100,7 +101,7 @@
             },
 
             queue() {
-                return this.queueGroup.get(this.queueGroup.active);
+                return this.queueGroup.get(this.queueGroup.activeIndex || 0);
             },
 
             player() {
@@ -136,34 +137,26 @@
         methods: {
             async addToPlayback(track) {
                 this[ADD_TRACK]({ track });
+
                 this[UPDATE_QUEUE]({
-                    index: this.queueGroup.active,
-                    active: this.queue.length - 1
+                    index: this.queueGroup.activeIndex,
+                    activeIndex: this.queue.length - 1,
                 });
 
-                await this.playerController.playTrack(track);
-                this.playingQueueIndex = this.queueGroup.active;
-
-                if (this.activeVisualizerType === 'random') {
-                    this.activeVisualizerType = 'random';
-                }
-
-                this[VISUALIZER_LISTEN_TO](this.player._sound._sounds[0]._node, track.picture);
-                this[VISUALIZER_LOAD_RESOURCE]({ picture: track.picture });
-                this[UPDATE_TRACK]({ index: this.queue.active, duration: this.player.duration * 1000 });
+                this[PLAY_TRACK]({ index: this.queue.activeIndex });
             },
 
             handleContextMenu(e, track) {
-                this.$emit('contextMenu', e, type => {
+                this.$emit('contextMenu', e, (type) => {
                     if (type === 'add') {
                         this.addToPlayback(track);
                     } else if ( type === 'import') {
                         this[INSERT_QUEUE]({
                             index: this.queueGroup.length,
-                            queue: new TrackQueue({ name: `${this.channelSelected.name}(${moment().format('YYYY-MM-DD')})` })
+                            queue: new TrackQueue({ name: `${this.trackListSelected.name}(${moment().format('YYYY-MM-DD')})` })
                         });
 
-                        this[UPDATE_QUEUE_GROUP]({ active: this.queueGroup.length - 1 });
+                        this[UPDATE_QUEUE_GROUP]({ activeIndex: this.queueGroup.length - 1 });
 
                         this.addToPlayback(this.tracks[0]);
 
@@ -187,12 +180,11 @@
                 UPDATE_QUEUE,
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
-                UPDATE_TRACK,
                 UPDATE_ACTIVE_VISUALIZER_TYPE,
-                TRIGGER_BACKGROUND_EVENT,
-                VISUALIZER_LISTEN_TO,
                 VISUALIZER_LOAD_RESOURCE
-            ])
+            ]),
+
+            ...mapActions([PLAY_TRACK]),
         },
 
         filters: {
@@ -203,28 +195,30 @@
             (async () => {
                 if (this.sources.length) {
                     this.sourceSelected = this.sources[0];
-                    this.channelSelected = this.sourceSelected.get(0);
+                    this.trackListSelected = this.sourceSelected.get(0);
                 }
             })();
         },
 
         watch: {
-            async channelSelected(channel) {
-                if (channel) {
+            async trackListSelected(trackList) {
+                if (trackList) {
                     this.loading = true;
-                    this.tracks = await channel.get();
+                    this.tracks = await trackList.get();
                     this.$refs.list.scrollTop = 0;
                     this.loading = false;
                 } else {
                     this.tracks = [];
                 }
             },
+
             sources(sources) {
                 this.sourceSelected = sources[0];
-                this.channelSelected = this.sourceSelected.get(0);
+                this.trackListSelected = this.sourceSelected.get(0);
             },
+
             sourceSelected(source) {
-                this.channelSelected = source.get(0);
+                this.trackListSelected = source.get(0);
             }
         }
     }

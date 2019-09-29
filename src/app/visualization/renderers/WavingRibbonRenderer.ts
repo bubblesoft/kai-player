@@ -78,8 +78,8 @@ export default class extends Renderer implements IRenderer {
         const changeColor = () => {
             this.colorQueue.next();
 
-            if (typeof this.colorQueue.active === "number") {
-                this.wavingRibbon.color = this.colorQueue.get(this.colorQueue.active);
+            if (typeof this.colorQueue.activeIndex === "number") {
+                this.wavingRibbon.color = this.colorQueue.get(this.colorQueue.activeIndex);
             }
 
             if (this.active) {
