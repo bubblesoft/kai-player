@@ -65,6 +65,7 @@
     "The audio source doesn't provide a playback URL for this track.": "音频源未提供此音频的播放URL。",
     "The playback URL provided by the audio source is not valid/reachable.": "音频源提供的播放URL无效或无法连接。",
     "The audio format of the playback source is not supported.": "播放源的音频格式不受支持。",
+    "The connection to the playback source is slow.": "播放源连接慢。",
     "Unknown error.": "未知错误."
   }
 }

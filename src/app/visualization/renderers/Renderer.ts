@@ -11,6 +11,7 @@ export default abstract class Renderer implements IRenderer {
 
     protected constructor() {
         this.root = document.createElement("div");
+        this.root.className = "renderer-root";
 
         this.root.style.cssText = `
             position: absolute;

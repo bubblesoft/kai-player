@@ -108,6 +108,7 @@ const getRecommendedTrack = async (track: Track, sources: Source[]) => {
 
             return `/proxy/${recommendedTrack.picture}`;
         })(),
+        playbackSources: recommendedTrack.playbackSources,
     });
 };
 

@@ -106,7 +106,7 @@
                         span(:style="{ color: usingAltTrack ? 'rgb(89, 192, 255)' : '#fff' }") {{ track.name || $t('Unknown Track') }} - {{ track.artists && track.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist') }}
                 span.track-notifications
                     v-popover(
-                        v-if="track && track.status === Status.Error"
+                        v-if="track && (track.status === Status.Error || track.status === Status.Warning)"
                         delay="300"
                         placement="top"
                         trigger="hover click focus"
@@ -122,7 +122,7 @@
                             slot="popover"
                             v-for="message of Array.from(track.messages)"
                         ) {{ $t(message.text) }}
-                    span.control-button(v-if="track && track.status === Status.Error")
+                    span.control-button(v-if="track && (track.status === Status.Error || track.status === Status.Warning)")
                         svg.info(
                             width="16"
                             height="16"
@@ -297,7 +297,9 @@
             },
 
             duration() {
-                return this.playerController.duration || Math.round((this.track.duration || 0) / 1000);
+                return this.playerController.duration
+                    || this.track && this.track.duration && Math.round((this.track.duration) / 1000)
+                    || 0;
             },
 
             usingAltTrack() {

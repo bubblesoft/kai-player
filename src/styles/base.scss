@@ -5,4 +5,8 @@ body {
   td {
     word-break: break-word;
   }
+
+  .renderer-root > * {
+    margin: auto;
+  }
 }

@@ -14,5 +14,5 @@ export default interface Track {
     readonly picture?: string;
     status: Status;
     duration?: number;
-    loadStreamUrls(): Promise<void>;
+    loadPlaybackSources(): Promise<void>;
 }

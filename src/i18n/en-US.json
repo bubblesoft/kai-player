@@ -65,6 +65,7 @@
     "The audio source doesn't provide a playback URL for this track.": "The audio source doesn't provide a playback URL for this track.",
     "The playback URL provided by the audio source is not valid/reachable.": "The playback URL provided by the audio source is not valid/reachable.",
     "The audio format of the playback source is not supported.": "The audio format of the playback source is not supported.",
+    "The connection to the playback source is slow.": "The connection to the playback source is slow.",
     "Unknown error.": "Unknown error."
   }
 }

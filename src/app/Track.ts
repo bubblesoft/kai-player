@@ -6,17 +6,18 @@ import ITrack from "./ITrack";
 
 import Artist from "./Artist";
 import Message from "./Message";
+import PlaybackSource from "./PlaybackSource";
 import Source from "./source/Source";
 import Status from "./Status";
 
 interface IOptions {
     artists: Artist[];
     status?: Status;
-    streamUrls?: string[];
+    playbackSources?: PlaybackSource[];
     picture?: string;
     duration?: number;
     messages?: Message[];
-    getStreamUrls?: (track: Track) => Promise<string[]>;
+    getPlaybackSources?: (track: Track) => Promise<PlaybackSource[]>;
 }
 
 export default class Track implements ITrack {
@@ -28,17 +29,17 @@ export default class Track implements ITrack {
     public readonly picture?: string;
     public status: Status;
     public duration?: number;
-    public streamUrls?: string[];
-    private readonly getStreamUrls?: () => Promise<string[]>;
+    public playbackSources?: PlaybackSource[];
+    private readonly getPlaybackSources?: () => Promise<PlaybackSource[]>;
 
     constructor(id: string, name: string, source: Source, {
         artists,
         picture,
         status,
-        streamUrls,
+        playbackSources,
         duration,
         messages,
-        getStreamUrls,
+        getPlaybackSources,
     }: IOptions) {
         this.id = id;
         this.name = name;
@@ -47,8 +48,8 @@ export default class Track implements ITrack {
         this.picture = picture;
         this.status = status || Status.Ok;
 
-        if (streamUrls && streamUrls.length) {
-            this.streamUrls = streamUrls;
+        if (playbackSources && playbackSources.length) {
+            this.playbackSources = playbackSources;
         }
 
         this.duration = duration;
@@ -59,27 +60,35 @@ export default class Track implements ITrack {
             }
         }
 
-        if (getStreamUrls) {
-            this.getStreamUrls = async () => await getStreamUrls(this);
+        if (getPlaybackSources) {
+            this.getPlaybackSources = async () => await getPlaybackSources(this);
         }
     }
 
-    public async loadStreamUrls() {
-        if (this.getStreamUrls) {
-            this.streamUrls = await this.getStreamUrls();
+    public async loadPlaybackSources() {
+        const playbackSources = await (async () => {
+            if (this.getPlaybackSources) {
+                return await this.getPlaybackSources();
+            }
 
-            return;
+            return (await (await fetch("/audio/playbacksources", {
+                method: "POST",
+
+                headers: new Headers({ "Content-Type": "application/json" }),
+
+                body: JSON.stringify({
+                    id: this.id,
+                    source: this.source.id,
+                }),
+            })).json()).data.map((data: any) => new PlaybackSource(data.urls, data.quality)) || this.playbackSources;
+        })();
+
+        if (playbackSources && playbackSources.length) {
+            this.playbackSources = playbackSources;
         }
 
-        this.streamUrls = (await (await fetch("/audio/streamurls", {
-            method: "POST",
-
-            headers: new Headers({ "Content-Type": "application/json" }),
-
-            body: JSON.stringify({
-                id: this.id,
-                source: this.source.id,
-            }),
-        })).json()).data;
+        if (this.playbackSources && !this.playbackSources.length) {
+            delete this.playbackSources;
+        }
     }
 }

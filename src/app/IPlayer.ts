@@ -5,7 +5,9 @@ export default interface IPlayer {
     readonly duration: number;
     progress: number;
     volume: number;
-    load(urls: string[]|string): void;
+    startRace(id?: number): number;
+    joinRace(urls: string[]|string, id: number, timeToWait?: number): void;
+    stopRace(): number;
     unload(): void;
     play(): void;
     pause(): void;

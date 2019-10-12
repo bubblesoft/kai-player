@@ -65,6 +65,7 @@
     "The audio source doesn't provide a playback URL for this track.": "오디오 소스는 이트랙의 재생 URL 을 제공하지 않았습니다.",
     "The playback URL provided by the audio source is not valid/reachable.": "오디오 소스에서 제공하는 재생 URL 은 유효하지 않거나 연결할 수 없슴니다.",
     "The audio format of the playback source is not supported.": "재생원의 오디오 형식을 지원하지 않습니다.",
+    "The connection to the playback source is slow.": "재생원과 연결이 느림니다.",
     "Unknown error.": "알 수 없는 오류."
   }
 }

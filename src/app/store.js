@@ -5,7 +5,7 @@ import * as mutationTypes from '../scripts/mutation-types';
 import * as actionTypes from '../scripts/action-types';
 
 import { loadLocale } from './i18n';
-import { getSourceById, getRecommendedTrack, generateLayout, fetchData } from "../scripts/utils";
+import { getRecommendedTrack, generateLayout, fetchData } from "../scripts/utils";
 
 import Status from "./Status";
 import PlayerStatus from "./PlayerStatus";
@@ -13,6 +13,7 @@ import Player from "./Player";
 import PlayerController from "./PlayerController";
 import TrackError from "./TrackError";
 import TrackInfo from "./TrackInfo";
+import PlaybackSource from "./PlaybackSource";
 import Artist from "./Artist";
 import Track from "./Track";
 import Queue from "./Queue";
@@ -98,11 +99,16 @@ const playerModule = {
             const track = queue.get(index);
 
             if (track) {
-                dispatch(mutationTypes.STOP_PLAYBACK);
-
+                commit(mutationTypes.STOP_PLAYBACK);
                 commit(mutationTypes.UPDATE_PLAYING_QUEUE_INDEX, queueIndex);
                 commit(mutationTypes.UPDATE_PROGRESS, 0);
                 commit(mutationTypes.UPDATE_PROGRESS_STATE, 0);
+
+                const nextTrackPromise = () => {
+                    if (queue.constructor === RandomTrackQueue) {
+                        return getRecommendedTrack(track, sources && sources.filter(source => source.active));
+                    }
+                };
 
                 try {
                     await playerController.playTrack(track);
@@ -110,7 +116,7 @@ const playerModule = {
                     console.log(e);
 
                     if (queue.constructor === RandomTrackQueue) {
-                        commit(mutationTypes.ADD_TRACK, { track: await getRecommendedTrack(track, sources && sources.filter(source => source.active)) });
+                        commit(mutationTypes.ADD_TRACK, { track: await nextTrackPromise });
                     }
 
                     dispatch(actionTypes.PLAY_TRACK, { index: commit(mutationTypes.NEXT_TRACK) });
@@ -122,10 +128,15 @@ const playerModule = {
             }
         },
 
-        [actionTypes.STOP_PLAYBACK]({ commit }) {
+        async [actionTypes.STOP_PLAYBACK]({ dispatch, commit }) {
             commit(mutationTypes.STOP_PLAYBACK);
             commit(mutationTypes.UPDATE_PROGRESS, 0);
             commit(mutationTypes.UPDATE_PROGRESS_STATE, 0);
+
+            (async () => {
+                await dispatch(actionTypes.TRIGGER_BACKGROUND_EVENT, "stop");
+                await dispatch(actionTypes.TRIGGER_BACKGROUND_EVENT, "reset");
+            })();
         },
 
         [actionTypes.RESUME_PLAYBACK]({ state }) {
@@ -294,7 +305,10 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                     source: track.source.id,
                     artists: track.artists.map(artist => ({ name: artist.name })),
                     duration: track.duration,
-                    streamUrls: track.streamUrls,
+                    playbackSources: track.playbackSources && track.playbackSources.map((playbackSource) => ({
+                        urls: playbackSource.urls,
+                        quality: playbackSource.quality,
+                    })),
                     picture: track.picture,
                     status: track.status.id,
                     messages: track.messages && Array.from(track.messages).map((message) => ({
@@ -343,7 +357,7 @@ const restoreQueueData = () => {
                     artists: trackData.artists.map(artistData => new Artist({ name: artistData.name })),
                     duration: trackData.duration,
                     picture: trackData.picture,
-                    streamUrls: trackData.streamUrls,
+                    playbackSources: trackData.playbackSources && trackData.playbackSources.urls && new PlaybackSource(trackData.playbackSources.urls, trackData.playbackSources.quality),
                     status: Status.fromId(trackData.status),
                     messages: trackData.messages && trackData.messages.map((messageData) => {
                         if (messageData.level === "error") {

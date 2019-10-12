@@ -3,6 +3,7 @@
  */
 
 import Artist from "../Artist";
+import PlaybackSource from "../PlaybackSource";
 import Track from "../Track";
 import Source from "./Source";
 
@@ -38,7 +39,8 @@ export default class TrackList {
         })).json()).data.map((trackData: any) => {
             return new Track(trackData.id, trackData.name, this.source, {
                 artists: trackData.artists.map((artist: any) => new Artist({ name: artist.name })),
-                duration: trackData.dt,
+                duration: trackData.duration,
+
                 picture: (() => {
                     if (!trackData.picture) {
                         return;
@@ -46,6 +48,9 @@ export default class TrackList {
 
                     return `/proxy/${trackData.picture}`;
                 })(),
+
+                playbackSources: trackData.playbackSources && trackData.playbackSources
+                        .map((playbackSource: any) => new PlaybackSource(playbackSource.urls, playbackSource.quality)),
             });
         });
     }

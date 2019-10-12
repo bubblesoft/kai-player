@@ -147,7 +147,7 @@
                                 )
                                 .track-notifications
                                     v-popover(
-                                        v-if="track.status === Status.Error"
+                                        v-if="track.status === Status.Error || track.status === Status.Warning"
                                         delay="300"
                                         placement="top"
                                         trigger="hover click focus"
@@ -163,7 +163,7 @@
                                             v-for="message of Array.from(track.messages)"
                                         ) {{ $t(message.text) }}
                                     svg.info(
-                                        v-if="track.status === Status.Error"
+                                        v-if="track.status === Status.Error || track.status === Status.Warning"
                                         width="16"
                                         height="16"
                                         viewBox="0 0 24 24"
