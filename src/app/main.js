@@ -2,10 +2,6 @@
  * Created by qhyang on 2017/12/1.
  */
 
-import 'whatwg-fetch';
-import 'abortcontroller-polyfill/dist/polyfill-patch-fetch';
-import 'url-polyfill';
-
 import Vue from 'vue';
 
 import VTooltip from "v-tooltip";
@@ -13,14 +9,14 @@ import VueConfirm from '../scripts/vue-confirm';
 
 import interact from 'interactjs';
 
-import '../styles/bootstrap';
-import '../styles/base';
-import '../styles/pretty-checkbox';
-import '../styles/v-tooltip';
-
-import { i18n, loadLocale } from './i18n';
+import { i18n } from "./i18n";
+import { requestNetworkIdle } from "../scripts/utils";
 
 import App from './app';
+
+import "../styles/bootstrap";
+import "../styles/base";
+import "../styles/v-tooltip";
 
 Vue.use(VTooltip);
 Vue.use(VueConfirm);
@@ -29,6 +25,33 @@ Vue.use(VueConfirm);
     if (!window['Promise']) {
         window['Promise'] = await import('promise-polyfill');
     }
+
+    if (!window["fetch"]) {
+        await import("whatwg-fetch");
+    }
+
+    if (!window["AbortController"]) {
+        await import("abortcontroller-polyfill/dist/polyfill-patch-fetch");
+    }
+
+    if (!window["URL"]) {
+        await import("url-polyfill");
+    }
+
+    (async() => {
+        // if ("serviceWorker" in navigator) {
+        //     try {
+        //         (await import("serviceworker-webpack-plugin/lib/runtime")).register();
+        //         window["serviceWorkerEnabled"] = true;
+        //     } catch (err) {
+        //         console.log(err);
+        //     }
+        // }
+
+        requestNetworkIdle(async () => {
+            await import("../styles/pretty-checkbox");
+        }, 1000 * 60);
+    })();
 
     const interactables = [];
     const bindingValues = [];
@@ -75,7 +98,11 @@ Vue.use(VueConfirm);
 
     const locale = localStorage.getItem('kaiplayerlocale') || window.navigator.language || 'en-US';
 
-    loadLocale(locale);
+    // networkIdleCallback(async () => {
+        const { loadLocale } = await import("./i18n");
+
+        loadLocale(locale);
+    // }, { timeout: 1000 * 3 });
 
     const store = (await import('./store')).default;
 

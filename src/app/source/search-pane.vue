@@ -69,6 +69,7 @@
     import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
     import { PLAY_TRACK } from "../../scripts/action-types";
 
+    import PlaybackSource from "../PlaybackSource";
     import Track from "../Track";
     import Artist from "../Artist";
 
@@ -137,41 +138,51 @@
                     .map(source => source.id);
 
                 controller.abort();
-                controller = new AbortController;
-                this.loading = true;
 
-                try {
-                    this.tracks = (await (await fetch('/audio/search', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            keywords,
-                            sources: activeSources
-                        }),
-                        headers: new Headers({
-                            'Content-Type': 'application/json'
-                        }),
-                        signal: controller.signal
-                    })).json()).data.map((trackData) => {
-                        return new Track(trackData.id, trackData.name, getSourceById(trackData.source, sources), {
-                            duration: trackData.duration || null,
-                            artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
-                            picture: (() => {
-                                if (!trackData.picture) {
-                                    return null;
-                                }
+                this.$nextTick(async () => {
+                    controller = new AbortController;
+                    this.loading = true;
 
-                                return `/proxy/${trackData.picture}`;
+                    try {
+                        this.tracks = (await (await fetch('/audio/search', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                keywords,
+                                sources: activeSources
+                            }),
+                            headers: new Headers({
+                                'Content-Type': 'application/json'
+                            }),
+                            signal: controller.signal
+                        })).json()).data.map((trackData) => {
+                            return new Track(trackData.id, trackData.name, getSourceById(trackData.source, sources), {
+                                duration: trackData.duration || null,
+                                artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
 
-                            })()
+                                picture: (() => {
+                                    if (!trackData.picture) {
+                                        return null;
+                                    }
+
+                                    return `/proxy/${trackData.picture}`;
+
+                                })(),
+
+                                playbackSources: trackData.playbackSources && trackData.playbackSources
+                                    .map((playbackSource) => new PlaybackSource(playbackSource.urls.map((url) => `/proxy/${url}`), playbackSource.quality, true))
+                                    .concat((() => trackData.playbackSources
+                                        .map((playbackSource) => playbackSource.cached ? undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, false))
+                                        .filter((playbackSource) => playbackSource))()),
+                            });
                         });
-                    });
 
-                    this.$refs.list.scrollTop = 0;
-                } catch (e) {
-                    console.log(e);
-                }
+                        this.$refs.list.scrollTop = 0;
+                    } catch (e) {
+                        console.log(e);
+                    }
 
-                this.loading = false;
+                    this.loading = false;
+                });
             },
 
             async addToPlayback(track) {

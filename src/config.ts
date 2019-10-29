@@ -4,6 +4,13 @@ export default {
     defaultImage: "http://kaiplanet.net/lighthouse.jpg",
     defaultPreference: {
         playback: {
+            alternativeTracks: {
+                enable: true,
+                similarityRange: {
+                    high: 1,
+                    low: .9,
+                },
+            },
             timeToWait: 3000,
         },
     },

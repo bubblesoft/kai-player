@@ -106,7 +106,12 @@ export default class Player implements IPlayer {
     private raceErrorCount = 0;
     private cancelWatchRace: (() => void)|undefined;
     private soundsInRace: Howl[] = [];
+    private soundsInRaceReject: Array<(reason: any) => void> = [];
     private raceTimeouts: Array<ReturnType<typeof setTimeout>> = [];
+    private lastError?: number|Error;
+    private lastErrorSoundId?: number;
+    private lastErrorReject?: (reason: any) => void;
+    private lastErrorSound?: Howl;
 
     constructor() {
         this.volume = .5;
@@ -124,6 +129,9 @@ export default class Player implements IPlayer {
         }
 
         this.raceErrorCount = 0;
+        this.soundsInRace = [];
+        this.soundsInRaceReject = [];
+        this.raceTimeouts = [];
 
         if (this.sound) {
             this.sound.unload();
@@ -160,14 +168,32 @@ export default class Player implements IPlayer {
                     });
 
                     this.soundsInRace.push(sound);
-                    sound.once("load", () => resolve(sound));
+                    this.soundsInRaceReject.push(reject);
+                    sound.once("load", () => {
+                        initHowlOnProgress(sound);
+
+                        sound.once("progress", () => {
+                            resolve(sound);
+                        });
+
+                        sound.once("playerror", (soundId: number, err: number|Error) => {
+                            this.raceErrorCount++;
+                            this.lastErrorReject = reject;
+                            this.lastError = err;
+                            this.lastErrorSoundId = soundId;
+
+                            this.onRacerFailCallbacks.forEach((callback) => callback(sound._src));
+                        });
+
+                        sound.play();
+                    });
 
                     sound.once("loaderror", (soundId: number, err: number|Error) => {
                         this.raceErrorCount++;
-
-                        if (this.raceErrorCount >= this.soundsInRace.length) {
-                            reject([soundId, err]);
-                        }
+                        this.lastErrorReject = reject;
+                        this.lastError = err;
+                        this.lastErrorSoundId = soundId;
+                        this.lastErrorSound = sound;
 
                         this.onRacerFailCallbacks.forEach((callback) => callback(sound._src));
                     });
@@ -175,6 +201,26 @@ export default class Player implements IPlayer {
             }))]);
 
         this.watchRace();
+    }
+
+    public stopJoinRace() {
+        if (this.raceErrorCount >= this.soundsInRace.length && this.lastErrorReject) {
+            return this.lastErrorReject([this.lastErrorSoundId, this.lastError, this.lastErrorSound]);
+        }
+
+        this.soundsInRace.forEach((sound, i) => {
+            sound.once("playerror", (soundId: number, err: number|Error) => {
+                if (this.raceErrorCount >= this.soundsInRace.length) {
+                    this.soundsInRaceReject[i]([soundId, err, sound]);
+                }
+            });
+
+            sound.once("loaderror", (soundId: number, err: number|Error) => {
+                if (this.raceErrorCount >= this.soundsInRace.length) {
+                    this.soundsInRaceReject[i]([soundId, err, sound]);
+                }
+            });
+        });
     }
 
     public stopRace() {
@@ -188,6 +234,8 @@ export default class Player implements IPlayer {
             clearTimeout(timeout);
         }
 
+        this.raceTimeouts = [];
+
         this.soundsInRace.forEach((sound, index) => {
             if (sound !== this.sound) {
                 sound.unload();
@@ -196,7 +244,8 @@ export default class Player implements IPlayer {
             }
         });
 
-        this.soundsInRace = this.soundsInRace.filter((sound) => sound);
+        this.soundsInRace = [];
+        this.soundsInRaceReject = [];
 
         return this.raceId;
     }
@@ -223,6 +272,7 @@ export default class Player implements IPlayer {
         }
 
         this.sound.pause();
+        this.streaming = false;
 
         const seek = this.sound.seek();
 
@@ -284,6 +334,7 @@ export default class Player implements IPlayer {
                 break;
 
             case "loaderror":
+                this.callbackWrapMap.set(callback, callbackWrap);
                 this.onLoadErrorCallbacks.push(callbackWrap);
 
                 break;
@@ -345,7 +396,7 @@ export default class Player implements IPlayer {
         switch (event) {
             case "racerfail":
                 this.onRacerFailCallbacks.forEach((onRacerFailCallback, index, callbacks) => {
-                    if (callback === onRacerFailCallback) {
+                    if (callbackWrap === onRacerFailCallback || callback === onRacerFailCallback) {
                         callbacks.splice(index, 1);
                     }
                 });
@@ -354,7 +405,7 @@ export default class Player implements IPlayer {
 
             case "load":
                 this.onLoadCallbacks.forEach((onLoadCallback, index, callbacks) => {
-                    if (callback === onLoadCallback) {
+                    if (callbackWrap === onLoadCallback || callback === onLoadCallback) {
                         callbacks.splice(index, 1);
                     }
                 });
@@ -363,7 +414,7 @@ export default class Player implements IPlayer {
 
             case "loaderror":
                 this.onLoadErrorCallbacks.forEach((onLoadErrorCallback, index, callbacks) => {
-                    if (callback === onLoadErrorCallback) {
+                    if (callbackWrap === onLoadErrorCallback || callback === onLoadErrorCallback) {
                         callbacks.splice(index, 1);
                     }
                 });
@@ -376,7 +427,7 @@ export default class Player implements IPlayer {
                 }
 
                 this.onPlayErrorCallbacks.forEach((onPlayErrorCallback, index, callbacks) => {
-                    if (callback === onPlayErrorCallback) {
+                    if (callbackWrap === onPlayErrorCallback || callback === onPlayErrorCallback) {
                         callbacks.splice(index, 1);
                     }
                 });
@@ -385,7 +436,7 @@ export default class Player implements IPlayer {
 
             case "progress":
                 this.onProgressCallbacks.forEach((onProgressCallback, index, callbacks) => {
-                    if (callback === onProgressCallback) {
+                    if (callbackWrap === onProgressCallback || callback === onProgressCallback) {
                         callbacks.splice(index, 1);
                     }
                 });
@@ -398,7 +449,7 @@ export default class Player implements IPlayer {
                 }
 
                 this.onEndCallbacks.forEach((onEndCallback, index, callbacks) => {
-                    if (callback === onEndCallback) {
+                    if (callbackWrap === onEndCallback || callback === onEndCallback) {
                         callbacks.splice(index, 1);
                     }
                 });
@@ -419,16 +470,17 @@ export default class Player implements IPlayer {
         Promise.race([this.racePromise, new Promise<Howl>((resolve, reject) => {
             this.cancelWatchRace = () => reject([undefined, Player.cancelWatchRaceError]);
         })]).then((sound) => {
-            this.racing = false;
-            setTimeout(() => this.onLoadCallbacks.forEach((callback) => callback(sound._src)), 0);
             this.sound = sound;
+            this.stopRace();
+            setTimeout(() => this.onLoadCallbacks.forEach((callback) => callback(sound._src)), 0);
             this.load();
-        }).catch(([id, err]) => {
+        }).catch(([id, err, sound]) => {
             if (err === Player.cancelWatchRaceError) {
                 return;
             }
 
-            this.racing = false;
+            this.sound = sound;
+            this.stopRace();
             setTimeout(() => this.onLoadErrorCallbacks.forEach((callback) => callback(id, err)), 0);
         });
     }
@@ -439,8 +491,6 @@ export default class Player implements IPlayer {
         }
 
         this.stopRace();
-
-        initHowlOnProgress(this.sound);
 
         this.sound.on("progress", () => {
             this.streaming = false;
@@ -473,7 +523,13 @@ export default class Player implements IPlayer {
             return;
         }
 
-        const seek = this.sound.seek();
+        const seek = (() => {
+            try {
+                return this.sound.seek();
+            } catch {
+                return undefined;
+            }
+        })();
 
         if (typeof seek === "number") {
             this.seek = seek;

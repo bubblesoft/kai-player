@@ -1,5 +1,5 @@
 <template lang="pug">
-    .list-pane(v-if="sources.length")
+    .list-pane(v-if="sources.length && sources.filter((source) => source.get() && source.get().length).length")
         .toolbar
             select.form-control.input-sm(v-model="sourceSelected")
                 option(
@@ -192,20 +192,33 @@
         },
 
         created() {
-            (async () => {
-                if (this.sources.length) {
-                    this.sourceSelected = this.sources[0];
-                    this.trackListSelected = this.sourceSelected.get(0);
-                }
-            })();
+            if (this.sources.length) {
+                this.sourceSelected = this.sources[0];
+                this.trackListSelected = this.sourceSelected.get(0);
+            }
+
+            if (!this.trackListSelected) {
+                const unwatch = this.$watch(() =>  this.sourceSelected, (sourceSelected) => {
+                    if (sourceSelected.get(0)) {
+                        unwatch();
+                        this.trackListSelected = this.sourceSelected.get(0);
+                    }
+                });
+            }
         },
 
         watch: {
             async trackListSelected(trackList) {
                 if (trackList) {
                     this.loading = true;
-                    this.tracks = await trackList.get();
-                    this.$refs.list.scrollTop = 0;
+
+                    try {
+                        this.tracks = await trackList.get();
+                        this.$refs.list.scrollTop = 0;
+                    } catch (e) {
+                        console.log(e);
+                    }
+
                     this.loading = false;
                 } else {
                     this.tracks = [];

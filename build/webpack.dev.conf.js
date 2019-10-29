@@ -6,9 +6,9 @@
 
 const path = require('path');
 
-const webpack = require('webpack');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+// const ServiceWorkerWebpackPlugin = require('serviceworker-webpack-plugin');
 
 const rootDir = path.resolve(__dirname, '..');
 
@@ -65,6 +65,13 @@ module.exports = {
                 ]
             },
             {
+                include: [
+                    path.resolve(rootDir, 'node_modules', 'three-audio-visualization', 'src', 'vendors', 'physijs', 'physijs_worker.js'),
+                    path.resolve(rootDir, 'node_modules', 'ammo.js')
+                ],
+                loader: 'url-loader?limit=8192'
+            },
+            {
                 test: /\.scss$/,
                 loaders: [ 'style-loader', 'css-loader', 'sass-loader' ],
                 exclude: /node_modules/
@@ -76,13 +83,6 @@ module.exports = {
             },
             {
                 test: /\.(?:mp3|svg|png|ico)$/,
-                loader: 'url-loader?limit=8192'
-            },
-            {
-                include: [
-                    path.resolve(rootDir, 'node_modules', 'three-audio-visualization', 'src', 'vendors', 'physijs', 'physijs_worker.js'),
-                    path.resolve(rootDir, 'node_modules', 'ammo.js')
-                ],
                 loader: 'url-loader?limit=8192'
             },
             {
@@ -102,7 +102,10 @@ module.exports = {
             template: path.resolve(rootDir, 'src', 'index.html'),
             chunks: [ 'app', 'runtime' ]
         }),
-        new VueLoaderPlugin()
+        new VueLoaderPlugin(),
+        // new ServiceWorkerWebpackPlugin({
+        //     entry: path.join(rootDir, 'src', "app", 'sw'),
+        // })
     ],
     optimization: {
         runtimeChunk: {

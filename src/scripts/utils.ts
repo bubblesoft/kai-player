@@ -24,7 +24,17 @@ const initHowlOnProgress = (howl: Howl) => {
 
     howl.on("play", (soundId) => {
         interval = setInterval(() => {
-            const seek = howl.seek();
+            const seek = (() => {
+                try {
+                    return howl.seek();
+                } catch {
+                    return undefined;
+                }
+            })();
+
+            if (!seek) {
+                return;
+            }
 
             if (typeof seek !== "number") {
                 // @ts-ignore
@@ -249,6 +259,16 @@ const fetchData = async (path: string, options: any = {}) => {
        throw new Error("No response.");
     }
 
+    if (Array.isArray(jsonRes)) {
+        for (const component of jsonRes) {
+            if (component.code !== 1) {
+                throw new Error(component.message);
+            }
+        }
+
+        return jsonRes.map((component) => component.data);
+    }
+
     if (jsonRes.code === 1) {
         return jsonRes.data;
     }
@@ -256,4 +276,18 @@ const fetchData = async (path: string, options: any = {}) => {
     throw new Error(jsonRes.message);
 };
 
-export { initHowlOnProgress, getSourceById, getRecommendedTrack, formatDuration, generateLayout, loadImage, fetchData };
+const requestNetworkIdle = (callback: () => void, timeout?: number) => {
+    if (!(window as any).serviceWorkerEnabled || !navigator.serviceWorker) {
+        return setTimeout(callback, timeout || 0);
+    }
+
+    (async () => {
+        // @ts-ignore
+        const { networkIdleCallback } = await import("network-idle-callback");
+
+        networkIdleCallback(callback, { timeout });
+    })();
+};
+
+export { initHowlOnProgress, getSourceById, getRecommendedTrack, formatDuration, generateLayout, loadImage, fetchData,
+    requestNetworkIdle };

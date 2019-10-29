@@ -3,8 +3,9 @@ import IPlabackSource from "./IPlaybackSource";
 export default class PlaybackSource implements IPlabackSource {
     public readonly urls: string[];
     public readonly quality: number;
+    public readonly proxied: boolean;
 
-    constructor(urls: string[]|string, quality: number) {
+    constructor(urls: string[]|string, quality: number, proxied: boolean) {
         if (Array.isArray(urls)) {
             this.urls = urls;
         } else {
@@ -12,5 +13,6 @@ export default class PlaybackSource implements IPlabackSource {
         }
 
         this.quality = quality;
+        this.proxied = proxied;
     }
 }

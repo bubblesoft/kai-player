@@ -50,7 +50,13 @@ export default class TrackList {
                 })(),
 
                 playbackSources: trackData.playbackSources && trackData.playbackSources
-                        .map((playbackSource: any) => new PlaybackSource(playbackSource.urls, playbackSource.quality)),
+                    .map((playbackSource: any) =>
+                        new PlaybackSource(playbackSource.urls.map((url: string) =>
+                            `/proxy/${url}`), playbackSource.quality, true))
+                    .concat((() => trackData.playbackSources
+                        .map((playbackSource: any): PlaybackSource|undefined => playbackSource.cached ? undefined
+                            : new PlaybackSource(playbackSource.urls, playbackSource.quality, false))
+                        .filter((playbackSource?: PlaybackSource) => playbackSource))()),
             });
         });
     }

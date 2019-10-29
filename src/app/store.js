@@ -1,6 +1,8 @@
 import Vue from 'vue';
 import Vuex from "vuex";
 
+import config from "../config";
+
 import * as mutationTypes from '../scripts/mutation-types';
 import * as actionTypes from '../scripts/action-types';
 
@@ -28,10 +30,13 @@ import Visualizer from './visualization/visual_controllers/Visualizer';
 Vue.use(Vuex);
 
 const locale = localStorage.getItem('kaiplayerlocale') || window.navigator.language || 'en-US';
+const storedPreference = localStorage.getItem("kaiplayerpreference");
+const preference = storedPreference ? JSON.parse(storedPreference) : config.defaultPreference;
 
 const playerController = new PlayerController;
 
 playerController.player = new Player;
+playerController.preference = preference;
 
 let onProgress;
 
@@ -161,7 +166,8 @@ const generalModule = {
 
             return showSourceIcon ? Boolean(+showSourceIcon) : true;
         })(),
-        locale
+        locale,
+        preference,
     },
 
     mutations: {
@@ -229,17 +235,24 @@ const sourceModule = {
             playerController.sources = sources;
         },
         [mutationTypes.UPDATE_SOURCE] (state, { index, active }) {
-            state.sourceGroup.get(index).active = active;
+            if (typeof active !== "undefined") {
+                state.sourceGroup.get(index).active = active;
 
-            localStorage.setItem('kaiplayersourceactive', JSON.stringify((() => {
-                const data = {};
+                localStorage.setItem("kaiplayersourceactive", JSON.stringify((() => {
+                    const data = {};
 
-                state.sourceGroup.get().forEach(source => {
-                    data[source.id] = source.active;
-                });
+                    state.sourceGroup.get().forEach(source => {
+                        data[source.id] = source.active;
+                    });
 
-                return data;
-            })()));
+                    return data;
+                })()));
+            }
+
+            const sourceGroup = state.sourceGroup;
+
+            state.sourceGroup = null;
+            state.sourceGroup = sourceGroup;
         }
     },
     actions: {
@@ -250,16 +263,6 @@ const sourceModule = {
                         name: source.name,
                         icons: source.icons,
                     });
-
-                    try {
-                        const listsData = await fetchData("/audio/lists", { body: { source: source.id } });
-
-                        if (listsData) {
-                            listsData.forEach((listData) => _source.add(new TrackList(listData.id, listData.name, _source)));
-                        }
-                    } catch (e) {
-                        console.log(e);
-                    }
 
                     const sourceActiveMap = JSON.parse(localStorage.getItem("kaiplayersourceactive")) || { hearthis: false };
 
@@ -274,6 +277,24 @@ const sourceModule = {
 
                 commit(mutationTypes.ADD_SOURCES, sources);
                 dispatch(actionTypes.UPDATE_TRACK_SOURCE);
+
+                try {
+                    const listsDataSet = await fetchData("/audio/lists", { body: sources.map((source) => ({ source: source.id })) });
+
+                    if (listsDataSet) {
+                        listsDataSet.forEach((listsData, i) => {
+                            if (!listsData) {
+                                return;
+                            }
+
+                            listsData.forEach((listData) => sources[i].add(new TrackList(listData.id, listData.name, sources[i])));
+                        });
+
+                        commit(mutationTypes.UPDATE_SOURCE, sources);
+                    }
+                } catch (e) {
+                    console.log(e);
+                }
 
                 return sources;
             } catch (e) {
@@ -305,10 +326,13 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                     source: track.source.id,
                     artists: track.artists.map(artist => ({ name: artist.name })),
                     duration: track.duration,
-                    playbackSources: track.playbackSources && track.playbackSources.map((playbackSource) => ({
-                        urls: playbackSource.urls,
-                        quality: playbackSource.quality,
-                    })),
+                    playbackSources: track.playbackSources.length ? track.playbackSources
+                        .filter((playbackSource) => playbackSource.proxied)
+                        .map((playbackSource) => ({
+                            urls: playbackSource.urls,
+                            quality: playbackSource.quality,
+                            proxied: playbackSource.proxied,
+                        })) : undefined,
                     picture: track.picture,
                     status: track.status.id,
                     messages: track.messages && Array.from(track.messages).map((message) => ({
@@ -321,12 +345,25 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                         })(message),
                         code: message.code,
                     })),
+                    altPlaybackSources: track.altPlaybackSources.length ? track.altPlaybackSources
+                        .filter((altPlaybackSource) => {
+                            debugger;
+                            return altPlaybackSource.playbackSource.proxied;
+                        })
+                        .map((altPlaybackSource) => ({
+                            playbackSource: {
+                                urls: altPlaybackSource.playbackSource.urls,
+                                quality: altPlaybackSource.playbackSource.quality,
+                                proxied: altPlaybackSource.playbackSource.proxied,
+                            },
+                            similarity: altPlaybackSource.similarity,
+                        })) : undefined,
                 })),
                 activeIndex: queue.activeIndex
             }
         }),
         activeIndex: queueGroup.activeIndex,
-        playingQueueIndex
+        playingQueueIndex,
     }));
 };
 
@@ -357,7 +394,9 @@ const restoreQueueData = () => {
                     artists: trackData.artists.map(artistData => new Artist({ name: artistData.name })),
                     duration: trackData.duration,
                     picture: trackData.picture,
-                    playbackSources: trackData.playbackSources && trackData.playbackSources.urls && new PlaybackSource(trackData.playbackSources.urls, trackData.playbackSources.quality),
+                    playbackSources: trackData.playbackSources && trackData.playbackSources.length ? trackData.playbackSources
+                        .map((playbackSource) => playbackSource.urls && playbackSource.urls.length && new PlaybackSource(playbackSource.urls, playbackSource.quality, playbackSource.proxied))
+                        .filter((playbackSource) => playbackSource) : undefined,
                     status: Status.fromId(trackData.status),
                     messages: trackData.messages && trackData.messages.map((messageData) => {
                         if (messageData.level === "error") {
@@ -366,6 +405,16 @@ const restoreQueueData = () => {
 
                         return TrackInfo.fromCode(messageData.code);
                     }),
+                    altPlaybackSources: trackData.altPlaybackSources && trackData.altPlaybackSources.length ? trackData.altPlaybackSources.map(({ playbackSource, similarity }) => {
+                        if (!playbackSource.urls || !playbackSource.urls.length) {
+                            return;
+                        }
+
+                        return {
+                            playbackSource: new PlaybackSource(playbackSource.urls, playbackSource.quality, playbackSource.proxied),
+                            similarity,
+                        };
+                    }).filter((altPlaybackSource) => altPlaybackSource) : [],
                 })));
             }
 

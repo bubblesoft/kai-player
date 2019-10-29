@@ -3,7 +3,7 @@
     "target": "es5",
     "lib": ["es2019", "dom"],
     "strict": true,
-    "module": "es2015",
+    "module": "esNext",
     "moduleResolution": "node"
   }
 }

@@ -211,7 +211,7 @@
     import Status from "../Status";
 
     import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, VISUALIZER_LOAD_RESOURCE } from "../../scripts/mutation-types";
-    import { PLAY_TRACK } from "../../scripts/action-types";
+    import { PLAY_TRACK, STOP_PLAYBACK } from "../../scripts/action-types";
 
     import yoyoMarquee from '../yoyo-marquee';
     import editableBox from '../editable-box';
@@ -275,10 +275,10 @@
                     return this.queue ? this.queue.activeIndex : null;
                 },
 
-                set(active) {
+                set(activeIndex) {
                     this[UPDATE_QUEUE]({
                         index: this.queueGroup.activeIndex,
-                        active
+                        activeIndex,
                     });
                 }
             },
@@ -338,8 +338,11 @@
 
             handleTrackRemove(index) {
                 if (index === this.activeIndex) {
-                    this.player.unload();
-                    index > 0 && this.activeIndex--;
+                    this[STOP_PLAYBACK]();
+
+                    if (index > 0) {
+                        this.activeIndex--;
+                    }
                 } else if (index < this.activeIndex) {
                     this.activeIndex--;
                 }
@@ -500,6 +503,7 @@
 
             ...mapActions([
                 PLAY_TRACK,
+                STOP_PLAYBACK,
             ])
         },
 
