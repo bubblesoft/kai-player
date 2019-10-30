@@ -232,7 +232,7 @@ const sourceModule = {
     mutations: {
         [mutationTypes.ADD_SOURCES] (state, sources) {
             state.sourceGroup.add(sources);
-            playerController.sources = sources;
+            playerController.sources = state.sourceGroup.get();
         },
         [mutationTypes.UPDATE_SOURCE] (state, { index, active }) {
             if (typeof active !== "undefined") {
@@ -258,22 +258,32 @@ const sourceModule = {
     actions: {
         async [actionTypes.FETCH_SOURCES] ({ dispatch, commit }) {
             try {
-                const sources = await Promise.all((await fetchData("/audio/sources")).map(async (source) => {
-                    const _source = new Source(source.id, {
-                        name: source.name,
-                        icons: source.icons,
+                const sourcesData = await Promise.all(await fetchData("/audio/sources"));
+
+                const sources = sourcesData.map((sourceData, i) => {
+                    const source = new Source(sourceData.id, {
+                        name: sourceData.name,
+                        icons: sourceData.icons,
                     });
 
                     const sourceActiveMap = JSON.parse(localStorage.getItem("kaiplayersourceactive")) || { hearthis: false };
 
-                    if (sourceActiveMap.hasOwnProperty(source.id)) {
-                        _source.active = sourceActiveMap[source.id];
+                    if (sourceActiveMap.hasOwnProperty(sourceData.id)) {
+                        source.active = sourceActiveMap[sourceData.id];
                     } else {
-                        _source.active = true;
+                        source.active = true;
                     }
 
-                    return _source;
-                }));
+                    source.priority = (() => {
+                        if (sourcesData.length === 1) {
+                            return 1;
+                        }
+
+                        return (1 - i / sourcesData.length);
+                    })();
+
+                    return source;
+                });
 
                 commit(mutationTypes.ADD_SOURCES, sources);
                 dispatch(actionTypes.UPDATE_TRACK_SOURCE);

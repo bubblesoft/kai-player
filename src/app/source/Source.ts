@@ -10,6 +10,7 @@ export default class Source extends Set<TrackList> {
     public readonly id: string;
     public readonly icons: string[];
     public active: boolean;
+    public priority: number;
 
     constructor(id: string, { name, icons }: { name?: string, icons?: string[] } = {}) {
         super({ name });
@@ -17,5 +18,6 @@ export default class Source extends Set<TrackList> {
         this.id = id;
         this.icons = icons || [];
         this.active = false;
+        this.priority = 1;
     }
 }

@@ -24,7 +24,7 @@
                     element="tbody"
                 )
                     tr(
-                        v-for="track in tracks"
+                        v-for=" [track] in tracks"
                         v-interact:doubletap="() => { addToPlayback(track); }"
                         @contextmenu.prevent="handleContextMenu($event, track);"
                     )
@@ -50,7 +50,7 @@
                             )
                                 path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
         vueLoading(
-            v-if="loading"
+            v-if="loading && !tracks.length"
             type="cylon"
             color="#fff"
         )
@@ -141,45 +141,58 @@
 
                 this.$nextTick(async () => {
                     controller = new AbortController;
+                    this.tracks = [];
                     this.loading = true;
 
-                    try {
-                        this.tracks = (await (await fetch('/audio/search', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                keywords,
-                                sources: activeSources
-                            }),
-                            headers: new Headers({
-                                'Content-Type': 'application/json'
-                            }),
-                            signal: controller.signal
-                        })).json()).data.map((trackData) => {
-                            return new Track(trackData.id, trackData.name, getSourceById(trackData.source, sources), {
-                                duration: trackData.duration || null,
-                                artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
+                    activeSources.forEach(async (activeSource) => {
+                        try {
+                            const tracks = (await (await fetch('/audio/search', {
+                                method: 'POST',
+                                body: JSON.stringify({
+                                    keywords,
+                                    sources: [activeSource],
+                                }),
+                                headers: new Headers({
+                                    'Content-Type': 'application/json'
+                                }),
+                                signal: controller.signal
+                            })).json()).data.map((trackData) => {
+                                return [new Track(trackData.id, trackData.name, getSourceById(trackData.source, sources), {
+                                    duration: trackData.duration || null,
+                                    artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
 
-                                picture: (() => {
-                                    if (!trackData.picture) {
-                                        return null;
+                                    picture: (() => {
+                                        if (!trackData.picture) {
+                                            return null;
+                                        }
+
+                                        return `/proxy/${trackData.picture}`;
+
+                                    })(),
+
+                                    playbackSources: trackData.playbackSources && trackData.playbackSources
+                                        .map((playbackSource) => new PlaybackSource(playbackSource.urls.map((url) => `/proxy/${url}`), playbackSource.quality, true))
+                                        .concat((() => trackData.playbackSources
+                                            .map((playbackSource) => playbackSource.cached ? undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, false))
+                                            .filter((playbackSource) => playbackSource))()),
+                                }), trackData.similarity];
+                            });
+
+                            this.tracks = this.tracks
+                                .concat(tracks)
+                                .sort(([trackA, similarityA], [trackB, similarityB]) => {
+                                    if (similarityA !== similarityB) {
+                                        return similarityB - similarityA;
                                     }
 
-                                    return `/proxy/${trackData.picture}`;
+                                    return trackB.source.priority - trackA.source.priority;
+                                });
 
-                                })(),
-
-                                playbackSources: trackData.playbackSources && trackData.playbackSources
-                                    .map((playbackSource) => new PlaybackSource(playbackSource.urls.map((url) => `/proxy/${url}`), playbackSource.quality, true))
-                                    .concat((() => trackData.playbackSources
-                                        .map((playbackSource) => playbackSource.cached ? undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, false))
-                                        .filter((playbackSource) => playbackSource))()),
-                            });
-                        });
-
-                        this.$refs.list.scrollTop = 0;
-                    } catch (e) {
-                        console.log(e);
-                    }
+                            this.$refs.list.scrollTop = 0;
+                        } catch (e) {
+                            console.log(e);
+                        }
+                    });
 
                     this.loading = false;
                 });
