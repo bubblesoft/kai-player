@@ -77,6 +77,8 @@
 //@import "utilities.less";
 //@import "responsive-utilities.less";
 
+@import "./glass-panel";
+
 .panel {
   box-shadow: 0 0 25px rgba(0, 0, 0, 0.1), inset 0 0 1px rgba(255, 255, 255, 0.6);
 
@@ -103,4 +105,20 @@
     color: #fff;
     background-color: rgba(255, 255, 255, 0.1);
   }
+}
+
+.modal-content {
+  background-color: rgba(255, 255, 255, .05);
+  .glass-panel();
+}
+
+.modal-header {
+  border-bottom: none;
+}
+.modal-header .close {
+  color: #fff;
+}
+
+.modal-footer {
+  border-top: none;
 }

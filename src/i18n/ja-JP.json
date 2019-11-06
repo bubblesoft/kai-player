@@ -15,6 +15,7 @@
     "New": "新規作成",
     "Settings": "設定",
     "Confirm Action": "確認",
+    "Tips": "利用案内",
     "Add to playlist": "プレーリストに追加",
     "Import all as a playlist": "全部を新規プレーリストに",
     "Chart": "ランキング",
@@ -66,6 +67,11 @@
     "The playback URL provided by the audio source is not valid/reachable.": "媒体源によって提供した再生URLは無効または接続できませんでした。",
     "The audio format of the playback source is not supported.": "再生ソースのオーディオ形式はサポートされていません。",
     "The connection to the playback source is slow.": "再生ソースの接続が遅い。",
-    "Unknown error.": "未確認エラー。"
+    "Unknown error.": "未確認エラー。",
+    "Panels are resizable/movable and can be closed/opened using the switches on the bottom control bar.": "パネルはサイズ調整・移動可能であり、下のコントロールバー上のスイッチを使用して開く・閉じることもできる。",
+    "Select the \"Listen Randomly\" playlist to start playing random tracks pushed by the app.": "\"気軽に聴く\"というプレーリストを選択して、アプリによってプッシュされた音楽が連続再生できる。",
+    "Pick a visualization effect from the drop-down on the control bar.": "コントロールバーのドロップダウンリストから視覚化効果を選択。",
+    "Detailed preference settings available via the gear icon on the control bar.": "詳細設定ならコントロールバーの歯車アイコンをクリック。",
+    "More features are under development and will be added in feature releases.": "より多くの機能が開発中、後で追加する予定である。"
   }
 }

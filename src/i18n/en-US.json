@@ -15,6 +15,7 @@
     "New": "New",
     "Settings": "Settings",
     "Confirm Action": "Confirm Action",
+    "Tips": "Tips",
     "Add to playlist": "Add to playlist",
     "Import all as a playlist": "Import all as a playlist",
     "Chart": "Chart",
@@ -66,6 +67,11 @@
     "The playback URL provided by the audio source is not valid/reachable.": "The playback URL provided by the audio source is not valid/reachable.",
     "The audio format of the playback source is not supported.": "The audio format of the playback source is not supported.",
     "The connection to the playback source is slow.": "The connection to the playback source is slow.",
-    "Unknown error.": "Unknown error."
+    "Unknown error.": "Unknown error.",
+    "Panels are resizable/movable and can be closed/opened using the switches on the bottom control bar.": "Panels are resizable/movable and can be closed/opened using the switches on the bottom control bar.",
+    "Select the \"Listen Randomly\" playlist to start playing random tracks pushed by the app.": "Select the \"Listen Randomly\" playlist to start playing random tracks pushed by the app.",
+    "Pick a visualization effect from the drop-down on the control bar.": "Pick a visualization effect from the drop-down on the control bar.",
+    "Detailed preference settings available via the gear icon on the control bar.": "Detailed preference settings available via the gear icon on the control bar.",
+    "More features are under development and will be added in feature releases.": "More features are under development and will be added in feature releases."
   }
 }

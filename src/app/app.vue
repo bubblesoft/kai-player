@@ -60,7 +60,7 @@
                         @contextMenu="(e, callback) => { trackContextMenuCallback = callback; $refs.trackContextMenu.open(e); }"
                     )
         settings(
-            v-if="showSettings"
+            v-if="renderSettings"
             v-model="showSettings"
         )
         selectQueueModal(
@@ -91,7 +91,7 @@
 
     import interact from 'interactjs';
 
-    import { INIT_PLAYER_MODULE, INIT_QUEUE_MODULE, FETCH_SOURCES } from "../scripts/action-types";
+    import { INIT, INIT_PLAYER_MODULE, INIT_QUEUE_MODULE, FETCH_SOURCES } from "../scripts/action-types";
     import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SWITCH_TO_BACKGROUND, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE } from "../scripts/mutation-types";
 
     import TrackQueue from './queue/TrackQueue';
@@ -164,6 +164,8 @@
         data() {
             return {
                 showSettings: false,
+                renderSettings: false,
+                renderSettingsTimeout: undefined,
                 showSelectQueueModal: false,
                 listContextMenuCallback: () => {},
                 searchContextMenuCallback: () => {},
@@ -365,7 +367,7 @@
                 visualizer: state => state.visualizationModule._visualizer,
                 mode: state => state.generalModule.mode,
                 layout: state => state.generalModule.layout,
-                backgroundImage: state => state.generalModule.backgroundImage
+                backgroundImage: state => state.generalModule.backgroundImage,
             })
         },
 
@@ -389,6 +391,7 @@
                 BACKGROUND_LOAD_RESOURCE
             ]),
             ...mapActions([
+                INIT,
                 INIT_PLAYER_MODULE,
                 INIT_QUEUE_MODULE,
                 FETCH_SOURCES,
@@ -398,7 +401,26 @@
             ])
         },
 
+        watch: {
+            showSettings(showSettings) {
+                if (this.renderSettingsTimeout) {
+                    clearTimeout(this.renderSettingsTimeout);
+                    delete this.renderSettingsTimeout;
+                }
+
+                if (showSettings === true) {
+                    return this.renderSettings = true;
+                } else if (showSettings === false) {
+                    this.renderSettingsTimeout = setTimeout(() => {
+                        delete this.renderSettingsTimeout;
+                        this.renderSettings = false;
+                    }, 2000);
+                }
+            },
+        },
+
         async created() {
+            this[INIT]();
             this[INIT_PLAYER_MODULE]();
 
             const initQueueModulePromise = this[INIT_QUEUE_MODULE]();
@@ -447,7 +469,17 @@
             }
 
             if (this.queue && this.queue.constructor === RandomTrackQueue || !this.queue.length && this.queue.name === this.$t("Temp")) {
-                const track = await getRecommendedTrack(null, await fetchSourcesPromises);
+                const track = await (async () => {
+                    while (true) {
+                        try {
+                            return await getRecommendedTrack(null, await fetchSourcesPromises);
+                        } catch (e) {
+                            console.log(e);
+
+                            await new Promise((resolve) => setTimeout(resolve, 200));
+                        }
+                    }
+                })();
 
                 this[ADD_TRACK]({ track });
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: track.picture });

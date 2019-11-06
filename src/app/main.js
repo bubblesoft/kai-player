@@ -12,7 +12,7 @@ import interact from 'interactjs';
 import { i18n } from "./i18n";
 import { requestNetworkIdle } from "../scripts/utils";
 
-import App from './app';
+import container from "./container";
 
 import "../styles/bootstrap";
 import "../styles/base";
@@ -110,6 +110,6 @@ Vue.use(VueConfirm);
         el: 'app',
         store,
         i18n,
-        render: createElement => createElement(App)
+        render: (createElement) => createElement(container),
     });
 })();

@@ -43,14 +43,11 @@ module.exports = {
             },
             {
                 test: /\.ts$/,
-                loader: 'ts-loader',
-                exclude: /node_modules/
-            },
-            {
-                test: /\.ts$/,
-                loader: 'tslint-loader',
-                enforce: 'pre',
-                exclude: /node_modules/
+                exclude: /node_modules/,
+                loaders: [{
+                    loader: 'ts-loader',
+                    options: { appendTsSuffixTo: [/\.vue$/] }
+                }, 'tslint-loader']
             },
             {
                 test: /\.js$/,

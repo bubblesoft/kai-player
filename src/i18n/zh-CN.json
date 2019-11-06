@@ -15,6 +15,7 @@
     "New": "新建",
     "Settings": "设置",
     "Confirm Action": "确认",
+    "Tips": "使用帮助",
     "Add to playlist": "添加到播放列表",
     "Import all as a playlist": "导入全部为播放列表",
     "Chart": "排行榜",
@@ -66,6 +67,11 @@
     "The playback URL provided by the audio source is not valid/reachable.": "音频源提供的播放URL无效或无法连接。",
     "The audio format of the playback source is not supported.": "播放源的音频格式不受支持。",
     "The connection to the playback source is slow.": "播放源连接慢。",
-    "Unknown error.": "未知错误."
+    "Unknown error.": "未知错误.",
+    "Panels are resizable/movable and can be closed/opened using the switches on the bottom control bar.": "面板可以移动/调整大小，使用下方控制面板上的开关打开/关闭。",
+    "Select the \"Listen Randomly\" playlist to start playing random tracks pushed by the app.": "选择\"随便听听\"播放列表随机播放APP推送的音乐。",
+    "Pick a visualization effect from the drop-down on the control bar.": "使用控制面板上的下拉菜单选择可视化效果。",
+    "Detailed preference settings available via the gear icon on the control bar.": "详细偏好设置请点击控制面板上的齿轮图标。",
+    "More features are under development and will be added in feature releases.": "更多功能正在开发中，将在后续版本中加入。"
   }
 }

@@ -168,6 +168,7 @@ const generalModule = {
         })(),
         locale,
         preference,
+        showTips: !JSON.parse(localStorage.getItem("kaiplayerinitiated")),
     },
 
     mutations: {
@@ -198,9 +199,15 @@ const generalModule = {
         [mutationTypes.SET_SHOW_SOURCE_ICON] (state, showSourceIcon) {
             state.showSourceIcon = showSourceIcon;
             localStorage.setItem('kaiplayershowsouceicon', Number(showSourceIcon));
-        }
+        },
+        [mutationTypes.SET_SHOW_TIPS] (state, showTips) {
+            state.showTips = showTips;
+        },
     },
     actions: {
+        [actionTypes.INIT] () {
+            localStorage.setItem("kaiplayerinitiated", JSON.stringify(true));
+        },
         loadLayout({ commit, state }, { mode = state.mode }) {
             const layoutData = localStorage.getItem('kaiplayerlayout' + mode);
 
@@ -216,6 +223,9 @@ const generalModule = {
         saveLayout({ commit, state }, { index, layout }) {
             commit(mutationTypes.SAVE_LAYOUT, { index, layout });
             localStorage.setItem('kaiplayerlayout' + state.mode, JSON.stringify(state.layout));
+        },
+        [actionTypes.CLOSE_TIPS] ({ commit }) {
+            commit(mutationTypes.SET_SHOW_TIPS, false);
         }
     }
 };
