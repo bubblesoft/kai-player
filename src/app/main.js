@@ -39,14 +39,14 @@ Vue.use(VueConfirm);
     }
 
     (async() => {
-        // if ("serviceWorker" in navigator) {
-        //     try {
-        //         (await import("serviceworker-webpack-plugin/lib/runtime")).register();
-        //         window["serviceWorkerEnabled"] = true;
-        //     } catch (err) {
-        //         console.log(err);
-        //     }
-        // }
+        if ("serviceWorker" in navigator) {
+            try {
+                (await import("serviceworker-webpack-plugin/lib/runtime")).register();
+                window["serviceWorkerEnabled"] = true;
+            } catch (err) {
+                console.log(err);
+            }
+        }
 
         requestNetworkIdle(async () => {
             await import("../styles/pretty-checkbox");

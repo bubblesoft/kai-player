@@ -259,21 +259,7 @@ const fetchData = async (path: string, options: any = {}) => {
        throw new Error("No response.");
     }
 
-    if (Array.isArray(jsonRes)) {
-        for (const component of jsonRes) {
-            if (component.code !== 1) {
-                throw new Error(component.message);
-            }
-        }
-
-        return jsonRes.map((component) => component.data);
-    }
-
-    if (jsonRes.code === 1) {
-        return jsonRes.data;
-    }
-
-    throw new Error(jsonRes.message);
+    return jsonRes;
 };
 
 const requestNetworkIdle = (callback: () => void, timeout?: number) => {

@@ -268,7 +268,15 @@ const sourceModule = {
     actions: {
         async [actionTypes.FETCH_SOURCES] ({ dispatch, commit }) {
             try {
-                const sourcesData = await Promise.all(await fetchData("/audio/sources"));
+                const sourcesRes = await fetchData("/audio/sources");
+
+                if (sourcesRes.code !== 1) {
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+
+                    return await dispatch(actionTypes.FETCH_SOURCES);
+                }
+
+                const sourcesData = sourcesRes.data;
 
                 const sources = sourcesData.map((sourceData, i) => {
                     const source = new Source(sourceData.id, {
@@ -299,15 +307,15 @@ const sourceModule = {
                 dispatch(actionTypes.UPDATE_TRACK_SOURCE);
 
                 try {
-                    const listsDataSet = await fetchData("/audio/lists", { body: sources.map((source) => ({ source: source.id })) });
+                    const listResSet = await fetchData("/audio/lists", { body: sources.map((source) => ({ source: source.id })) });
 
-                    if (listsDataSet) {
-                        listsDataSet.forEach((listsData, i) => {
-                            if (!listsData) {
+                    if (listResSet) {
+                        listResSet.forEach((listRes, i) => {
+                            if (!listRes || listRes.code !== 1 || !listRes.data || !listRes.data.length) {
                                 return;
                             }
 
-                            listsData.forEach((listData) => sources[i].add(new TrackList(listData.id, listData.name, sources[i])));
+                            listRes.data.forEach((listData) => sources[i].add(new TrackList(listData.id, listData.name, sources[i])));
                         });
 
                         commit(mutationTypes.UPDATE_SOURCE, sources);
@@ -318,7 +326,10 @@ const sourceModule = {
 
                 return sources;
             } catch (e) {
+                console.log(e);
+
                 await new Promise((resolve) => setTimeout(resolve, 100));
+
                 return await dispatch(actionTypes.FETCH_SOURCES);
             }
         }

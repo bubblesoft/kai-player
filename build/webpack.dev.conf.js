@@ -8,7 +8,7 @@ const path = require('path');
 
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-// const ServiceWorkerWebpackPlugin = require('serviceworker-webpack-plugin');
+const ServiceWorkerWebpackPlugin = require('serviceworker-webpack-plugin');
 
 const rootDir = path.resolve(__dirname, '..');
 
@@ -17,13 +17,8 @@ module.exports = {
     devServer: {
         contentBase: path.resolve(rootDir, 'build'),
         proxy: {
-            '/kaiplanet': 'http://localhost:3000',
-            '/audio': 'http://localhost:3000',
-            '/soundcloud': 'http://localhost:3000',
-            '/netease': 'http://localhost:3000',
-            '/qq': 'http://localhost:3000',
-            '/hearthis': 'http://localhost:3000',
-            '/proxy': 'http://localhost:3000'
+            '/audio': 'http://kaiplanet.net:3000',
+            '/proxy': 'http://kaiplanet.net:3000'
         }
     },
     devtool: 'source-map',
@@ -100,9 +95,9 @@ module.exports = {
             chunks: [ 'app', 'runtime' ]
         }),
         new VueLoaderPlugin(),
-        // new ServiceWorkerWebpackPlugin({
-        //     entry: path.join(rootDir, 'src', "app", 'sw'),
-        // })
+        new ServiceWorkerWebpackPlugin({
+            entry: path.join(rootDir, 'src', "app", 'sw'),
+        })
     ],
     optimization: {
         runtimeChunk: {
