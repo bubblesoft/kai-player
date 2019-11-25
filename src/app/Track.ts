@@ -2,6 +2,8 @@
  * Created by qhyang on 2017/12/11.
  */
 
+import {fetchData, getSourceById} from "../scripts/utils";
+
 import ITrack from "./ITrack";
 
 import Artist from "./Artist";
@@ -9,6 +11,8 @@ import Message from "./Message";
 import PlaybackSource from "./PlaybackSource";
 import Source from "./source/Source";
 import Status from "./Status";
+
+import config from "../config";
 
 interface IOptions {
     artists: Artist[];
@@ -19,6 +23,7 @@ interface IOptions {
     messages?: Message[];
     altPlaybackSources?: Array<{ playbackSource: PlaybackSource, similarity: number }>;
     getPlaybackSources?: (track: Track) => Promise<PlaybackSource[]>;
+    sources?: Source[];
 }
 
 interface IAltPlaybackSource {
@@ -37,17 +42,22 @@ interface IStreamUrlOptions {
 }
 
 export default class Track implements ITrack {
+    private static preloadFailError = new Error("Source preload failed.");
+
     public readonly id: string;
     public readonly name: string;
     public readonly artists: Artist[];
-    public readonly source: Source;
+    public readonly source: Source|string;
     public readonly messages: Set<Message> = new Set();
     public readonly picture?: string;
     public status: Status;
     public duration?: number;
     public playbackSources: PlaybackSource[] = [];
     public readonly altPlaybackSources: IAltPlaybackSource[] = [];
+    public preference?: any;
+    public sources: Source[] = [];
     private readonly getPlaybackSources?: () => Promise<PlaybackSource[]>;
+    private preloaded = false;
 
     constructor(id: string, name: string, source: Source, {
         artists,
@@ -58,6 +68,7 @@ export default class Track implements ITrack {
         messages,
         altPlaybackSources,
         getPlaybackSources,
+        sources,
     }: IOptions) {
         this.id = id;
         this.name = name;
@@ -85,6 +96,129 @@ export default class Track implements ITrack {
         if (getPlaybackSources) {
             this.getPlaybackSources = async () => await getPlaybackSources(this);
         }
+
+        if (sources) {
+            this.sources = sources;
+        }
+    }
+
+    public async preload() {
+        if (this.preloaded) {
+            return true;
+        }
+
+        const preloadPlaybackSources = async (playbackSources: PlaybackSource[]): Promise<void> => {
+            const audios = playbackSources
+                .filter((source) => !source.proxied)
+                .flatMap((source) => source.urls)
+
+                .map((url) => {
+                    const audio = new Audio();
+
+                    audio.preload = "auto";
+                    audio.src = url;
+
+                    return audio;
+                });
+
+            audios.forEach((audio) => {
+                audio.addEventListener("canplay", () => {
+                    audios.forEach((otherAudio) => {
+                        if  (otherAudio !== audio) {
+                            otherAudio.removeAttribute("src");
+                            otherAudio.load();
+                        }
+                    });
+                });
+            });
+
+            const abortControllers = new Map<string, AbortController>();
+
+            const proxiedUrls = playbackSources
+                .filter((playbackSource) => playbackSource.proxied)
+                .flatMap((playbackSource) => playbackSource.urls);
+
+            // @ts-ignore
+            return await Promise.any(proxiedUrls.map(async (proxiedUrl) => {
+                const abortController = new AbortController();
+
+                abortControllers.set(proxiedUrl, abortController);
+
+                const res = await fetch(proxiedUrl, { signal: abortController.signal });
+
+                if (!res.ok) {
+                    throw Track.preloadFailError;
+                }
+
+                proxiedUrls.forEach((otherUrl) => {
+                    if (otherUrl !== proxiedUrl) {
+                        const otherAbortController = abortControllers.get(otherUrl);
+
+                        if (otherAbortController) {
+                            otherAbortController.abort();
+                        }
+                    }
+                });
+
+                return;
+            }));
+        };
+
+        const preference = this.preference || config.defaultPreference;
+
+        if (!this.playbackSources.filter((source) => source.generated).length) {
+            this.playbackSources.push(new PlaybackSource(this.generateStreamUrl({
+                quality: 0,
+                similarityRange: {
+                    high: preference.playback.alternativeTracks.similarityRange.high,
+                    low: preference.playback.alternativeTracks.similarityRange.low,
+                },
+                timeToWait: preference.playback.timeToWait,
+            }), 0, {
+                generated: true,
+                proxied: true,
+            }));
+        }
+
+        const loadPlaybackSourcesPromise =  this.loadPlaybackSources();
+        const getAltTracksPromise = this.getAltTracks();
+
+        const preloadPlaybackSourcesPromise1 = (async () => {
+            await loadPlaybackSourcesPromise;
+
+            return await preloadPlaybackSources(this.playbackSources);
+        })();
+
+        const preloadPlaybackSourcesPromise2 = (async () => {
+            const altTracks = await (async () => {
+                try {
+                    return await getAltTracksPromise;
+                } catch (e) {
+                    // console.log(e);
+
+                    return [];
+                }
+            })();
+
+            // @ts-ignore
+            return await Promise.any(altTracks.map(async (altTrack: Track) => {
+                await altTrack.loadPlaybackSources();
+
+                return await preloadPlaybackSources(altTrack.playbackSources);
+            }));
+        })();
+
+        // @ts-ignore
+        try {
+            // @ts-ignore
+            await Promise.any([preloadPlaybackSourcesPromise1, preloadPlaybackSourcesPromise2]);
+
+            this.preloaded = true;
+        } catch (e) {
+            // console.log(e);
+        }
+
+        return this.preloaded;
     }
 
     public async loadPlaybackSources() {
@@ -100,21 +234,27 @@ export default class Track implements ITrack {
 
                 body: JSON.stringify({
                     id: this.id,
-                    source: this.source.id,
+                    source: this.source instanceof Source ? this.source.id : this.source,
                 }),
             })).json()).data;
 
             return data && data
                 .map((playbackSource: any): PlaybackSource|undefined => playbackSource.cached ? undefined
-                    : new PlaybackSource(playbackSource.urls, playbackSource.quality, false))
+                    : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                        proxied: false,
+                        statical: playbackSource.statical,
+                    }))
                 .filter((playbackSource?: PlaybackSource) => playbackSource);
         })();
 
         if (playbackSources && playbackSources.length) {
-            if (!this.playbackSources.filter((playbackSource) => playbackSource.proxied).length) {
+            if (!this.playbackSources.filter((source) => source.proxied && !source.generated).length) {
                 this.playbackSources.push(...playbackSources.map((playbackSource: PlaybackSource) =>
                     new PlaybackSource(playbackSource.urls
-                        .map((url: string) => `/proxy/${url}`), playbackSource.quality, true)));
+                        .map((url: string) => `/proxy/${url}`), playbackSource.quality, {
+                        proxied: true,
+                        statical: playbackSource.statical,
+                    })));
             }
 
             for (const playbackSource of playbackSources) {
@@ -136,10 +276,6 @@ export default class Track implements ITrack {
                     this.playbackSources.push(playbackSource);
                 }
             }
-        }
-
-        if (this.playbackSources && !this.playbackSources.length) {
-            delete this.playbackSources;
         }
 
         return this.playbackSources;
@@ -195,14 +331,14 @@ export default class Track implements ITrack {
         }
     }
 
-    public generateStreamUrl({ quality, timeToWait, sources, similarityRange }: IStreamUrlOptions = {}): string {
+    public generateStreamUrl({ quality, timeToWait, sources, similarityRange }: IStreamUrlOptions = {}) {
         const baseUrl = "/audio/stream";
         const id = this.id;
-        const sourceId = this.source.id;
+        const sourceId = this.source instanceof Source ? this.source.id : this.source;
 
         const options = {
             alternativeTracks: {
-                exceptedSources: [this.source.id],
+                exceptedSources: [this.source instanceof Source ? this.source.id : this.source],
                 similarityRange: similarityRange && {
                     high: similarityRange.high,
                     low: similarityRange.low,
@@ -218,5 +354,56 @@ export default class Track implements ITrack {
         };
 
         return `${baseUrl}/${id}/${sourceId}/${JSON.stringify(options)}`;
+    }
+
+    public async getAltTracks(): Promise<Track[]> {
+        const preference = this.preference || config.defaultPreference;
+
+        const res = await fetchData("/audio/alttracks", {
+            body: {
+                artists: this.artists.map((artist) => artist.name),
+                exceptedSources: [this.source instanceof Source ? this.source.id : this.source],
+                name: this.name,
+                similarityRange: {
+                    high: preference.playback.alternativeTracks.similarityRange.high,
+                    low: preference.playback.alternativeTracks.similarityRange.low,
+                },
+            },
+        });
+
+        if (res.code !== 1 || !res.data || !res.data.length) {
+            return [];
+        }
+
+        return res.data.map(({ id, name, artists, source, picture, duration, playbackSources }: any) =>
+            new Track(id, name, this.sources && this.sources.length ? getSourceById(source, this.sources) : source, {
+                artists: artists.map((artist: any) => new Artist({ name: artist.name })),
+                duration,
+
+                picture: (() => {
+                    if (!picture) {
+                        return;
+                    }
+
+                    return `/proxy/${picture}`;
+                })(),
+
+                playbackSources: playbackSources && playbackSources
+                    .map((playbackSource: any) =>
+                        new PlaybackSource(playbackSource.urls.map((url: string) =>
+                            `/proxy/${url}`), playbackSource.quality, {
+                            proxied: true,
+                            statical: playbackSource.statical,
+                        }))
+                    .concat((() => playbackSources
+                        .map((playbackSource: any): PlaybackSource|undefined => playbackSource.cached ?
+                            undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                                proxied: false,
+                                statical: playbackSource.statical,
+                            }))
+                        .filter((playbackSource?: PlaybackSource) => playbackSource))()),
+
+                sources: this.sources,
+            }));
     }
 }

@@ -52,29 +52,7 @@ export default class<T> extends Set<T> implements IQueue<T> {
     }
 
     public next() {
-        if (this.activeIndex === null) {
-            return null;
-        }
-
-        switch (this.mode) {
-            case "repeat":
-            default:
-                if (this.activeIndex < this.length - 1) {
-                    this.activeIndex++;
-                } else {
-                    this.activeIndex = 0;
-                }
-
-                break;
-
-            case "repeatOne":
-                break;
-
-            case "shuffle":
-                this.activeIndex = Math.floor(Math.random() * this.length);
-
-                break;
-        }
+        this.activeIndex = this.getNextIndex();
 
         return this.activeIndex;
     }
@@ -87,5 +65,29 @@ export default class<T> extends Set<T> implements IQueue<T> {
         }
 
         return this.modeIndex;
+    }
+
+    protected getNextIndex(): number|null {
+        if (this.activeIndex === null) {
+            return null;
+        }
+
+        switch (this.mode) {
+            case "repeat":
+            default:
+                if (this.activeIndex < this.length - 1) {
+                    return this.activeIndex + 1;
+                } else {
+                    return 0;
+                }
+
+            case "repeatOne":
+                return this.activeIndex;
+
+            case "shuffle":
+                return Math.floor(Math.random() * this.length);
+        }
+
+        return this.activeIndex;
     }
 }

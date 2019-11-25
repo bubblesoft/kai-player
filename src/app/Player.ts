@@ -169,6 +169,7 @@ export default class Player implements IPlayer {
 
                     this.soundsInRace.push(sound);
                     this.soundsInRaceReject.push(reject);
+
                     sound.once("load", () => {
                         initHowlOnProgress(sound);
 
@@ -210,15 +211,19 @@ export default class Player implements IPlayer {
 
         this.soundsInRace.forEach((sound, i) => {
             sound.once("playerror", (soundId: number, err: number|Error) => {
-                if (this.raceErrorCount >= this.soundsInRace.length) {
-                    this.soundsInRaceReject[i]([soundId, err, sound]);
-                }
+                setTimeout(() => {
+                    if (this.raceErrorCount >= this.soundsInRace.length && this.soundsInRaceReject[i]) {
+                        this.soundsInRaceReject[i]([soundId, err, sound]);
+                    }
+                }, 0);
             });
 
             sound.once("loaderror", (soundId: number, err: number|Error) => {
-                if (this.raceErrorCount >= this.soundsInRace.length) {
-                    this.soundsInRaceReject[i]([soundId, err, sound]);
-                }
+                setTimeout(() => {
+                    if (this.raceErrorCount >= this.soundsInRace.length && this.soundsInRaceReject[i]) {
+                        this.soundsInRaceReject[i]([soundId, err, sound]);
+                    }
+                }, 0);
             });
         });
     }

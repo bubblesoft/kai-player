@@ -390,6 +390,7 @@
                 VISUALIZER_LISTEN_TO,
                 BACKGROUND_LOAD_RESOURCE
             ]),
+
             ...mapActions([
                 INIT,
                 INIT_PLAYER_MODULE,
@@ -398,7 +399,7 @@
                 'initVisualization',
                 'loadLayout',
                 'saveLayout',
-            ])
+            ]),
         },
 
         watch: {
@@ -453,7 +454,7 @@
                 this[INSERT_QUEUE]({
                     index: 0,
                     queue: new TrackQueue({
-                        name: this.$t('Temp')
+                        name: this.$t("Temp Playlist")
                     })
                 });
 
@@ -468,7 +469,7 @@
                 this[UPDATE_PLAYING_QUEUE_INDEX](1);
             }
 
-            if (this.queue && this.queue.constructor === RandomTrackQueue || !this.queue.length && this.queue.name === this.$t("Temp")) {
+            if (this.queue && !this.queue.length && (this.queue.constructor === RandomTrackQueue || this.queue.name === this.$t("Temp Playlist"))) {
                 const track = await (async () => {
                     while (true) {
                         try {

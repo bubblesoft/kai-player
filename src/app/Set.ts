@@ -13,7 +13,7 @@ export default abstract class<T> implements ISet<T> {
         return this.items.length;
     }
 
-    constructor({ name }: { name?: string } = {}) {
+    protected constructor({ name }: { name?: string } = {}) {
         this.name = name;
         this.items = [];
         this.activeIndex = null;

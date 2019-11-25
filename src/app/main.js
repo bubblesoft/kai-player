@@ -26,6 +26,12 @@ Vue.use(VueConfirm);
         window['Promise'] = await import('promise-polyfill');
     }
 
+    if (!window["Promise"]["any"]) {
+        const any = (await import("promise.any")).default;
+
+        any.shim();
+    }
+
     if (!window["fetch"]) {
         await import("whatwg-fetch");
     }
@@ -40,6 +46,10 @@ Vue.use(VueConfirm);
 
     (async() => {
         if ("serviceWorker" in navigator) {
+            if (process.env.NODE_ENV === "development") {
+                return;
+            }
+
             try {
                 (await import("serviceworker-webpack-plugin/lib/runtime")).register();
                 window["serviceWorkerEnabled"] = true;

@@ -83,14 +83,14 @@
                             height="20"
                             viewBox="0 0 24 24"
                         )
-                            path(d="M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z")
+                            path(d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z")
                         svg(
                             v-else
                             width="20"
                             height="20"
                             viewBox="0 0 24 24"
                         )
-                            path(d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z")
+                            path(d="M20.71,7.04C21.1,6.65 21.1,6 20.72,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15,5.25L18.75,9M17.75,10L14,6.25L4,16.25V20H7.75L17.75,10Z")
         .list-wrap(v-if="queue")
             .random-queue-box(v-if="queue.constructor === RandomTrackQueue")
                 draggable.draggable(
@@ -100,7 +100,7 @@
                 )
                 yoyoMarquee(
                     v-if="activeTrack"
-                    style="width: 90%;"
+                    style="width: 90%; text-align: center;"
                     :title="activeTrack.name + '-' + (activeTrack.artists && activeTrack.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist'))"
                 )
                     h5(v-if="playingQueueIndex === queueGroup.activeIndex && activeTrack") {{ activeTrack.name + ' - ' + (activeTrack.artists && activeTrack.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist')) }}
@@ -417,7 +417,7 @@
 
             handleAdd(e) {
                 if (e.newIndex <= this.activeIndex) {
-                    activeIndex++;
+                    this.activeIndex++;
                 }
             },
 

@@ -8,6 +8,7 @@ import * as moment from "moment";
 import config from "../config";
 
 import Artist from "../app/Artist";
+import PlaybackSource from "../app/PlaybackSource";
 import Source from "../app/source/Source";
 import Track from "../app/Track";
 
@@ -93,7 +94,7 @@ const getSourceById = (() => {
     };
 })();
 
-const getRecommendedTrack = async (track: Track, sources: Source[]) => {
+const getRecommendedTrack = async (track: Track, sources: Source[]): Promise<Track> => {
     const recommendedTrack = (await (await fetch("/audio/recommend", {
         method: "POST",
 
@@ -108,9 +109,16 @@ const getRecommendedTrack = async (track: Track, sources: Source[]) => {
         headers: new Headers({ "Content-Type": "application/json" }),
     })).json()).data;
 
+    if (!recommendedTrack) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        return await getRecommendedTrack(track, sources);
+    }
+
     return new Track(recommendedTrack.id, recommendedTrack.name, getSourceById(recommendedTrack.source, sources), {
         artists: recommendedTrack.artists.map((artist: any) => new Artist({ name: artist.name })),
         duration: recommendedTrack.duration,
+
         picture: (() => {
             if (!recommendedTrack.picture) {
                 return;
@@ -118,7 +126,22 @@ const getRecommendedTrack = async (track: Track, sources: Source[]) => {
 
             return `/proxy/${recommendedTrack.picture}`;
         })(),
-        playbackSources: recommendedTrack.playbackSources,
+
+        playbackSources: recommendedTrack.playbackSources && recommendedTrack.playbackSources
+            .map((playbackSource: any) =>
+                new PlaybackSource(playbackSource.urls.map((url: string) =>
+                    `/proxy/${url}`), playbackSource.quality, {
+                    proxied: true,
+                    statical: playbackSource.statical,
+                }))
+            .concat((() => recommendedTrack.playbackSources
+                .map((playbackSource: any): PlaybackSource|undefined => playbackSource.cached ?
+                    undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                        proxied: false,
+                        statical: playbackSource.statical,
+                    }))
+                .filter((playbackSource?: PlaybackSource) => playbackSource))()),
+        sources,
     });
 };
 

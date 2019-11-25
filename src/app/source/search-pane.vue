@@ -21,10 +21,11 @@
                 draggable(
                     v-model="tracks"
                     :options="{ group: { name: 'tracks', pull: 'clone', put: false }, sort: false, handle: '.drag-handle', forceFallback: true, fallbackOnBody: true }"
+                    @start="fixDrag();"
                     element="tbody"
                 )
                     tr(
-                        v-for=" [track] in tracks"
+                        v-for="track in tracks"
                         v-interact:doubletap="() => { addToPlayback(track); }"
                         @contextmenu.prevent="handleContextMenu($event, track);"
                     )
@@ -86,11 +87,15 @@
         data() {
           return {
               keywords: '',
-              tracks: [],
+              tracksWithSimilarity: [],
               loading: false
           }
         },
         computed: {
+            tracks() {
+                return this.tracksWithSimilarity.map((trackWithSimilarity) => trackWithSimilarity[0]);
+            },
+
             sources() {
                 return this.sourceGroup.get();
             },
@@ -141,12 +146,12 @@
 
                 this.$nextTick(async () => {
                     controller = new AbortController;
-                    this.tracks = [];
+                    this.tracksWithSimilarity = [];
                     this.loading = true;
 
                     activeSources.forEach(async (activeSource) => {
                         try {
-                            const tracks = (await (await fetch('/audio/search', {
+                            const tracksWithSimilarity = (await (await fetch('/audio/search', {
                                 method: 'POST',
                                 body: JSON.stringify({
                                     keywords,
@@ -171,15 +176,23 @@
                                     })(),
 
                                     playbackSources: trackData.playbackSources && trackData.playbackSources
-                                        .map((playbackSource) => new PlaybackSource(playbackSource.urls.map((url) => `/proxy/${url}`), playbackSource.quality, true))
+                                        .map((playbackSource) => new PlaybackSource(playbackSource.urls.map((url) => `/proxy/${url}`), playbackSource.quality, {
+                                            proxied: true,
+                                            statical: playbackSource.statical,
+                                        }))
                                         .concat((() => trackData.playbackSources
-                                            .map((playbackSource) => playbackSource.cached ? undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, false))
+                                            .map((playbackSource) => playbackSource.cached ? undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                                                proxied: false,
+                                                statical: playbackSource.statical,
+                                            }))
                                             .filter((playbackSource) => playbackSource))()),
+
+                                    sources: this.sources,
                                 }), trackData.similarity];
                             });
 
-                            this.tracks = this.tracks
-                                .concat(tracks)
+                            this.tracksWithSimilarity = this.tracksWithSimilarity
+                                .concat(tracksWithSimilarity)
                                 .sort(([trackA, similarityA], [trackB, similarityB]) => {
                                     if (similarityA !== similarityB) {
                                         return similarityB - similarityA;
@@ -319,5 +332,18 @@
         top: 0;
         right: 0;
         bottom: 0;
+    }
+
+    .random-queue-box tr {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(51, 122, 183, .2);
+
+        td {
+            display: none;
+        }
     }
 </style>

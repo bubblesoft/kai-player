@@ -255,73 +255,85 @@ export default class PlayerController implements IPlayerController {
         }
 
         const loadAltTracksPromise = Promise.all(altTracksResPromises.map(async (altTracksResPromise) => {
-            const res = await altTracksResPromise;
+            try {
+                const res = await altTracksResPromise;
 
-            if (res.code !== 1 || !res.data || res.data.length) {
-                return;
-            }
+                if (res.code !== 1 || !res.data || !res.data.length) {
+                    return;
+                }
 
-            const altTracks = res.data.map(({ id, name, artists, source, picture, duration, playbackSources }: any) =>
-                new Track(id, name, getSourceById(source, this.sources), {
-                    artists: artists.map((artist: any) => new Artist({ name: artist.name })),
-                    duration,
+                const altTracks = res.data.map(({ id, name, artists, source, picture, duration,
+                    playbackSources }: any) => new Track(id, name, getSourceById(source, this.sources), {
+                        artists: artists.map((artist: any) => new Artist({ name: artist.name })),
+                        duration,
 
-                    picture: (() => {
-                        if (!picture) {
+                        picture: (() => {
+                            if (!picture) {
+                                return;
+                            }
+
+                            return `/proxy/${picture}`;
+                        })(),
+
+                        playbackSources: playbackSources && playbackSources
+                            .map((playbackSource: any) =>
+                                new PlaybackSource(playbackSource.urls.map((url: string) =>
+                                    `/proxy/${url}`), playbackSource.quality, {
+                                    proxied: true,
+                                    statical: playbackSource.statical,
+                                }))
+                            .concat((() => playbackSources
+                                .map((playbackSource: any): PlaybackSource|undefined => playbackSource.cached ?
+                                    undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                                        proxied: false,
+                                        statical: playbackSource.statical,
+                                    }))
+                                .filter((playbackSource?: PlaybackSource) => playbackSource))()),
+
+                        sources: this.sources,
+                    }));
+
+                if (aborted) {
+                    return;
+                }
+
+                if (!altTracks || !altTracks.length) {
+                    return;
+                }
+
+                this.altTracks.push(...altTracks);
+
+                const similarities = res.data.map(({ similarity }: any) => similarity);
+
+                await Promise.all(altTracks.map(async (altTrack: Track, i: number) => {
+                    try {
+                        const playbackSources = await (async () => {
+                            if (altTrack.playbackSources && altTrack.playbackSources.length) {
+                                return altTrack.playbackSources;
+                            }
+
+                            await altTrack.loadPlaybackSources();
+
+                            return altTrack.playbackSources;
+                        })();
+
+                        if (aborted) {
                             return;
                         }
 
-                        return `/proxy/${picture}`;
-                    })(),
-
-                    playbackSources: playbackSources && playbackSources
-                        .map((playbackSource: any) =>
-                            new PlaybackSource(playbackSource.urls.map((url: string) =>
-                                `/proxy/${url}`), playbackSource.quality, true))
-                        .concat((() => playbackSources
-                            .map((playbackSource: any): PlaybackSource|undefined => playbackSource.cached ?
-                                undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, false))
-                            .filter((playbackSource?: PlaybackSource) => playbackSource))()),
-                }));
-
-            if (aborted) {
-                return;
-            }
-
-            if (!altTracks || !altTracks.length) {
-                return;
-            }
-
-            this.altTracks.push(...altTracks);
-
-            const similarities = res.data.map(({ similarity }: any) => similarity);
-
-            await Promise.all(altTracks.map(async (altTrack: Track, i: number) => {
-                try {
-                    const playbackSources = await (async () => {
-                        if (altTrack.playbackSources && altTrack.playbackSources.length) {
-                            return altTrack.playbackSources;
+                        if (playbackSources && playbackSources.length) {
+                            track.addAltPlaybackSources(playbackSources.map((playbackSource) => ({
+                                playbackSource,
+                                similarity: similarities[i],
+                            })));
                         }
-
-                        await altTrack.loadPlaybackSources();
-
-                        return altTrack.playbackSources;
-                    })();
-
-                    if (aborted) {
-                        return;
+                    } catch (e) {
+                        // console.log(e);
                     }
-
-                    if (playbackSources && playbackSources.length) {
-                        track.addAltPlaybackSources(playbackSources.map((playbackSource) => ({
-                            playbackSource,
-                            similarity: similarities[i],
-                        })));
-                    }
-                } catch (e) {
-                    // console.log(e);
-                }
-            }));
+                }));
+            } catch (e) {
+                // console.log(e);
+            }
         }));
 
         this.timeouts.push(setTimeout(async () => {
@@ -351,11 +363,7 @@ export default class PlayerController implements IPlayerController {
                         this.loadPlaybackSources([playbackSource]), (1 - similarity) * timeToWait)));
             }
 
-            try {
-                await loadAltTracksPromise;
-            } catch (e) {
-                // console.log(e);
-            }
+            await loadAltTracksPromise;
 
             if (aborted) {
                 return;

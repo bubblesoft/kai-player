@@ -109,11 +109,37 @@ const playerModule = {
                 commit(mutationTypes.UPDATE_PROGRESS, 0);
                 commit(mutationTypes.UPDATE_PROGRESS_STATE, 0);
 
-                const nextTrackPromise = () => {
+                const getNextTrack = async () => {
                     if (queue.constructor === RandomTrackQueue) {
-                        return getRecommendedTrack(track, sources && sources.filter(source => source.active));
+                        return await getRecommendedTrack(track, sources && sources.filter(source => source.active));
                     }
+
+                    return queue.getNext();
                 };
+
+                let ended = false;
+                let nextTrackPromise;
+
+                (async () => {
+                    while (true) {
+                        if (ended) {
+                            return;
+                        }
+
+                        nextTrackPromise = getNextTrack();
+
+                        const nextTrack = await nextTrackPromise;
+                        const preloadSuccess = await nextTrack.preload();
+
+                        if (preloadSuccess) {
+                            break;
+                        }
+
+                        if (queue.constructor !== RandomTrackQueue) {
+                            break;
+                        }
+                    }
+                })();
 
                 try {
                     await playerController.playTrack(track);
@@ -130,6 +156,8 @@ const playerModule = {
                 if (rootState.visualizationModule._visualizer.activeType === "random") {
                     commit(mutationTypes.UPDATE_ACTIVE_VISUALIZER_TYPE, "random");
                 }
+
+                ended = true;
             }
         },
 
@@ -160,7 +188,7 @@ const generalModule = {
         },
         mode: null,
         layout: null,
-        backgroundImage: localStorage.getItem('kaiplayerbackgroundimage') || 'http://bubblesoft.oss-ap-southeast-1.aliyuncs.com/1d69083104fb0c7d0e3a568d72f3eff8_numendil-333089-unsplash.jpg',
+        backgroundImage: localStorage.getItem('kaiplayerbackgroundimage') || 'https://bubblesoft.oss-ap-southeast-1.aliyuncs.com/1d69083104fb0c7d0e3a568d72f3eff8_numendil-333089-unsplash.jpg',
         showSourceIcon: (() => {
             const showSourceIcon = localStorage.getItem('kaiplayershowsouceicon');
 
@@ -315,7 +343,7 @@ const sourceModule = {
                                 return;
                             }
 
-                            listRes.data.forEach((listData) => sources[i].add(new TrackList(listData.id, listData.name, sources[i])));
+                            listRes.data.forEach((listData) => sources[i].add(new TrackList(listData.id, listData.name, sources[i], { sources })));
                         });
 
                         commit(mutationTypes.UPDATE_SOURCE, sources);
@@ -357,12 +385,13 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                     source: track.source.id,
                     artists: track.artists.map(artist => ({ name: artist.name })),
                     duration: track.duration,
-                    playbackSources: track.playbackSources.length ? track.playbackSources
-                        .filter((playbackSource) => playbackSource.proxied)
+                    playbackSources: track.playbackSources && track.playbackSources.length ? track.playbackSources
+                        .filter((playbackSource) => playbackSource.proxied || playbackSource.statical)
                         .map((playbackSource) => ({
                             urls: playbackSource.urls,
                             quality: playbackSource.quality,
                             proxied: playbackSource.proxied,
+                            statical: playbackSource.statical,
                         })) : undefined,
                     picture: track.picture,
                     status: track.status.id,
@@ -377,15 +406,13 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                         code: message.code,
                     })),
                     altPlaybackSources: track.altPlaybackSources.length ? track.altPlaybackSources
-                        .filter((altPlaybackSource) => {
-                            debugger;
-                            return altPlaybackSource.playbackSource.proxied;
-                        })
+                        .filter(({ playbackSource }) => playbackSource.proxied || playbackSource.statical)
                         .map((altPlaybackSource) => ({
                             playbackSource: {
                                 urls: altPlaybackSource.playbackSource.urls,
                                 quality: altPlaybackSource.playbackSource.quality,
                                 proxied: altPlaybackSource.playbackSource.proxied,
+                                statical: altPlaybackSource.playbackSource.statical,
                             },
                             similarity: altPlaybackSource.similarity,
                         })) : undefined,
@@ -393,6 +420,7 @@ const saveQueueData = (queueGroup, playingQueueIndex) => {
                 activeIndex: queue.activeIndex
             }
         }),
+
         activeIndex: queueGroup.activeIndex,
         playingQueueIndex,
     }));
@@ -414,21 +442,28 @@ const restoreQueueData = () => {
 
                     case 'basic':
                     default:
-                        return new TrackQueue({ name: queueData.name });
+                        return new TrackQueue({
+                            name: queueData.name,
+                            activeIndex: queueData.activeIndex,
+                        });
                 }
             })();
-
-            queue.activeIndex = queueData.activeIndex;
 
             if (queueData.tracks.length) {
                 queue.add(queueData.tracks.map((trackData) => new Track(trackData.id, trackData.name, new Source(trackData.source, { name: trackData.source }), {
                     artists: trackData.artists.map(artistData => new Artist({ name: artistData.name })),
                     duration: trackData.duration,
                     picture: trackData.picture,
+
                     playbackSources: trackData.playbackSources && trackData.playbackSources.length ? trackData.playbackSources
-                        .map((playbackSource) => playbackSource.urls && playbackSource.urls.length && new PlaybackSource(playbackSource.urls, playbackSource.quality, playbackSource.proxied))
+                        .map((playbackSource) => playbackSource.urls && playbackSource.urls.length && new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                            proxied: playbackSource.proxied,
+                            statical: playbackSource.statical,
+                        }))
                         .filter((playbackSource) => playbackSource) : undefined,
+
                     status: Status.fromId(trackData.status),
+
                     messages: trackData.messages && trackData.messages.map((messageData) => {
                         if (messageData.level === "error") {
                             return TrackError.fromCode(messageData.code);
@@ -436,18 +471,24 @@ const restoreQueueData = () => {
 
                         return TrackInfo.fromCode(messageData.code);
                     }),
+
                     altPlaybackSources: trackData.altPlaybackSources && trackData.altPlaybackSources.length ? trackData.altPlaybackSources.map(({ playbackSource, similarity }) => {
                         if (!playbackSource.urls || !playbackSource.urls.length) {
                             return;
                         }
 
                         return {
-                            playbackSource: new PlaybackSource(playbackSource.urls, playbackSource.quality, playbackSource.proxied),
+                            playbackSource: new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                                proxied: playbackSource.proxied,
+                                statical: playbackSource.statical,
+                            }),
                             similarity,
                         };
                     }).filter((altPlaybackSource) => altPlaybackSource) : [],
                 })));
             }
+
+            queue.activeIndex = queueData.activeIndex;
 
             return queue;
         }));

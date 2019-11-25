@@ -8,7 +8,9 @@
 </template>
 
 <script>
-    import { mapState } from "vuex";
+    import { mapActions } from "vuex";
+
+    import { CLOSE_TIPS } from "../scripts/action-types";
 
     import loading from "./loading";
     import error from "./error";
@@ -32,9 +34,23 @@
         }),
 
         computed: {
-            ...mapState({
-                showTips: (state) => state.generalModule.showTips,
-            })
+            showTips: {
+                get() {
+                    return this.$store.state.generalModule.showTips;
+                },
+
+                set(value) {
+                    if (!value) {
+                        this[CLOSE_TIPS]();
+                    }
+                },
+            }
+        },
+
+        methods: {
+            ...mapActions([
+                CLOSE_TIPS,
+            ]),
         },
 
         watch: {
@@ -59,7 +75,7 @@
             if (this.showTips === true) {
                 this.renderTips = true;
             }
-        }
+        },
     };
 </script>
 

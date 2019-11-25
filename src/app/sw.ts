@@ -1,3 +1,4 @@
+import { parse } from "content-range";
 import "network-idle-callback/lib/request-monitor";
 
 import CacheService from "./CacheService";
@@ -38,6 +39,18 @@ const initialize = (self: ServiceWorkerGlobalScope): void => {
                 try {
                     if (!networkResponse.ok) {
                         return networkResponse;
+                    }
+
+                    const contentRangeHeader = networkResponse.headers.get("Content-Range");
+
+                    if (networkResponse.status === 206 && contentRangeHeader) {
+                        const parts = parse(contentRangeHeader);
+
+                        if (parts) {
+                            if (parts.first !== 0 || !parts.length || parts.last !== parts.length - 1) {
+                                return networkResponse;
+                            }
+                        }
                     }
                 } catch (e) {
                     // console.log(e);
