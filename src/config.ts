@@ -3,6 +3,7 @@ export default {
     defaultIcon: "https://kaiplanet.net/favicon.ico",
     defaultImage: "https://kaiplanet.net/lighthouse.jpg",
     defaultPreference: {
+        graphicEffect: .6,
         playback: {
             alternativeTracks: {
                 enable: true,

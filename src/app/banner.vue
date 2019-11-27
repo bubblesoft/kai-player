@@ -1,52 +1,19 @@
 <template lang="pug">
     .banner
-        a.icon(
-            href="https://soundcloud.com/"
-            target="_blank"
+        .icons(
+            v-if="showIcons"
+            ref="icons"
+            :style="{ opacity: iconOpacity }"
         )
-            img(
-                src="../assets/soundcloud.ico"
-                data-src="https://a-v2.sndcdn.com/assets/images/sc-icons/favicon-2cadd14b.ico"
-                alt="SoundCloud"
-                title="SoundCloud"
+            .icon(
+                v-for="(source) in sources"
+                :style="{ width: iconWidth, paddingLeft: iconPadding, paddingRight: iconPadding }"
             )
-        a.icon(
-            href="https://hearthis.at/"
-            target="_blank"
-        )
-            img(
-                src="../assets/hearthisat.ico"
-                data-src="https://hearthis.at/favicon.ico"
-                alt="hearthis.at"
-                title="hearthis.at"
-            )
-        a.icon(
-            href="http://music.163.com"
-            target="_blank"
-        )
-            img(
-                src="http://s1.music.126.net/style/favicon.ico"
-                alt="网易云音乐"
-                title="网易云音乐"
-            )
-        a.icon(
-            href="https://y.qq.com/"
-            target="_blank"
-        )
-            img(
-                src="https://y.qq.com/favicon.ico"
-                alt="QQ音乐"
-                title="QQ音乐"
-            )
-        a.icon(
-            href="http://music.baidu.com/"
-            target="_blank"
-        )
-            img(
-                src="http://music.baidu.com/static/images/favicon.ico"
-                alt="百度音乐"
-                title="百度音乐"
-            )
+                img(
+                    :src="source.icons[0]"
+                    :alt="source.name"
+                    :title="source.name"
+                )
         .links
             a.link(
                 href="/"
@@ -61,7 +28,58 @@
             ) GITHUB
 </template>
 
-<script>
+<script lang="ts">
+    import { Component, Vue } from "vue-property-decorator";
+    import { State } from "vuex-class";
+
+    import config from "../config";
+
+    import SourceGroup from "./source/SourceGroup";
+
+    import { requestNetworkIdle } from "../scripts/utils";
+
+    @Component
+    export default class extends Vue {
+        public $refs!: { icons: HTMLElement };
+        private showIcons = false;
+        @State((state) => state.generalModule.mode) private mode!: string;
+        @State((state) => state.generalModule.preference || config.defaultPreference) private preference!: any;
+        @State((state) => state.sourceModule.sourceGroup) private sourceGroup!: SourceGroup;
+
+        get sources() {
+            return this.sourceGroup.get(undefined);
+        }
+
+        get iconWidth() {
+            if (!this.$refs.icons) {
+                return 100 / this.sources.length + "%";
+            }
+
+            return this.$refs.icons.offsetWidth / this.sources.length + "px";
+        }
+
+        get iconPadding() {
+            if (!this.$refs.icons) {
+                return 100 / this.sources.length * .18 + "%";
+            }
+
+            return this.$refs.icons.offsetWidth / this.sources.length * .18 + "px";
+        }
+
+        get iconOpacity() {
+            if (this.mode === "mobile" && this.preference.graphicEffect >= .6) {
+                return .6;
+            }
+
+            return "initial";
+        }
+
+        private created() {
+            requestNetworkIdle(() => {
+                this.showIcons = true;
+            });
+        }
+    }
 </script>
 
 <style lang="scss" scoped>
@@ -72,28 +90,40 @@
         padding: 20px;
 
         @media (max-width: 768px) {
-            padding: 16px;
+            padding: 9px 16px;
         }
 
-        .icon {
-            margin: 0 10px;
+        @media (max-width: 372px) {
+            padding: 9px 16px;
+        }
+
+        .icons {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            width: 35%;
 
             @media (max-width: 768px) {
-                margin: 0 8px;
+                flex-grow: 1;
+                width: auto;
             }
 
-            img {
-                width: 32px;
-                height: 32px;
-                
-                @media (max-width: 768px) {
-                    width: 28px;
-                    height: 28px;
+            .icon {
+                flex-shrink: 1;
+
+                img {
+                    width: 100%;
+                    height: auto;
+
+                    @media (max-width: 768px) {
+                        width: 100%;
+                        height: auto;
+                    }
                 }
-            }
 
-            @media (max-width: 372px) {
-                display: none;
+                @media (max-width: 372px) {
+                    display: none;
+                }
             }
         }
 
