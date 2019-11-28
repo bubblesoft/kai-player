@@ -32,10 +32,10 @@
                             value=""
                             disabled
                         ) {{ $t('Select a language') }}
-                        option(value="en-US") English
-                        option(value="zh-CN") 简体中文
-                        option(value="ja-JP") 日本語
-                        option(value="ko-KR") 한국어
+                        option(
+                            v-for="{ name, value } of localeOptions"
+                            :value="value"
+                        ) {{ name }}
             section
                 .text-danger {{ $t('Reset settings') }}
                 div
@@ -91,7 +91,15 @@
                     restore: null,
                     load: null,
                     fetch: null
-                }
+                },
+                localeOptions: [
+                    { name: "English", value: "en" },
+                    { name: "English(US)", value: "en-US" },
+                    { name: "中文", value: "zh" },
+                    { name: "中文(简体)", value: "zh-CN" },
+                    { name: "日本語", value: "ja" },
+                    { name: "한국어", value: "ko" },
+                ]
             }
         },
 
@@ -116,7 +124,21 @@
             },
             locale: {
                 get() {
-                    return this.$store.state.generalModule.locale;
+                    const locale = this.$store.state.generalModule.locale;
+
+                    if (/^ja/.test(locale)) {
+                        return "ja";
+                    }
+
+                    if (/^ko/.test(locale)) {
+                        return "ko";
+                    }
+
+                    if (!this.localeOptions.map(({ value }) => value).includes(locale)) {
+                        return "en-US";
+                    }
+
+                    return locale;
                 },
                 set(locale) {
                     this[SET_LOCALE](locale);

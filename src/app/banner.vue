@@ -32,11 +32,11 @@
     import { Component, Vue } from "vue-property-decorator";
     import { State } from "vuex-class";
 
-    import config from "../config";
-
     import SourceGroup from "./source/SourceGroup";
 
     import { requestNetworkIdle } from "../scripts/utils";
+
+    import config from "../config";
 
     @Component
     export default class extends Vue {
@@ -46,27 +46,39 @@
         @State((state) => state.generalModule.preference || config.defaultPreference) private preference!: any;
         @State((state) => state.sourceModule.sourceGroup) private sourceGroup!: SourceGroup;
 
-        get sources() {
+        private get sources() {
             return this.sourceGroup.get(undefined);
         }
 
-        get iconWidth() {
-            if (!this.$refs.icons) {
+        private get iconWidth() {
+            const iconsRef = this.$refs.icons;
+
+            if (!iconsRef) {
                 return 100 / this.sources.length + "%";
             }
 
-            return this.$refs.icons.offsetWidth / this.sources.length + "px";
+            const maxIconWidth = 24;
+
+            return Math.min(iconsRef.offsetWidth / this.sources.length, maxIconWidth + this.iconPaddingInPixel * 2) + "px";
         }
 
-        get iconPadding() {
+        private get iconPadding() {
             if (!this.$refs.icons) {
                 return 100 / this.sources.length * .18 + "%";
             }
 
-            return this.$refs.icons.offsetWidth / this.sources.length * .18 + "px";
+            return this.iconPaddingInPixel + "px";
         }
 
-        get iconOpacity() {
+        private get iconPaddingInPixel() {
+            if (!this.$refs.icons) {
+                return 0;
+            }
+
+            return this.$refs.icons.offsetWidth / this.sources.length * .18;
+        }
+
+        private get iconOpacity() {
             if (this.mode === "mobile" && this.preference.graphicEffect >= .6) {
                 return .6;
             }
@@ -94,7 +106,7 @@
         }
 
         @media (max-width: 372px) {
-            padding: 9px 16px;
+            padding: 9px 12px;
         }
 
         .icons {
@@ -114,15 +126,7 @@
                 img {
                     width: 100%;
                     height: auto;
-
-                    @media (max-width: 768px) {
-                        width: 100%;
-                        height: auto;
-                    }
-                }
-
-                @media (max-width: 372px) {
-                    display: none;
+                    vertical-align: baseline;
                 }
             }
         }
@@ -131,7 +135,11 @@
             margin-left: 20px;
 
             @media (max-width: 768px) {
-                margin-left: 15px;
+                margin-left: 16px;
+            }
+
+            @media (max-width: 372px) {
+                margin-left: 12px;
             }
 
             .link {

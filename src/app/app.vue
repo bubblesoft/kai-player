@@ -7,52 +7,52 @@
                 pane-frame(
                     v-if="picturePanelOpen"
                     v-model="pictureLayout"
-                    heading="Artwork"
+                    :heading="$t('Artwork')"
                     @close="picturePanelOpen = false;"
                 )
                     picturePane
             transition(name="fade")
                 pane-frame(
-                    v-if="sourcePanelLoaded"
+                    v-if="renderSourcePanel"
                     v-show="sourcePanelOpen"
                     v-model="sourceLayout"
-                    heading="Media Source"
+                    :heading="$t('Media Source')"
                     @close="sourcePanelOpen = false;"
                 )
                     sourcePane
             transition(name="fade")
                 pane-frame(
-                    v-if="listPanelLoaded"
+                    v-if="renderListPanel"
                     v-show="listPanelOpen"
                     v-model="listLayout"
-                    heading="Chart"
+                    :heading="$t('Chart')"
                     @close="listPanelOpen = false;"
                 )
                     listPane(@contextMenu="(e, callback) => { listContextMenuCallback = callback; $refs.listContextMenu.open(e); }")
             transition(name="fade")
                 pane-frame(
-                    v-if="searchPanelLoaded"
+                    v-if="renderSearchPanel"
                     v-show="searchPanelOpen"
                     v-model="searchLayout"
-                    heading="Search"
+                    :heading="$t('Search')"
                     @close="searchPanelOpen = false;"
                 )
                     searchPane(@contextMenu="(e, callback) => { searchContextMenuCallback = callback; $refs.searchContextMenu.open(e); }")
             transition(name="fade")
                 pane-frame(
-                    v-if="playlistPanelLoaded"
+                    v-if="renderPlaylistPanel"
                     v-show="playlistPanelOpen"
                     v-model="playlistLayout"
-                    heading="Playlist"
+                    :heading="$t('Playlist')"
                     @close="playlistPanelOpen = false;"
                 )
                     playlistPane(@contextMenu="(e, callback) => { playlistContextMenuCallback = callback; $refs.playlistContextMenu.open(e); }")
             transition(name="fade")
                 pane-frame(
-                    v-if="tracksPanelLoaded"
+                    v-if="renderTracksPanel"
                     v-show="tracksPanelOpen"
                     v-model="tracksLayout"
-                    heading="Tracks"
+                    :heading="`${$t('Tracks')}(${queue && queue.name})`"
                     @close="tracksPanelOpen = false;"
                 )
                     tracksPane(
@@ -77,6 +77,7 @@
             li(v-interact:tap="() => { trackContextMenuCallback('up'); }") {{ $t('Move up') }}
             li(v-interact:tap="() => { trackContextMenuCallback('down'); }") {{ $t('Move down') }}
             li(v-interact:tap="() => { trackContextMenuCallback('move'); }") {{ $t('Move to...') }}
+            li(v-interact:tap="() => { trackContextMenuCallback('copy'); }") {{ $t('Copy to...') }}
             li(v-interact:tap="() => { trackContextMenuCallback('remove'); }") {{ $t('Remove') }}
         contextMenu(ref="playlistContextMenu")
             li(v-interact:tap="() => { playlistContextMenuCallback('open'); }") {{ $t('Select') }}
@@ -92,12 +93,12 @@
     import interact from 'interactjs';
 
     import { INIT, INIT_PLAYER_MODULE, INIT_QUEUE_MODULE, FETCH_SOURCES } from "../scripts/action-types";
-    import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SWITCH_TO_BACKGROUND, VISUALIZER_LISTEN_TO, BACKGROUND_LOAD_RESOURCE } from "../scripts/mutation-types";
+    import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, BACKGROUND_LOAD_RESOURCE } from "../scripts/mutation-types";
 
     import TrackQueue from './queue/TrackQueue';
     import RandomTrackQueue from './queue/RandomTrackQueue';
 
-    import { getRecommendedTrack } from '../scripts/utils';
+    import { getRecommendedTrack, requestNetworkIdle } from '../scripts/utils';
 
     import contextMenu from 'vue-context-menu';
 
@@ -107,6 +108,10 @@
     import controlBar from './control-bar';
     import paneFrame from './pane-frame';
     import selectQueueModal from './select-queue-modal';
+
+    const DESTROY_INSTANCE_TIMEOUT = 5 * 10000;
+
+    let that;
 
     export default {
         components: {
@@ -162,6 +167,8 @@
         },
 
         data() {
+            that = this;
+
             return {
                 showSettings: false,
                 renderSettings: false,
@@ -172,11 +179,12 @@
                 selectQueueModalCallback: () => {},
                 trackContextMenuCallback: () => {},
                 playlistContextMenuCallback: () => {},
-                sourcePanelLoaded: false,
-                listPanelLoaded: false,
-                searchPanelLoaded: false,
-                playlistPanelLoaded: false,
-                tracksPanelLoaded: false,
+                renderSourcePanel: false,
+                renderListPanel: false,
+                renderSearchPanel: false,
+                renderPlaylistPanel: false,
+                renderTracksPanel: false,
+                timeouts: new Map(),
             }
         },
 
@@ -254,7 +262,7 @@
 
             picturePanelOpen: {
                 get() {
-                    return this.$store.state.generalModule.layout.picture.visible;
+                    return this.layout && this.layout.picture.visible;
                 },
 
                 set(visible) {
@@ -271,7 +279,7 @@
 
             sourcePanelOpen: {
                 get() {
-                    return this.$store.state.generalModule.layout.source.visible;
+                    return this.layout && this.layout.source.visible;
                 },
 
                 set(visible) {
@@ -288,7 +296,7 @@
 
             listPanelOpen: {
                 get() {
-                    return this.$store.state.generalModule.layout.list.visible;
+                    return this.layout && this.layout.list.visible;
                 },
 
                 set(visible) {
@@ -305,7 +313,7 @@
 
             searchPanelOpen: {
                 get() {
-                    return this.$store.state.generalModule.layout.search.visible;
+                    return this.layout && this.layout.search.visible;
                 },
 
                 set(visible) {
@@ -322,7 +330,7 @@
 
             playlistPanelOpen: {
                 get() {
-                    return this.$store.state.generalModule.layout.playlist.visible;
+                    return this.layout && this.layout.playlist.visible;
                 },
 
                 set(visible) {
@@ -339,7 +347,7 @@
 
             tracksPanelOpen: {
                 get() {
-                    return this.$store.state.generalModule.layout.tracks.visible;
+                    return this.layout && this.layout.tracks.visible;
                 },
 
                 set(visible) {
@@ -386,8 +394,6 @@
                 UPDATE_ACTIVE_PANEL_INDEX,
                 SET_MODE,
                 LOAD_LAYOUT,
-                SWITCH_TO_BACKGROUND,
-                VISUALIZER_LISTEN_TO,
                 BACKGROUND_LOAD_RESOURCE
             ]),
 
@@ -418,6 +424,30 @@
                     }, 2000);
                 }
             },
+
+            ...["sourcePanel", "listPanel", "searchPanel", "playlistPanel", "tracksPanel"].reduce((map, key) => {
+                map[`${key}Open`] = (open) => {
+                    const renderKey = `render${key.slice(0, 1).toUpperCase()}${key.slice(1)}`;
+
+                    if (open !== true) {
+                        return that.timeouts.set(key, setTimeout(() => {
+                            that.timeouts.delete(key);
+                            that[renderKey] = false;
+                        }, DESTROY_INSTANCE_TIMEOUT));
+                    }
+
+                    that[renderKey] = true;
+
+                    const timeout = that.timeouts.get(key);
+
+                    if (timeout) {
+                        clearTimeout(timeout);
+                        that.timeouts.delete(key);
+                    }
+                };
+
+                return map;
+            }, {}),
         },
 
         async created() {
@@ -469,7 +499,7 @@
                 this[UPDATE_PLAYING_QUEUE_INDEX](1);
             }
 
-            if (this.queue && !this.queue.length && (this.queue.constructor === RandomTrackQueue || this.queue.name === this.$t("Temp Playlist"))) {
+            if (this.queue && !this.queue.length && this.queue.name === this.$t("Temp Playlist")) {
                 const track = await (async () => {
                     while (true) {
                         try {
@@ -484,9 +514,32 @@
 
                 this[ADD_TRACK]({ track });
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: track.picture });
-            } else {
+            } else if (this.track) {
                 this[BACKGROUND_LOAD_RESOURCE]({ picture: this.track.picture });
             }
+
+            this.queueGroup.get().forEach(async (queue, i) => {
+                if (queue.constructor === RandomTrackQueue && !queue.length) {
+                    const track = await (async () => {
+                        while (true) {
+                            try {
+                                return await getRecommendedTrack(null, await fetchSourcesPromises);
+                            } catch (e) {
+                                console.log(e);
+
+                                await new Promise((resolve) => setTimeout(resolve, 200));
+                            }
+                        }
+                    })();
+
+                    this[ADD_TRACK]({
+                        track,
+                        queueIndex: i,
+                    });
+                }
+            });
+
+            requestNetworkIdle(() => this.renderSettings = true);
         },
 
         mounted() {
@@ -497,13 +550,7 @@
 
             ["sourcePanel", "listPanel", "searchPanel", "playlistPanel", "tracksPanel"].map((key) => {
                 if (this[`${key}Open`] === true) {
-                    this[`${key}Loaded`] = true;
-                } else {
-                    const unwatch = this.$watch(`${key}Open`, () => {
-                        unwatch();
-
-                        this[`${key}Loaded`] = true;
-                    });
+                    this[`render${key.slice(0, 1).toUpperCase()}${key.slice(1)}`] = true;
                 }
             });
         },

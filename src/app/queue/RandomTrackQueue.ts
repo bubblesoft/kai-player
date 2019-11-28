@@ -4,12 +4,14 @@
 
 import config from "../../config";
 
+import IQueue from "../IQueue";
+
 import Track from "../Track";
 import TrackQueue from "./TrackQueue";
 
-export default class extends TrackQueue {
+export default class extends TrackQueue implements IQueue<Track> {
     public add(tracks: Track|Track[]) {
-        if (tracks instanceof Array) {
+        if (Array.isArray(tracks)) {
             if (tracks.filter((track) => track === undefined).length) {
                 throw new Error("No item passed.");
             }
@@ -25,13 +27,17 @@ export default class extends TrackQueue {
 
         if (this.items.length === 1) {
             this.activeIndex = 0;
+        } else {
+            this.activeIndex = Array.isArray(tracks) ? this.activeIndex + tracks.length : this.activeIndex + 1;
         }
 
         if (this.length > config.queue.randomQueueThreshold) {
             this.items.pop();
         }
 
-        return this.length - 1;
+        this.nextIndex = this.generateNextIndex();
+
+        return Array.isArray(tracks) ? tracks.length - 1 : 0;
     }
 
     public previous() {
@@ -42,15 +48,20 @@ export default class extends TrackQueue {
         }
 
         this.activeIndex = Math.min(this.activeIndex + 1, this.length);
+        this.nextIndex = this.generateNextIndex();
 
         return this.activeIndex;
     }
 
-    protected getNextIndex(): number|null {
-        if (this.activeIndex === null) {
-            return 0;
+    public getLastIndex(): number {
+        return 0;
+    }
+
+    protected generateNextIndex(): number {
+        if (this.activeIndex === -1) {
+            return -1;
         }
 
-        return Math.max(this.activeIndex - 1, 0);
+        return Math.max(this.activeIndex - 1, -1);
     }
 }

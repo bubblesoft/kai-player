@@ -38,7 +38,7 @@ export default abstract class Renderer implements IRenderer {
         return this;
     }
 
-    public renderPicture() {
+    public renderPicture(url: string) {
         return this;
     }
 

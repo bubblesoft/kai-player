@@ -24,6 +24,9 @@ const initialize = (self: ServiceWorkerGlobalScope): void => {
                 const response = await cacheService.match(event.request);
 
                 if (response) {
+                    // @ts-ignore
+                    self.requestMonitor.unlisten(event);
+
                     return response;
                 }
 
@@ -56,7 +59,13 @@ const initialize = (self: ServiceWorkerGlobalScope): void => {
                     // console.log(e);
                 }
 
-                cacheService.put(event.request, networkResponse.clone());
+                (async () => {
+                    try {
+                        await cacheService.put(event.request, networkResponse.clone());
+                    } catch (e) {
+                        // console.log(e);
+                    }
+                })();
 
                 return networkResponse;
             } catch (e) {

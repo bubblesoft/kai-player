@@ -8,7 +8,7 @@
             :class="{ hide: autoHide }"
             :style="{ backgroundPosition: (1 - ratioX + ratioY) * 50 + 10 + '% ' + '0' }"
         )
-            div {{ $t(heading) }}
+            div {{ heading }}
         .control(
             v-if="activePanelIndex === $el"
             :class="{ hide: autoHide }"

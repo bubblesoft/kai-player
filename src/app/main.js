@@ -2,6 +2,8 @@
  * Created by qhyang on 2017/12/1.
  */
 
+import Promise from "promise-polyfill";
+
 import Vue from 'vue';
 
 import VTooltip from "v-tooltip";
@@ -17,19 +19,26 @@ import container from "./container";
 import "../styles/bootstrap";
 import "../styles/base";
 import "../styles/v-tooltip";
+import "../styles/pretty-checkbox";
 
 Vue.use(VTooltip);
 Vue.use(VueConfirm);
 
-(async () => {
-    if (!window['Promise']) {
-        window['Promise'] = await import('promise-polyfill');
-    }
+if (!window["Promise"]) {
+    window["Promise"] = Promise;
+}
 
+(async () => {
     if (!window["Promise"]["any"]) {
         const any = (await import("promise.any")).default;
 
         any.shim();
+    }
+
+    if (!window["Promise"]["allSettled"]) {
+        const allSettled = (await import("promise.allsettled")).default;
+
+        allSettled.shim();
     }
 
     if (!window["fetch"]) {
@@ -44,7 +53,7 @@ Vue.use(VueConfirm);
         await import("url-polyfill");
     }
 
-    (async() => {
+    const registerServiceWorkerPromise = (async() => {
         if ("serviceWorker" in navigator) {
             if (process.env.NODE_ENV === "development") {
                 return;
@@ -52,15 +61,12 @@ Vue.use(VueConfirm);
 
             try {
                 (await import("serviceworker-webpack-plugin/lib/runtime")).register();
+
                 window["serviceWorkerEnabled"] = true;
             } catch (err) {
                 console.log(err);
             }
         }
-
-        requestNetworkIdle(async () => {
-            await import("../styles/pretty-checkbox");
-        }, 1000 * 60);
     })();
 
     const interactables = [];
@@ -106,13 +112,66 @@ Vue.use(VueConfirm);
         }
     });
 
-    const locale = localStorage.getItem('kaiplayerlocale') || window.navigator.language || 'en-US';
+    const lastLocale = localStorage.getItem("kaiplayerlocale");
+    const locale = lastLocale || window.navigator.language || "en-US";
 
-    // networkIdleCallback(async () => {
+    const initLocale = async () => {
         const { loadLocale } = await import("./i18n");
 
         loadLocale(locale);
-    // }, { timeout: 1000 * 3 });
+    };
+
+    if (!lastLocale) {
+        (async () => {
+            const retryTimes = 3;
+
+            let retriedTimes = 0;
+
+            while (true) {
+                if (retriedTimes >= retryTimes) {
+                    break;
+                }
+
+                try {
+                    await initLocale();
+
+                    break;
+                } catch (e) {
+                    console.log(e);
+
+                    retriedTimes++;
+                }
+            }
+        })();
+    }
+
+    (async () => {
+        await registerServiceWorkerPromise;
+
+        requestNetworkIdle(async () => {
+            const retryTimes = 10;
+
+            let retriedTimes = 0;
+
+            while (true) {
+                if (retriedTimes >= retryTimes) {
+                    break;
+                }
+
+                try {
+                    await initLocale();
+
+                    break;
+                } catch (e) {
+                    console.log(e);
+
+                    retriedTimes++;
+
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                }
+            }
+        }, 1000 * 10);
+    })();
 
     const store = (await import('./store')).default;
 

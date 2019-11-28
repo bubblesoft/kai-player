@@ -7,7 +7,7 @@ import * as mutationTypes from '../scripts/mutation-types';
 import * as actionTypes from '../scripts/action-types';
 
 import { loadLocale } from './i18n';
-import { getRecommendedTrack, generateLayout, fetchData } from "../scripts/utils";
+import { getRecommendedTrack, generateLayout, fetchData, requestNetworkIdle } from "../scripts/utils";
 
 import Status from "./Status";
 import PlayerStatus from "./PlayerStatus";
@@ -39,6 +39,8 @@ playerController.player = new Player;
 playerController.preference = preference;
 
 let onProgress;
+let randomQueuePreloadEnded = true;
+let randomQueueNextTrackPromise;
 
 const playerModule = {
     state: {
@@ -49,6 +51,7 @@ const playerModule = {
                 || this.playerController.status === PlayerStatus.Streaming;
         },
 
+        duration: 0,
         progress: 0,
         _updateVisualiztionTrigger: false,
     },
@@ -57,7 +60,11 @@ const playerModule = {
             state.playerController.progress = progress;
         },
 
-        [mutationTypes.UPDATE_PROGRESS_STATE](state, progress) {
+        [mutationTypes.UPDATE_STATE_DURATION](state, duration) {
+            state.duration = duration;
+        },
+
+        [mutationTypes.UPDATE_STATE_PROGRESS](state, progress) {
             state.progress = progress;
         },
 
@@ -90,7 +97,7 @@ const playerModule = {
             if (!onProgress) {
                 onProgress = (soundId, seek) => {
                     if (typeof seek === "number") {
-                        commit(mutationTypes.UPDATE_PROGRESS_STATE, seek);
+                        commit(mutationTypes.UPDATE_STATE_PROGRESS, seek);
                     }
                 };
             }
@@ -103,68 +110,111 @@ const playerModule = {
             const queue = queueGroup.get(queueIndex);
             const track = queue.get(index);
 
-            if (track) {
-                commit(mutationTypes.STOP_PLAYBACK);
-                commit(mutationTypes.UPDATE_PLAYING_QUEUE_INDEX, queueIndex);
-                commit(mutationTypes.UPDATE_PROGRESS, 0);
-                commit(mutationTypes.UPDATE_PROGRESS_STATE, 0);
+            if (!track) {
+                return;
+            }
 
-                const getNextTrack = async () => {
-                    if (queue.constructor === RandomTrackQueue) {
-                        return await getRecommendedTrack(track, sources && sources.filter(source => source.active));
-                    }
+            commit(mutationTypes.STOP_PLAYBACK);
+            commit(mutationTypes.UPDATE_PLAYING_QUEUE_INDEX, queueIndex);
+            commit(mutationTypes.UPDATE_PROGRESS, 0);
+            commit(mutationTypes.UPDATE_STATE_PROGRESS, 0);
 
+            const abortController = new AbortController();
+
+            const getNextTrack = async () => {
+                if (queue.getNext()) {
                     return queue.getNext();
-                };
+                }
 
-                let ended = false;
-                let nextTrackPromise;
+                while (true) {
+                    try {
+                        const nextTrack = await getRecommendedTrack(track, sources && sources.filter((source) => source.active), { abortSignal: abortController.signal });
+
+                        if (nextTrack) {
+                            return nextTrack;
+                        }
+                    } catch (e) {
+                        console.log(e);
+
+                        if (abortController.signal.aborted) {
+                            break;
+                        }
+
+                        await new Promise((resolve) => setTimeout(resolve, 200));
+                    }
+                }
+            };
+
+            if (queue.constructor !== RandomTrackQueue) {
+                const nextTrack = queue.getNext();
+
+                requestNetworkIdle(() => {
+                    nextTrack.preload({ abortSignal: abortController.signal });
+                }, preference.playback.timeToWait);
+            } else {
+                randomQueuePreloadEnded = false;
 
                 (async () => {
                     while (true) {
-                        if (ended) {
+                        if (randomQueuePreloadEnded) {
                             return;
                         }
 
-                        nextTrackPromise = getNextTrack();
+                        randomQueueNextTrackPromise = getNextTrack();
 
-                        const nextTrack = await nextTrackPromise;
-                        const preloadSuccess = await nextTrack.preload();
+                        const nextTrack = await randomQueueNextTrackPromise;
+
+                        const preloadSuccess = await new Promise((resolve) => {
+                            requestNetworkIdle(async () => {
+                                resolve(await nextTrack.preload({ abortSignal: abortController.signal }));
+                            }, preference.playback.timeToWait);
+                        });
 
                         if (preloadSuccess) {
                             break;
                         }
-
-                        if (queue.constructor !== RandomTrackQueue) {
-                            break;
-                        }
                     }
                 })();
+            }
 
-                try {
-                    await playerController.playTrack(track);
-                } catch(e) {
-                    console.log(e);
+            try {
+                await playerController.playTrack(track, () => commit(mutationTypes.UPDATE_STATE_DURATION, state.playerController.duration));
+            } catch(e) {
+                console.log(e);
 
-                    if (queue.constructor === RandomTrackQueue) {
-                        commit(mutationTypes.ADD_TRACK, { track: await nextTrackPromise });
-                    }
+                randomQueuePreloadEnded = true;
 
-                    dispatch(actionTypes.PLAY_TRACK, { index: commit(mutationTypes.NEXT_TRACK) });
+                if (!queue.getNext()) {
+                    const nextTrack = await (async () => {
+                        while (true) {
+                            const track = await randomQueueNextTrackPromise;
+
+                            if (track) {
+                                return track;
+                            }
+
+                            randomQueueNextTrackPromise = getNextTrack();
+                        }
+                    })();
+
+                    commit(mutationTypes.ADD_TRACK, { track: nextTrack, queueIndex: playingQueueIndex });
                 }
 
-                if (rootState.visualizationModule._visualizer.activeType === "random") {
-                    commit(mutationTypes.UPDATE_ACTIVE_VISUALIZER_TYPE, "random");
-                }
+                dispatch(actionTypes.PLAY_TRACK, { index: commit(mutationTypes.NEXT_TRACK) });
+            }
 
-                ended = true;
+            abortController.abort();
+            randomQueuePreloadEnded = true;
+
+            if (rootState.visualizationModule._visualizer.activeType === "random") {
+                commit(mutationTypes.UPDATE_ACTIVE_VISUALIZER_TYPE, "random");
             }
         },
 
         async [actionTypes.STOP_PLAYBACK]({ dispatch, commit }) {
             commit(mutationTypes.STOP_PLAYBACK);
             commit(mutationTypes.UPDATE_PROGRESS, 0);
-            commit(mutationTypes.UPDATE_PROGRESS_STATE, 0);
+            commit(mutationTypes.UPDATE_STATE_PROGRESS, 0);
 
             (async () => {
                 await dispatch(actionTypes.TRIGGER_BACKGROUND_EVENT, "stop");
@@ -312,7 +362,7 @@ const sourceModule = {
                         icons: sourceData.icons,
                     });
 
-                    const sourceActiveMap = JSON.parse(localStorage.getItem("kaiplayersourceactive")) || { hearthis: false };
+                    const sourceActiveMap = JSON.parse(localStorage.getItem("kaiplayersourceactive")) || {};
 
                     if (sourceActiveMap.hasOwnProperty(sourceData.id)) {
                         source.active = sourceActiveMap[sourceData.id];
@@ -442,10 +492,7 @@ const restoreQueueData = () => {
 
                     case 'basic':
                     default:
-                        return new TrackQueue({
-                            name: queueData.name,
-                            activeIndex: queueData.activeIndex,
-                        });
+                        return new TrackQueue({ name: queueData.name });
                 }
             })();
 
@@ -489,12 +536,14 @@ const restoreQueueData = () => {
             }
 
             queue.activeIndex = queueData.activeIndex;
+            queue.nextIndex = queue.generateNextIndex();
 
             return queue;
         }));
 
         queueGroup.activeIndex = queueGroupData.activeIndex;
         playingQueueIndex = queueGroupData.playingQueueIndex || 0;
+        queueGroup.activeIndex = playingQueueIndex || queueGroupData.activeIndex;
     }
 
     return {
@@ -542,10 +591,10 @@ const queueModule = {
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
-        [mutationTypes.ADD_TRACK](state, { track, queueIndex = state.playingQueueIndex }) {
-            const queue = state.queueGroup.get(queueIndex);
+        [mutationTypes.ADD_TRACK](state, { track, queue, queueIndex = state.queueGroup.activeIndex }) {
+            const targetQueue = queue || state.queueGroup.get(queueIndex);
 
-            queue.add(track);
+            targetQueue.add(track);
             saveQueueData(state.queueGroup, state.playingQueueIndex);
         },
 
@@ -633,6 +682,34 @@ const queueModule = {
                 });
             });
         },
+
+        async [actionTypes.FETCH_NEXT_TRACK_FOR_RANDOM_QUEUE]({ state, commit, rootState }, { track, queueIndex } = {}) {
+            const queue = state.queueGroup.get(queueIndex);
+
+            if (!queue instanceof RandomTrackQueue) {
+                throw new Error("Not a random queue.");
+            }
+
+            const recommendedTrack = await (async() => {
+                if (!randomQueuePreloadEnded && randomQueueNextTrackPromise) {
+                    randomQueuePreloadEnded = true;
+
+                    return await randomQueueNextTrackPromise;
+                }
+
+                while (true) {
+                    try {
+                        return await getRecommendedTrack(track, sourceGroup.get().filter(source => source.active));
+                    } catch (e) {
+                        console.log(e);
+
+                        await new Promise((resolve) => setTimeout(resolve, 200));
+                    }
+                }
+            })();
+
+            commit(mutationTypes.ADD_TRACK, { track: recommendedTrack, queueIndex });
+        }
     },
 };
 

@@ -8,13 +8,13 @@ import Queue from "../Queue";
 import Track from "../Track";
 
 export default class extends Queue<Track> implements IQueue<Track> {
-    private nextIndex: number|null;
+    protected nextIndex: number;
 
     constructor({ name, mode, activeIndex }: { name?: string, mode?: string, activeIndex?: number } = {}) {
         super({ name, mode });
 
-        this.activeIndex = activeIndex || null;
-        this.nextIndex = this.getNextIndex();
+        this.activeIndex = activeIndex || -1;
+        this.nextIndex = this.generateNextIndex();
     }
 
     public add(tracks: Track|Track[]) {
@@ -23,6 +23,9 @@ export default class extends Queue<Track> implements IQueue<Track> {
         // } else {
         //     tracks.loadPlaybackSources();
         // }
+        setTimeout(() => {
+            this.nextIndex = this.generateNextIndex();
+        }, 0);
 
         return super.add(tracks);
     }
@@ -33,30 +36,61 @@ export default class extends Queue<Track> implements IQueue<Track> {
         // } else {
         //     tracks.loadPlaybackSources();
         // }
+        setTimeout(() => {
+            this.nextIndex = this.generateNextIndex();
+        }, 0);
 
         return super.insert(index, tracks);
     }
 
+    public goTo(index: number) {
+        setTimeout(() => {
+            this.nextIndex = this.generateNextIndex();
+        }, 0);
+
+        return super.goTo(index);
+    }
+
+    public previous() {
+        setTimeout(() => {
+            this.nextIndex = this.generateNextIndex();
+        }, 0);
+
+        return super.previous();
+    }
+
     public next() {
         if (typeof this.nextIndex !== "number") {
-            this.nextIndex = this.getNextIndex();
+            this.nextIndex = this.generateNextIndex();
         }
 
         this.activeIndex = this.nextIndex;
-        this.nextIndex = this.getNextIndex();
+        this.nextIndex = this.generateNextIndex();
 
         return this.activeIndex;
     }
 
+    public switchMode() {
+        setTimeout(() => {
+            this.nextIndex = this.generateNextIndex();
+        }, 0);
+
+        return super.switchMode();
+    }
+
     public getNext(): Track|null {
-        if (typeof this.nextIndex !== "number") {
-            this.nextIndex = this.getNextIndex();
+        if (this.nextIndex === -1) {
+            this.nextIndex = this.generateNextIndex();
         }
 
-        if (typeof this.nextIndex !== "number") {
-            return this.activeIndex ? this.get(this.activeIndex) : null;
+        if (this.nextIndex === -1) {
+            return null;
         }
 
         return this.get(this.nextIndex);
+    }
+
+    public getLastIndex(): number {
+        return this.length - 1;
     }
 }

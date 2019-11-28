@@ -56,7 +56,7 @@ export default class Visualizer extends VisualController {
         const _renderers = {
             three: threeRenderer,
             histogram: histogramRenderer,
-            ribbon: wavingRibbonRenderer,
+            // ribbon: wavingRibbonRenderer,
             electricArc: electricArcRenderer,
             artwork: artworkRenderer
         };

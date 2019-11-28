@@ -26,7 +26,7 @@ export default class VisualController {
     _picture;
 
     get types() {
-        return Reflect.ownKeys(this._renderers).map(type => ({
+        return Reflect.ownKeys(this._renderers).filter((key) => key !== "__ob__").map((type) => ({
             name: mapTypeName(type),
             value: type
         }));

@@ -24,7 +24,6 @@
                 component: import("./app"),
                 loading,
                 error,
-                timeout: 30000,
             }),
         },
 

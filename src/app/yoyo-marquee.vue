@@ -28,7 +28,7 @@
                 const isWeiXin = /micromessenger/.test(window.navigator.userAgent.toLowerCase());
 
                 if (isWeiXin) {
-                    this.width += 5;
+                    this.width += 3;
                 }
 
                 contentDomElement.style.setProperty("--parent-width", this.width + 'px');

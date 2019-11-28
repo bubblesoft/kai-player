@@ -52,7 +52,7 @@ export default class<T> extends Set<T> implements IQueue<T> {
     }
 
     public next() {
-        this.activeIndex = this.getNextIndex();
+        this.activeIndex = this.generateNextIndex();
 
         return this.activeIndex;
     }
@@ -67,9 +67,9 @@ export default class<T> extends Set<T> implements IQueue<T> {
         return this.modeIndex;
     }
 
-    protected getNextIndex(): number|null {
+    protected generateNextIndex(): number {
         if (this.activeIndex === null) {
-            return null;
+            return -1;
         }
 
         switch (this.mode) {

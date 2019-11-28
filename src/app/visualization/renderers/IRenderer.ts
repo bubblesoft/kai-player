@@ -3,7 +3,7 @@ export default interface IRenderer {
     renderAudio(): this;
     renderAudio(bands: ((data: number[]) => void)[]): this;
     renderAudio(bands: ((data: number[]) => void)[], delta: number): this;
-    renderPicture(): this;
+    renderPicture(url: string): this;
     show(): this;
     hide(): this;
     start(): this;

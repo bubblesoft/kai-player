@@ -1,5 +1,5 @@
 <template lang="pug">
-    #control-bar(:style="{ backgroundImage: 'url(' + require('../assets/highlight.svg') + '),linear-gradient(rgba(255,255,255,.15) 10%,rgba(255,255,255,0) 90%),url(' + pic + ')' }")
+    #control-bar(:style="{ backgroundImage: pic && 'url(' + require('../assets/highlight.svg') + '),linear-gradient(rgba(255,255,255,.15) 10%,rgba(255,255,255,0) 90%),url(' + pic + ')' }")
         .tool-bar
             .options
                 select.form-control(
@@ -87,7 +87,7 @@
                             viewBox="0 0 24 24"
                         )
                             path(d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z")
-                .control-button(
+                .control-button.glowing-button(
                     @click="toggleSettingsModal();"
                 )
                     svg(
@@ -104,14 +104,14 @@
                 )
                     span.track-name-content(ref="trackNameContent")
                         span(:style="{ color: usingAltTrack ? 'rgb(89, 192, 255)' : '#fff' }") {{ track.name || $t('Unknown Track') }} - {{ track.artists && track.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist') }}
-                span.track-notifications
+                span.track-notifications(v-if="track")
                     v-popover(
-                        v-if="track && (track.status === Status.Error || track.status === Status.Warning)"
+                        v-if="track.status === Status.Error"
                         delay="300"
                         placement="top"
                         trigger="hover click focus"
                     )
-                        span.control-button
+                        span.control-button.glowing-button
                             svg.error(
                                 width="16"
                                 height="16"
@@ -122,25 +122,48 @@
                             slot="popover"
                             v-for="message of Array.from(track.messages)"
                         ) {{ $t(message.text) }}
-                    span.control-button(v-if="track && (track.status === Status.Error || track.status === Status.Warning)")
-                        svg.info(
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                        )
-                            path(d="M12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,11A1,1 0 0,1 13,12A1,1 0 0,1 12,13A1,1 0 0,1 11,12A1,1 0 0,1 12,11M12,8C14.63,8 17,9.57 18,12C16.62,15.31 12.81,16.88 9.5,15.5C7.92,14.84 6.66,13.58 6,12C7,9.57 9.37,8 12,8M12,9.5A2.5,2.5 0 0,0 9.5,12A2.5,2.5 0 0,0 12,14.5A2.5,2.5 0 0,0 14.5,12A2.5,2.5 0 0,0 12,9.5")
+                    v-popover(
+                        v-else-if="track.status === Status.Warning"
+                        delay="300"
+                        placement="top"
+                        trigger="hover click focus"
+                    )
+                        span.control-button.glowing-button
+                            svg.warning(
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16")
+                        .error-messages(
+                            slot="popover"
+                            v-for="message of Array.from(track.messages)"
+                        ) {{ $t(message.text) }}
+                    v-popover(
+                        delay="300"
+                        placement="top"
+                        trigger="hover click focus"
+                    )
+                        span.control-button.glowing-button
+                            svg.info(
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,11A1,1 0 0,1 13,12A1,1 0 0,1 12,13A1,1 0 0,1 11,12A1,1 0 0,1 12,11M12,8C14.63,8 17,9.57 18,12C16.62,15.31 12.81,16.88 9.5,15.5C7.92,14.84 6.66,13.58 6,12C7,9.57 9.37,8 12,8M12,9.5A2.5,2.5 0 0,0 9.5,12A2.5,2.5 0 0,0 12,14.5A2.5,2.5 0 0,0 14.5,12A2.5,2.5 0 0,0 12,9.5")
+                        div(slot="popover") Available in next release.
 
         .audio-control
-            .control-button.control-button_small(v-interact:tap="previous")
+            .control-button.control-button_small.glowing-button(v-interact:tap="previous")
                 svg(
                     width="24"
                     height="24"
                     viewBox="0 0 24 24"
                 )
                     path(d="M6 6h2v12H6zm3.5 6l8.5 6V6z")
-            .control-button.control-button_big(
+            .control-button.control-button_big.glowing-button(
                 v-if="!playing()"
-                v-interact:tap="async () => { play(); }"
+                v-interact:tap="play"
                 :class="{ loading: loading || playerController.status === PlayerStatus.Loading || playerController.status === PlayerStatus.Streaming }"
                 key="play"
             )
@@ -150,7 +173,7 @@
                     viewBox="0 0 24 24"
                 )
                     path(d="M8 5v14l11-7z")
-            .control-button.control-button_big(
+            .control-button.control-button_big.glowing-button(
                 v-else
                 v-interact:tap="pause"
                 :class="{ loading: loading || playerController.status === PlayerStatus.Loading || playerController.status === PlayerStatus.Streaming }"
@@ -162,14 +185,14 @@
                     viewBox="0 0 24 24"
                 )
                     path(d="M6 19h4V5H6v14zm8-14v14h4V5h-4z")
-            .control-button.control-button_small(v-interact:tap="next")
+            .control-button.control-button_small.glowing-button(v-interact:tap="next")
                 svg(
                     width="24"
                     height="24"
                     viewBox="0 0 24 24"
                 )
                     path(d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z")
-            .control-button.control-button_small(v-interact:tap="stop")
+            .control-button.control-button_small.glowing-button(v-interact:tap="stop")
                 svg(
                     width="24"
                     height="24"
@@ -203,7 +226,7 @@
                 :process-style="{ 'background-color': 'rgba(255, 255, 255, 0.9)', filter: 'drop-shadow(2px 2px 10px rgba(150, 150, 150, 1))' }"
                 :tooltip-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)', 'border-color': 'rgba(255, 255, 255, 0.6)', 'border-style': 'none' }"
             )
-            .mode-switch.control-button(
+            .mode-switch.control-button.glowing-button(
                 v-if="mode === 'shuffle'"
                 v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
                 v-tooltip="Object.assign({}, { content: $t('Shuffle') }, tooltipConfig)"
@@ -214,7 +237,7 @@
                     viewBox="0 0 24 24"
                 )
                     path(d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z")
-            .mode-switch.control-button(
+            .mode-switch.control-button.glowing-button(
                 v-else-if="mode === 'repeatOne'"
                 v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
                 v-tooltip="Object.assign({}, { content: $t('Repeat one') }, tooltipConfig)"
@@ -225,7 +248,7 @@
                     viewBox="0 0 24 24"
                 )
                     path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z")
-            .mode-switch.control-button(
+            .mode-switch.control-button.glowing-button(
                 v-else
                 v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
                 v-tooltip="Object.assign({}, { content: $t('Repeat all') }, tooltipConfig)"
@@ -248,15 +271,15 @@
     import PlayerStatus from "./PlayerStatus";
     import RandomTrackQueue from "./queue/RandomTrackQueue";
 
-    import { UPDATE_PROGRESS, UPDATE_PROGRESS_STATE, PAUSE_PLAYBACK, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
-    import { PLAY_TRACK, STOP_PLAYBACK, RESUME_PLAYBACK, TRIGGER_BACKGROUND_EVENT } from "../scripts/action-types";
+    import { UPDATE_PROGRESS, UPDATE_STATE_PROGRESS, PAUSE_PLAYBACK, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, UPDATE_ACTIVE_BACKGROUND_TYPE, UPDATE_ACTIVE_VISUALIZER_TYPE, BACKGROUND_LOAD_RESOURCE, VISUALIZER_LOAD_RESOURCE } from '../scripts/mutation-types';
+    import { PLAY_TRACK, STOP_PLAYBACK, RESUME_PLAYBACK, FETCH_NEXT_TRACK_FOR_RANDOM_QUEUE, TRIGGER_BACKGROUND_EVENT } from "../scripts/action-types";
 
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
 
     import yoyoMarquee from './yoyo-marquee';
 
-    import { getRecommendedTrack, formatDuration, loadImage } from '../scripts/utils';
+    import { getRecommendedTrack, formatDuration, loadImage, requestNetworkIdle } from "../scripts/utils";
 
     export default {
         components: {
@@ -275,6 +298,7 @@
                     delay: 500,
                     trigger: "hover click focus",
                 },
+                fetchingNext: false,
                 Status,
                 PlayerStatus,
             }
@@ -292,13 +316,14 @@
 
                 set(progress) {
                     this[UPDATE_PROGRESS](progress);
-                    this[UPDATE_PROGRESS_STATE](progress);
+                    this[UPDATE_STATE_PROGRESS](progress);
                 }
             },
 
             duration() {
                 return this.playerController.duration
                     || this.track && this.track.duration && Math.round((this.track.duration) / 1000)
+                    || this.$store.state.playerModule.duration
                     || 0;
             },
 
@@ -439,7 +464,8 @@
             },
 
             ...mapState({
-                queue: state => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex || 0),
+                playingQueueIndex: (state) => state.queueModule.playingQueueIndex,
+                queue: (state) => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex || 0),
                 playerController: state => state.playerModule.playerController,
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 visualizationInit: state => state.visualizationModule.init,
@@ -456,13 +482,15 @@
 
             async track(to) {
                 if (to && to.picture) {
-                    try {
-                        this.pic = applyCanvasMask(scale({ width: 200, height: 200 }, await loadImage(to.picture)), await loadImage(require('../assets/mask.png')), 200, 200, true);
-                    } catch (e) {
-                        this.pic = '';
-                    }
+                    requestNetworkIdle(async () => {
+                        try {
+                            this.pic = applyCanvasMask(scale({ width: 200, height: 200 }, await loadImage(to.picture)), await loadImage(require('../assets/mask.png')), 200, 200, true);
+                        } catch (e) {
+                            this.pic = null;
+                        }
+                    });
                 } else {
-                    this.pic = '';
+                    this.pic = null;
                 }
 
                 if (this.$refs.trackNameContent) {
@@ -491,11 +519,11 @@
                     this[RESUME_PLAYBACK]();
                 } else {
                     if (this.queue.activeIndex !== null) {
-                        await this[PLAY_TRACK]({ index: this.queue.activeIndex });
+                        this[PLAY_TRACK]({ index: this.queue.activeIndex });
                     } else {
                         this.loading = true;
 
-                        await this[PLAY_TRACK]({
+                        this[PLAY_TRACK]({
                             index: await new Promise((resolve) => {
                                 const unwatch = this.$watch("track", () => {
                                     unwatch();
@@ -525,7 +553,7 @@
             async previous() {
                 const eventPromise = this[TRIGGER_BACKGROUND_EVENT]("previousTrack");
 
-                await this[PLAY_TRACK]({ index: this.queue.previous() });
+                this[PLAY_TRACK]({ index: this.queue.previous() });
                 await eventPromise;
             },
 
@@ -534,13 +562,19 @@
 
                 this.playerController.stop();
 
-                if (this.queue.constructor === RandomTrackQueue) {
+                if (this.queue.constructor === RandomTrackQueue && !this.queue.getNext()) {
+                    if (this.fetchingNext) {
+                        return;
+                    }
+
                     this.loading = true;
-                    this[ADD_TRACK]({ track: await getRecommendedTrack(this.track, this.sources.filter(source => source.active)) });
+                    this.fetchingNext = true;
+                    await this[FETCH_NEXT_TRACK_FOR_RANDOM_QUEUE]({ queueIndex: this.playingQueueIndex });
                     this.loading = false;
+                    this.fetchingNext = false;
                 }
 
-                await this[PLAY_TRACK]({ index: this.queue.next() });
+                this[PLAY_TRACK]({ index: this.queue.next() });
                 await eventPromise;
             },
 
@@ -550,7 +584,7 @@
 
             ...mapMutations([
                 UPDATE_PROGRESS,
-                UPDATE_PROGRESS_STATE,
+                UPDATE_STATE_PROGRESS,
                 PAUSE_PLAYBACK,
                 ADD_TRACK,
                 UPDATE_TRACK,
@@ -565,6 +599,7 @@
                 PLAY_TRACK,
                 STOP_PLAYBACK,
                 RESUME_PLAYBACK,
+                FETCH_NEXT_TRACK_FOR_RANDOM_QUEUE,
                 TRIGGER_BACKGROUND_EVENT,
                 'saveLayout'
             ])
@@ -602,7 +637,7 @@
         background-repeat: no-repeat;
         box-shadow: 0 0 25px rgba(0, 0, 0, 0.1),
             inset 0 0 20px rgba(255, 255, 255, 0.1);
-        z-index: 1;
+        z-index: 2;
 
         @media (max-width: 768px) {
             background-position: 30% 0, center, 100% center;
@@ -750,42 +785,6 @@
             .mode-switch {
                 @media (min-width: 370px) and (max-width: 629px) {
                     display: none;
-                }
-            }
-        }
-
-        .control-button {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            line-height: 0;
-            cursor: pointer;
-
-            svg {
-                fill: rgba(255, 255, 255, .6);
-
-                &.error {
-                    fill: rgba(211, 101, 98, .6);
-                }
-
-                &.info {
-                    fill: rgba(89, 192, 255, .6);
-                }
-            }
-
-            &:hover svg {
-                fill: rgba(255, 255, 255, 0.9);
-                -webkit-filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
-                filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
-                -ms-filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
-                filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
-
-                &.error {
-                    fill: rgba(211, 101, 98, .9);
-                }
-
-                &.info {
-                    fill: rgba(89, 192, 255, .9);
                 }
             }
         }

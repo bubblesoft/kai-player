@@ -1,6 +1,6 @@
 {
   "messages": {
-    "Error": "エラー",
+    "Error, please refresh the page.": "エラー、ページを再読み込みして下さい。",
     "Confirm": "確認",
     "Cancel": "キャンセル",
     "Close": "閉じる",
@@ -38,6 +38,7 @@
     "Unknown Artist": "未知アーチスト",
     "Add to a playlist": "プレーリストに追加",
     "Move to...": "他のリストに移動",
+    "Copy to...": "他のリストにコピー",
     "Enter edit mode": "編集モードに変換",
     "Exit edit mode": "編集モードを終了",
     "Drag a track here to remove it": "アイテムを引いてここに置くと削除する",
@@ -66,12 +67,13 @@
     "The audio source doesn't provide a playback URL for this track.": "媒体源はこのトラック再生URLを提供していません。",
     "The playback URL provided by the audio source is not valid/reachable.": "媒体源によって提供した再生URLは無効または接続できませんでした。",
     "The audio format of the playback source is not supported.": "再生ソースのオーディオ形式はサポートされていません。",
-    "The connection to the playback source is slow.": "再生ソースの接続が遅い。",
+    "The connection to the server is slow.": "サーバーへの接続が遅い。",
+    "The connection to the server is unstable.": "サーバーへの接続が不安定。",
     "Unknown error.": "未確認エラー。",
     "Panels are resizable/movable and can be closed/opened using the switches on the bottom control bar.": "パネルはサイズ調整・移動可能であり、下のコントロールバー上のスイッチを使用して開く・閉じることもできる。",
     "Select the \"Listen Randomly\" playlist to start playing random tracks pushed by the app.": "\"気軽に聴く\"というプレーリストを選択して、アプリによってプッシュされた音楽が連続再生できる。",
-    "Pick a visualization effect from the drop-down on the control bar.": "コントロールバーのドロップダウンリストから視覚化効果を選択。",
+    "Pick up a visualization effect from the drop-down on the control bar (visualization may be inactive with slow network).": "コントロールバーのドロップダウンリストから視覚化効果を選択（不安定なネット接続では視覚化が非アクティブになる場合もあり）。",
     "Detailed preference settings available via the gear icon on the control bar.": "詳細設定ならコントロールバーの歯車アイコンをクリック。",
-    "More features are under development and will be added in feature releases.": "より多くの機能が開発中、後で追加する予定である。"
+    "More features are under continuous development.": "より多くの機能が開発中、長期的な追加予定である。"
   }
 }

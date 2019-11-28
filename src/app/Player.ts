@@ -89,7 +89,8 @@ export default class Player implements IPlayer {
         this.privateVolume = volume;
     }
 
-    private sound: Howl|undefined;
+    private sound?: Howl;
+    private altSound?: Howl;
     private streaming = false;
     private privateVolume = 0;
     private seek: number;
@@ -120,7 +121,7 @@ export default class Player implements IPlayer {
     }
 
     public startRace(id?: number) {
-        this.stopRace();
+        this.unload();
 
         if (id) {
             this.raceId = id;
@@ -129,12 +130,10 @@ export default class Player implements IPlayer {
         }
 
         this.raceErrorCount = 0;
-        this.soundsInRace = [];
-        this.soundsInRaceReject = [];
-        this.raceTimeouts = [];
 
         if (this.sound) {
             this.sound.unload();
+
             delete this.sound;
         }
 
@@ -145,63 +144,15 @@ export default class Player implements IPlayer {
     }
 
     public joinRace(urls: string[]|string, raceId: number, timeToWait: number = 0) {
-        if (!this.racing) {
-            return;
-        }
-
-        if (this.raceId !== raceId) {
-            return;
-        }
-
-        if (!this.racePromise) {
-            throw Player.noRaceError;
-        }
-
-        this.racePromise = Promise.race([this.racePromise, ...(Array.isArray(urls) ? urls : [urls])
-            .map((url) => new Promise<Howl>((resolve, reject) => {
-                this.raceTimeouts.push(setTimeout(() => {
-                    const sound = new Howl({
-                        format: ["mp3"],
-                        html5: true,
-                        src: url,
-                        volume: this.volume,
-                    });
-
-                    this.soundsInRace.push(sound);
-                    this.soundsInRaceReject.push(reject);
-
-                    sound.once("load", () => {
-                        initHowlOnProgress(sound);
-
-                        sound.once("progress", () => {
-                            resolve(sound);
-                        });
-
-                        sound.once("playerror", (soundId: number, err: number|Error) => {
-                            this.raceErrorCount++;
-                            this.lastErrorReject = reject;
-                            this.lastError = err;
-                            this.lastErrorSoundId = soundId;
-
-                            this.onRacerFailCallbacks.forEach((callback) => callback(sound._src));
-                        });
-
-                        sound.play();
-                    });
-
-                    sound.once("loaderror", (soundId: number, err: number|Error) => {
-                        this.raceErrorCount++;
-                        this.lastErrorReject = reject;
-                        this.lastError = err;
-                        this.lastErrorSoundId = soundId;
-                        this.lastErrorSound = sound;
-
-                        this.onRacerFailCallbacks.forEach((callback) => callback(sound._src));
-                    });
-                }, timeToWait));
-            }))]);
-
-        this.watchRace();
+        this.raceTimeouts.push(setTimeout(() => {
+            this.joinSoundsToRace((Array.isArray(urls) ? urls : [urls]).map((url) => new Howl({
+                format: ["mp3"],
+                html5: true,
+                mute: true,
+                src: url,
+                volume: this.volume,
+            })), raceId);
+        }, timeToWait));
     }
 
     public stopJoinRace() {
@@ -242,11 +193,11 @@ export default class Player implements IPlayer {
         this.raceTimeouts = [];
 
         this.soundsInRace.forEach((sound, index) => {
-            if (sound !== this.sound) {
+            if (sound !== this.sound && sound !== this.altSound) {
                 sound.unload();
-
-                delete this.soundsInRace[index];
             }
+
+            delete this.soundsInRace[index];
         });
 
         this.soundsInRace = [];
@@ -260,15 +211,30 @@ export default class Player implements IPlayer {
 
         if (this.sound) {
             this.sound.unload();
+
             delete this.sound;
+        }
+
+        if (this.altSound) {
+            this.altSound.unload();
+
+            delete this.altSound;
         }
     }
 
     public play() {
-        if (this.sound) {
-            this.sound.seek(this.seek);
-            this.sound.play();
+        if (!this.sound) {
+            return;
         }
+
+        this.sound.mute(false);
+
+        if (this.sound.playing()) {
+            return;
+        }
+
+        this.sound.seek(this.seek);
+        this.sound.play();
     }
 
     public pause() {
@@ -463,6 +429,61 @@ export default class Player implements IPlayer {
         }
     }
 
+    private joinSoundsToRace(sounds: Howl[]|Howl, raceId: number, { successEvent = "progress" } = {}) {
+        if (!this.racing) {
+            return;
+        }
+
+        if (this.raceId !== raceId) {
+            return;
+        }
+
+        if (!this.racePromise) {
+            throw Player.noRaceError;
+        }
+
+        this.racePromise = Promise.race([this.racePromise, ...(Array.isArray(sounds) ? sounds : [sounds])
+            .map((sound) => new Promise<Howl>((resolve, reject) => {
+                    this.soundsInRace.push(sound);
+                    this.soundsInRaceReject.push(reject);
+
+                    sound.once("load", () => {
+                        if (successEvent === "progress") {
+                            initHowlOnProgress(sound);
+
+                            sound.once("progress", (soundId: any, seek: any) => {
+                                resolve(sound);
+                            });
+
+                            sound.once("playerror", (soundId: number, err: number|Error) => {
+                                this.raceErrorCount++;
+                                this.lastErrorReject = reject;
+                                this.lastError = err;
+                                this.lastErrorSoundId = soundId;
+
+                                this.onRacerFailCallbacks.forEach((callback) => callback(sound._src, err));
+                            });
+
+                            sound.play();
+                        } else if (successEvent === "load") {
+                            resolve(sound);
+                        }
+                    });
+
+                    sound.once("loaderror", (soundId: number, err: number|Error) => {
+                        this.raceErrorCount++;
+                        this.lastErrorReject = reject;
+                        this.lastError = err;
+                        this.lastErrorSoundId = soundId;
+                        this.lastErrorSound = sound;
+
+                        this.onRacerFailCallbacks.forEach((callback) => callback(sound._src, err));
+                    });
+            }))]);
+
+        this.watchRace();
+    }
+
     private watchRace() {
         if (!this.racePromise) {
             throw Player.noRaceError;
@@ -475,13 +496,77 @@ export default class Player implements IPlayer {
         Promise.race([this.racePromise, new Promise<Howl>((resolve, reject) => {
             this.cancelWatchRace = () => reject([undefined, Player.cancelWatchRaceError]);
         })]).then((sound) => {
-            this.sound = sound;
-            this.stopRace();
-            setTimeout(() => this.onLoadCallbacks.forEach((callback) => callback(sound._src)), 0);
-            this.load();
+            const active = this.status === PlayerStatus.Playing
+                || this.status === PlayerStatus.Streaming
+                || this.status === PlayerStatus.Paused;
+
+            if (!active) {
+                if (this.sound) {
+                    this.sound.unload();
+                }
+
+                this.sound = sound;
+                setTimeout(() => this.onLoadCallbacks.forEach((callback) => callback(sound._src)), 0);
+                this.setup();
+            } else {
+                sound.stop();
+
+                if (this.altSound) {
+                    this.altSound.unload();
+                }
+
+                this.altSound = sound;
+            }
+
+            if (/^\/proxy/.test(sound._src)) {
+                this.stopRace();
+            } else {
+                this.racePromise = Promise.race([]);
+
+                for (const timeout of this.raceTimeouts) {
+                    clearTimeout(timeout);
+                }
+
+                this.raceTimeouts = [];
+
+                const raceId = new Date().getTime();
+
+                this.raceId = raceId;
+
+                const isWeiXin = /micromessenger/.test(window.navigator.userAgent.toLowerCase());
+
+                this.soundsInRace.forEach((soundInRace, index) => {
+                    if (soundInRace === this.sound) {
+                        delete this.soundsInRace[index];
+
+                        return;
+                    }
+
+                    if (/^\/proxy/.test(soundInRace._src)) {
+                        return;
+                    }
+
+                    soundInRace.unload();
+
+                    delete this.soundsInRace[index];
+                });
+
+                const soundsToJoinSubRace = this.soundsInRace.filter((soundToJoinSubRace) => soundToJoinSubRace);
+
+                this.soundsInRace = [];
+                this.soundsInRaceReject = [];
+
+                for (const soundToJoinSubRace of soundsToJoinSubRace) {
+                    this.joinSoundsToRace(soundToJoinSubRace, raceId, { successEvent: isWeiXin ? "load" : undefined });
+                }
+            }
         }).catch(([id, err, sound]) => {
             if (err === Player.cancelWatchRaceError) {
                 return;
+            }
+
+            if (this.sound) {
+                this.sound.unload();
             }
 
             this.sound = sound;
@@ -490,12 +575,10 @@ export default class Player implements IPlayer {
         });
     }
 
-    private load() {
+    private setup() {
         if (!this.sound) {
             throw new Error("No sound loaded.");
         }
-
-        this.stopRace();
 
         this.sound.on("progress", () => {
             this.streaming = false;

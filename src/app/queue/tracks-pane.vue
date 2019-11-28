@@ -103,7 +103,17 @@
                     style="width: 90%; text-align: center;"
                     :title="activeTrack.name + '-' + (activeTrack.artists && activeTrack.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist'))"
                 )
-                    h5(v-if="playingQueueIndex === queueGroup.activeIndex && activeTrack") {{ activeTrack.name + ' - ' + (activeTrack.artists && activeTrack.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist')) }}
+                    h5(v-if="activeTrack") {{ activeTrack.name + ' - ' + (activeTrack.artists && activeTrack.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist')) }}
+                .play-button.glowing-button(
+                    v-if="activeTrack && !active || queueGroup.activeIndex !== playingQueueIndex"
+                    v-interact:tap="() => { playTrack(activeIndex); }"
+                )
+                    svg(
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                    )
+                        path(d="M8 5v14l11-7z")
                 .tips.text-muted {{ $t('Drag a track here and start random listening') }}
             table.table-condensed.table.table-hover(v-else)
                 draggable(
@@ -145,9 +155,9 @@
                                     v-model="track.name"
                                     :editable="editMode"
                                 )
-                                .track-notifications
+                                .track-notifications.glowing-button
                                     v-popover(
-                                        v-if="track.status === Status.Error || track.status === Status.Warning"
+                                        v-if="track.status === Status.Error"
                                         delay="300"
                                         placement="top"
                                         trigger="hover click focus"
@@ -162,13 +172,35 @@
                                             slot="popover"
                                             v-for="message of Array.from(track.messages)"
                                         ) {{ $t(message.text) }}
-                                    svg.info(
-                                        v-if="track.status === Status.Error || track.status === Status.Warning"
-                                        width="16"
-                                        height="16"
-                                        viewBox="0 0 24 24"
+                                    v-popover(
+                                        v-else-if="track.status === Status.Warning"
+                                        delay="300"
+                                        placement="top"
+                                        trigger="hover click focus"
                                     )
-                                        path(d="M12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,11A1,1 0 0,1 13,12A1,1 0 0,1 12,13A1,1 0 0,1 11,12A1,1 0 0,1 12,11M12,8C14.63,8 17,9.57 18,12C16.62,15.31 12.81,16.88 9.5,15.5C7.92,14.84 6.66,13.58 6,12C7,9.57 9.37,8 12,8M12,9.5A2.5,2.5 0 0,0 9.5,12A2.5,2.5 0 0,0 12,14.5A2.5,2.5 0 0,0 14.5,12A2.5,2.5 0 0,0 12,9.5")
+                                        svg.warning(
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                        )
+                                            path(d="M12,2L1,21H23M12,6L19.53,19H4.47M11,10V14H13V10M11,16V18H13V16")
+                                        .error-messages(
+                                            slot="popover"
+                                            v-for="message of Array.from(track.messages)"
+                                        ) {{ $t(message.text) }}
+                                    v-popover(
+                                        v-if="selectedIndex === index"
+                                        delay="300"
+                                        placement="top"
+                                        trigger="hover click focus"
+                                    )
+                                        svg.info(
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                        )
+                                            path(d="M12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,11A1,1 0 0,1 13,12A1,1 0 0,1 12,13A1,1 0 0,1 11,12A1,1 0 0,1 12,11M12,8C14.63,8 17,9.57 18,12C16.62,15.31 12.81,16.88 9.5,15.5C7.92,14.84 6.66,13.58 6,12C7,9.57 9.37,8 12,8M12,9.5A2.5,2.5 0 0,0 9.5,12A2.5,2.5 0 0,0 12,14.5A2.5,2.5 0 0,0 14.5,12A2.5,2.5 0 0,0 12,9.5")
+                                        div(slot="popover") Available in next release.
                         td {{ track.artists.map(artist => artist.name).join(', ') }}
                         td(
                             v-if="track.duration"
@@ -207,6 +239,7 @@
 
     import { formatDuration } from "../../scripts/utils";
 
+    import PlayerStatus from "../PlayerStatus";
     import RandomTrackQueue from './RandomTrackQueue';
     import Status from "../Status";
 
@@ -266,10 +299,6 @@
                 }
             },
 
-            player() {
-                return this.playerController.player;
-            },
-
             activeIndex: {
                 get() {
                     return this.queue ? this.queue.activeIndex : null;
@@ -288,7 +317,12 @@
             },
 
             playing() {
-                return this.player.playing
+                return this.playerController.status === PlayerStatus.Playing
+                    || this.playerController.status === PlayerStatus.Streaming;
+            },
+
+            active() {
+                return this.playing || this.playerController.status === PlayerStatus.Loading;
             },
 
             playingQueueIndex: {
@@ -421,22 +455,45 @@
                 }
             },
 
-            copyToQueue(track) {
+            copyToQueue(track, callback) {
                 this.$emit('openQueueModal', (queue) => {
                     this[ADD_TRACK]({ track, queue });
+
+                    if (queue instanceof RandomTrackQueue) {
+                        const queueIndex = (() => {
+                            const queues = this.queueGroup.get();
+
+                            for (let i = 0; i < queues.length; i++) {
+                                if (queues[i] === queue) {
+                                    return i;
+                                }
+                            }
+
+                            return -1;
+                        })();
+
+                        if (queueIndex !== -1) {
+                            this[PLAY_TRACK]({ index: queue.goTo(queue.getLastIndex()), queueIndex });
+                        }
+                    }
+
+                    if (callback) {
+                        callback();
+                    }
                 });
             },
 
             handleContextMenu(e, track, index) {
-                this.$emit('contextMenu', e, type => {
-                    if (type === 'play') {
+                this.selectedIndex = index;
+
+                this.$emit("contextMenu", e, (type) => {
+                    if (type === "play") {
                         this.playTrack(index);
-                    } else if (type === 'move') {
-                        this.$emit('openQueueModal', (queue) => {
-                            this[ADD_TRACK]({ track, queue });
-                            this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1));
-                        });
-                    } else if (type === 'up') {
+                    } else if (type === "move") {
+                        this.copyToQueue(track, () => this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1)));
+                    } else if (type === "copy") {
+                        this.copyToQueue(track);
+                    } else if (type === "up") {
                         if (index > 0) {
                             this.$set(this.tracks, index, this.tracks[index - 1]);
                             this.$set(this.tracks, index - 1, track);
@@ -454,7 +511,7 @@
                                 this.selectedIndex--;
                             }
                         }
-                    } else if (type === 'down') {
+                    } else if (type === "down") {
                         if (index + 1 < this.tracks.length) {
                             this.$set(this.tracks, index, this.tracks[index + 1]);
                             this.$set(this.tracks, index + 1, track);
@@ -472,7 +529,7 @@
                                 this.selectedIndex--;
                             }
                         }
-                    } else if (type === 'remove') {
+                    } else if (type === "remove") {
                         this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1));
                         this.trashCan.data.push(track);
                         this.handleTrackRemove(index);
@@ -579,6 +636,18 @@
                 right: 0;
                 bottom: 0;
 
+                .play-button {
+                    position: absolute;
+                    top: 10%;
+                    width: auto;
+                    height: 30%;
+
+                    svg {
+                        width: auto;
+                        height: 100%;
+                    }
+                }
+
                 .draggable {
                     position: absolute;
                     left: 0;
@@ -629,34 +698,9 @@
                 flex-wrap: wrap;
 
                 svg {
-                    diplay: block;
+                    display: block;
                     width: 16px;
                     height: 16px;
-                    cursor: pointer;
-
-                    &.error {
-                        fill: rgba(211, 101, 98, .6);
-                    }
-
-                    &.info {
-                        fill: rgba(89, 192, 255, .6);
-                    }
-
-                    &:hover {
-                        fill: rgba(255, 255, 255, 0.9);
-                        -webkit-filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
-                        filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
-                        -ms-filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
-                        filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
-
-                        &.error {
-                            fill: rgba(211, 101, 98, .9);
-                        }
-
-                        &.info {
-                            fill: rgba(89, 192, 255, .9);
-                        }
-                    }
                 }
             }
         }

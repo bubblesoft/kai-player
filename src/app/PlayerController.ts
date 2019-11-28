@@ -4,7 +4,7 @@
 
 import config from "../config";
 
-import { fetchData, getSourceById } from "../scripts/utils";
+import {fetchData, getSourceById, requestNetworkIdle} from "../scripts/utils";
 
 import IPlayerController from "./IPlayerController";
 
@@ -96,13 +96,29 @@ export default class PlayerController implements IPlayerController {
     private onPlayErrorCallback?: (soundId: number, err: Error) => void;
     private onLoadErrorCallback?: (soundId: number, err: Error) => void;
     private onLoadCallback?: (loadedUrl: string) => void;
+    private originSourceFailed = false;
+    private proxiedOriginSourceFailed = false;
+    private stoppedJoinRace = false;
+    private timeout = false;
+    private abortController = new AbortController();
 
-    public playTrack(track: Track) {
-        this.stopLoading();
+    private get active() {
+        return this.status === PlayerStatus.Playing
+            || this.status === PlayerStatus.Streaming
+            || this.status === PlayerStatus.Paused;
+    }
+
+    public playTrack(track: Track, callback?: () => void) {
         this.unwatchPlayer();
+        this.stopLoading();
         this.track = track;
         this.playbackId = new Date().getTime();
         this.hasTrackAddedToPlayer = false;
+        this.originSourceFailed = false;
+        this.proxiedOriginSourceFailed = false;
+        this.stoppedJoinRace = false;
+        this.timeout = false;
+        this.abortController = new AbortController();
 
         return new Promise<void>((resolvePlayback, rejectPlayback) => {
             if (this.resolveExistingLoadingPromise) {
@@ -144,13 +160,14 @@ export default class PlayerController implements IPlayerController {
                 }
 
                 this.player.unload();
-                this.watchPlayer(resolvePlayback, rejectPlayback);
+                this.watchPlayer(resolvePlayback, rejectPlayback, callback);
                 this.altTracks = [];
                 this.playbackId = new Date().getTime();
                 this.loadTrack(track, resolvePlayback, rejectPlayback);
             } catch (e) {
                 // console.log(e);
 
+                this.loading = true;
                 rejectPlayback(e);
 
                 if (this.resolveExistingPlayTrackPromise) {
@@ -185,6 +202,8 @@ export default class PlayerController implements IPlayerController {
         if (this.resolveExistingPlayTrackPromise) {
             this.resolveExistingPlayTrackPromise();
         }
+
+        this.privateUsingAltTrack = false;
     }
 
     private loadTrack(track: Track, resolvePlayback: (value?: any) => void, rejectPlayback: (reason?: Error) => void) {
@@ -208,29 +227,52 @@ export default class PlayerController implements IPlayerController {
 
         const preference = this.preference || config.defaultPreference;
 
-        const altTracksResPromises = (() => {
-            return this.sources
-                .filter((source) => source !== track.source)
-                .map((source) => fetchData("/audio/alttracks", {
-                    body: {
-                        artists: track.artists.map((artist) => artist.name),
-                        name: track.name,
-                        similarityRange: {
-                            high: preference.playback.alternativeTracks.similarityRange.high,
-                            low: preference.playback.alternativeTracks.similarityRange.low,
-                        },
-                        sources: [source.id],
-                    },
-                }));
-        })();
-
         const loadPlaybackSourcesPromise = (async () => {
-            try {
-                if (track.playbackSources && track.playbackSources.length) {
-                    this.loadPlaybackSources(track.playbackSources);
-                }
+            const fetchPlaybackSources = async () => {
+                const playbackSources = await (async () => {
+                    try {
+                        return await track.loadPlaybackSources({
+                            abortSignal: this.abortController.signal,
+                            timeout: preference.playback.timeout,
+                        });
+                    } catch (e) {
+                        if (e === Track.fetchTimeoutError) {
+                            if (track !== this.track || !this.active) {
+                                if (track.status !== Status.Error) {
+                                    track.status = Status.Warning;
 
-                const playbackSources = await track.loadPlaybackSources();
+                                    if (track.status !== Status.Warning) {
+                                        track.messages.clear();
+                                    }
+
+                                    track.messages.add(TrackInfo.SLOW_CONNECTION);
+                                }
+                            }
+                        }
+
+                        if (aborted) {
+                            return;
+                        }
+
+                        if (e === Track.fetchTimeoutError) {
+                            this.timeout = true;
+
+                            return track.playbackSources;
+                        }
+
+                        // console.log(e);
+
+                        if (track.status !== Status.Error) {
+                            track.status = Status.Warning;
+
+                            if (track.status !== Status.Warning) {
+                                track.messages.clear();
+                            }
+
+                            track.messages.add(TrackInfo.USTABLE_CONNECTION);
+                        }
+                    }
+                })();
 
                 if (aborted) {
                     return;
@@ -238,11 +280,31 @@ export default class PlayerController implements IPlayerController {
 
                 if (playbackSources && playbackSources.length) {
                     this.loadPlaybackSources(playbackSources);
-                } else {
+                } else if (!this.timeout) {
                     track.status = Status.Error;
                     track.messages.clear();
                     track.messages.add(TrackError.NO_AVAILABLE_SOURCE);
                 }
+            };
+
+            try {
+                if (!track.playbackSources || !track.playbackSources.filter((s) => !s.proxied).length) {
+                    await fetchPlaybackSources();
+
+                    return;
+                }
+
+                this.loadPlaybackSources(track.playbackSources);
+
+                // await new Promise<void>((resolve, reject) => {
+                //     requestNetworkIdle(async () => {
+                //         try {
+                //             resolve(await fetchPlaybackSources());
+                //         } catch (e) {
+                //             reject(e);
+                //         }
+                //     }, timeToWait);
+                // });
             } catch (e) {
                 // console.log(e);
             }
@@ -254,16 +316,44 @@ export default class PlayerController implements IPlayerController {
             return;
         }
 
-        const loadAltTracksPromise = Promise.all(altTracksResPromises.map(async (altTracksResPromise) => {
-            try {
-                const res = await altTracksResPromise;
+        const loadAltTracks = () => {
+            const timeoutPromise = new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    reject(Track.fetchTimeoutError);
+                }, preference.playback.timeout);
+            });
 
-                if (res.code !== 1 || !res.data || !res.data.length) {
-                    return;
-                }
+            const altTracksResPromises = (() => {
+                return this.sources
+                // .filter((source) => source !== track.source)
+                    .map((source) => Promise.race([fetchData("/audio/alttracks", {
+                        body: {
+                            artists: track.artists.map((artist) => artist.name),
+                            exceptedTracks: [track.id],
+                            name: track.name,
+                            retrievePlaybackSource: true,
+                            similarityRange: {
+                                high: preference.playback.alternativeTracks.similarityRange.high,
+                                low: preference.playback.alternativeTracks.similarityRange.low,
+                            },
+                            sources: [source.id],
+                            timeout: preference.playback.timeout,
+                            withPlaybackSourceOnly: true,
+                        },
+                        signal: this.abortController.signal,
+                    }), timeoutPromise]));
+            })();
 
-                const altTracks = res.data.map(({ id, name, artists, source, picture, duration,
-                    playbackSources }: any) => new Track(id, name, getSourceById(source, this.sources), {
+            return Promise.all(altTracksResPromises.map(async (altTracksResPromise) => {
+                try {
+                    const res = await altTracksResPromise;
+
+                    if (res.code !== 1 || !res.data || !res.data.length) {
+                        return;
+                    }
+
+                    const altTracks = res.data.map(({ id, name, artists, source, picture, duration,
+                        playbackSources }: any) => new Track(id, name, getSourceById(source, this.sources), {
                         artists: artists.map((artist: any) => new Artist({ name: artist.name })),
                         duration,
 
@@ -293,80 +383,100 @@ export default class PlayerController implements IPlayerController {
                         sources: this.sources,
                     }));
 
-                if (aborted) {
-                    return;
-                }
+                    if (aborted) {
+                        return;
+                    }
 
-                if (!altTracks || !altTracks.length) {
-                    return;
-                }
+                    if (!altTracks || !altTracks.length) {
+                        return;
+                    }
 
-                this.altTracks.push(...altTracks);
+                    this.altTracks.push(...altTracks);
 
-                const similarities = res.data.map(({ similarity }: any) => similarity);
+                    const similarities = res.data.map(({ similarity }: any) => similarity);
 
-                await Promise.all(altTracks.map(async (altTrack: Track, i: number) => {
-                    try {
-                        const playbackSources = await (async () => {
-                            if (altTrack.playbackSources && altTrack.playbackSources.length) {
-                                return altTrack.playbackSources;
+                    await Promise.all(altTracks.map(async (altTrack: Track, i: number) => {
+                        try {
+                            const altTrackPlaybackSources = await (async () => {
+                                if (altTrack.playbackSources && altTrack.playbackSources.length) {
+                                    return altTrack.playbackSources.map((playbackSource) => ({
+                                        playbackSource,
+                                        similarity: similarities[i],
+                                    }));
+                                }
+
+                                const playbackSources = await (async () => {
+                                    try {
+                                        return await altTrack.loadPlaybackSources({
+                                            abortSignal: this.abortController.signal,
+                                            timeout: preference.playback.timeout,
+                                        });
+                                    } catch (e) {
+                                        if (e === Track.fetchTimeoutError) {
+                                            return;
+                                        }
+
+                                        // console.log(e);
+                                    }
+                                })();
+
+                                if (!playbackSources || !playbackSources.length) {
+                                    return;
+                                }
+
+                                return playbackSources.map((playbackSource) => ({
+                                    playbackSource,
+                                    similarity: similarities[i],
+                                }));
+                            })();
+
+                            if (aborted) {
+                                return;
                             }
 
-                            await altTrack.loadPlaybackSources();
+                            if (!altTrackPlaybackSources || !altTrackPlaybackSources.length) {
+                                return;
+                            }
 
-                            return altTrack.playbackSources;
-                        })();
+                            track.addAltPlaybackSources(altTrackPlaybackSources);
 
-                        if (aborted) {
-                            return;
+                            altTrackPlaybackSources.forEach(({ playbackSource, similarity }) => {
+                                if (!track.hasPlaybackSource(playbackSource)) {
+                                    this.timeouts.push(setTimeout(() =>
+                                        this.loadPlaybackSources([playbackSource]), (1 - similarity) * timeToWait));
+                                }
+                            });
+                        } catch (e) {
+                            // console.log(e);
                         }
+                    }));
+                } catch (e) {
+                    // console.log(e);
+                }
+            }));
+        };
 
-                        if (playbackSources && playbackSources.length) {
-                            track.addAltPlaybackSources(playbackSources.map((playbackSource) => ({
-                                playbackSource,
-                                similarity: similarities[i],
-                            })));
-                        }
-                    } catch (e) {
-                        // console.log(e);
-                    }
-                }));
-            } catch (e) {
-                // console.log(e);
-            }
-        }));
+        const altPlaybackSources = [...track.altPlaybackSources];
+        const hasAltPlaybackSource = Boolean(altPlaybackSources && altPlaybackSources.length);
+        const hasOriginAltPlaybackSource = Boolean(altPlaybackSources.filter((a) => !a.playbackSource.proxied).length);
+        const loadAltTracksPromise = hasOriginAltPlaybackSource ? Promise.resolve() : loadAltTracks();
 
         this.timeouts.push(setTimeout(async () => {
-            if (track.status !== Status.Error) {
-                track.status = Status.Warning;
+            this.timeouts.push(setTimeout(async () => {
+                if (track.status !== Status.Error) {
+                    track.status = Status.Warning;
 
-                if (track.status !== Status.Warning) {
-                    track.messages.clear();
+                    if (track.status !== Status.Warning) {
+                        track.messages.clear();
+                    }
+
+                    track.messages.add(TrackInfo.SLOW_CONNECTION);
                 }
+            }, timeToWait));
 
-                track.messages.add(TrackInfo.SLOW_SOURCE);
-            }
-
-            if (track.altPlaybackSources.length) {
-                track.altPlaybackSources.forEach(({ playbackSource, similarity }) =>
-                    this.timeouts.push(setTimeout(() =>
-                        this.loadPlaybackSources([playbackSource]), (1 - similarity) * timeToWait)));
-            } else {
-                await loadAltTracksPromise;
-
-                if (aborted) {
-                    return;
-                }
-
-                track.altPlaybackSources.forEach(({ playbackSource, similarity }) =>
-                    this.timeouts.push(setTimeout(() =>
-                        this.loadPlaybackSources([playbackSource]), (1 - similarity) * timeToWait)));
-            }
-
-            await loadAltTracksPromise;
-
-            if (aborted) {
-                return;
+            if (hasAltPlaybackSource) {
+                altPlaybackSources.forEach(({ playbackSource, similarity }) => this.timeouts.push(setTimeout(() =>
+                    this.loadPlaybackSources([playbackSource]), (1 - similarity) * timeToWait)));
             }
 
             try {
@@ -379,20 +489,50 @@ export default class PlayerController implements IPlayerController {
                 return;
             }
 
+            await loadAltTracksPromise;
+
+            if (aborted) {
+                return;
+            }
+
             this.timeouts.push(setTimeout(async () => {
                 if (!this.player) {
                     throw PlayerController.noPlayerError;
                 }
 
                 this.player.stopJoinRace();
+                this.stoppedJoinRace = true;
 
                 if (!this.hasTrackAddedToPlayer) {
-                    rejectPlayback(new Error("No playback source available."));
                     this.stopLoading();
 
                     if (this.resolveExistingLoadingPromise) {
                         this.resolveExistingLoadingPromise();
                     }
+
+                    if (this.active) {
+                        return;
+                    }
+
+                    this.loading = true;
+                    rejectPlayback(new Error("No playback source available."));
+                }
+
+                const hasOriginSource = Boolean(track && track.playbackSources.filter((p) => !p.proxied).length);
+                const hasProxiedOriginSource = Boolean(track && track.playbackSources.filter((p) => p.proxied).length);
+
+                const originFailed = (!hasOriginSource || this.originSourceFailed)
+                    && (!hasProxiedOriginSource || this.proxiedOriginSourceFailed);
+
+                if (this.timeout || originFailed) {
+                    this.timeouts.push(setTimeout(() => {
+                        if (this.active) {
+                            return;
+                        }
+
+                        this.loading = true;
+                        rejectPlayback(new Error("Loading timeout."));
+                    }, timeToWait));
                 }
             }, timeToWait));
         }, timeToWait));
@@ -407,10 +547,16 @@ export default class PlayerController implements IPlayerController {
             clearTimeout(timeout);
         }
 
+        if (this.player) {
+            this.player.stopRace();
+        }
+
+        this.abortController.abort();
         this.loading = false;
     }
 
-    private watchPlayer(resolvePlayback: (value?: any) => void, rejectPlayback: (reason?: Error) => void) {
+    private watchPlayer(resolvePlayback: (value?: any) => void, rejectPlayback: (reason?: Error) => void,
+                        callback?: () => void) {
         this.unwatchPlayer();
 
         let aborted = false;
@@ -429,7 +575,81 @@ export default class PlayerController implements IPlayerController {
             throw PlayerController.noPlayerError;
         }
 
+        const track = this.track;
+
+        let originSourceFailed = false;
+        let proxiedOriginSourceFailed = false;
+
         this.onRacerFailCallback = (url: string) => {
+            const rejectPlaybackAfterMilliseconds = (milliseconds: number) => {
+                this.timeouts.push(setTimeout(() => {
+                    if (this.active) {
+                        return;
+                    }
+
+                    this.loading = true;
+                    rejectPlayback();
+                }, milliseconds));
+            };
+
+            const preference = this.preference || config.defaultPreference;
+            const timeToWait = preference.playback.timeToWait;
+
+            if (!track || !track.playbackSources || !track.playbackSources.length) {
+                rejectPlaybackAfterMilliseconds(timeToWait);
+
+                return;
+            }
+
+            const matchedSources = track.playbackSources.filter((playbackSource) => playbackSource.urls.includes(url));
+
+            if (matchedSources.length) {
+                matchedSources.forEach((playbackSource) => {
+                    if (playbackSource.proxied) {
+                        proxiedOriginSourceFailed = true;
+
+                        if (!aborted) {
+                            this.proxiedOriginSourceFailed = true;
+                        }
+
+                        return;
+                    }
+
+                    originSourceFailed = true;
+
+                    if (!aborted) {
+                        this.originSourceFailed = true;
+                    }
+                });
+            }
+
+            const hasOriginSource = Boolean(track && track.playbackSources.filter((p) => !p.proxied).length);
+            const hasProxiedOriginSource = Boolean(track && track.playbackSources.filter((p) => p.proxied).length);
+
+            if ((!hasOriginSource || originSourceFailed) && (!hasProxiedOriginSource || proxiedOriginSourceFailed)) {
+                track.status = Status.Error;
+                track.messages.clear();
+                track.messages.add(TrackError.SOURCE_NOT_VALID);
+
+                if (!aborted) {
+                    if (this.stoppedJoinRace) {
+                        rejectPlaybackAfterMilliseconds(timeToWait);
+                    }
+                }
+            }
+
+            for (const playbackSource of track.playbackSources.filter((source) => !source.statical)) {
+                if (playbackSource.urls.includes(url)) {
+                    track.removePlaybackSource(playbackSource);
+                }
+            }
+
+            for (const altPlaybackSource of track.altPlaybackSources) {
+                if (altPlaybackSource.playbackSource.urls.includes(url)) {
+                    track.removeAltPlaybackSource(altPlaybackSource);
+                }
+            }
+
             if (aborted) {
                 if (!this.player) {
                     throw PlayerController.noPlayerError;
@@ -441,45 +661,19 @@ export default class PlayerController implements IPlayerController {
 
                 return;
             }
-
-            if (!this.track || !this.track.playbackSources || !this.track.playbackSources.length) {
-                return;
-            }
-
-            const isOriginSource = this.track.playbackSources
-                .map((playbackSource) => playbackSource.urls)
-                .flat()
-                .reduce((matched, playbackSourceUrl) => matched || playbackSourceUrl === url, false);
-
-            if (isOriginSource) {
-                this.track.status = Status.Error;
-                this.track.messages.clear();
-                this.track.messages.add(TrackError.SOURCE_NOT_VALID);
-                this.track.loadPlaybackSources();
-            }
-
-            for (const playbackSource of this.track.playbackSources) {
-                if (playbackSource.urls.includes(url)) {
-                    this.track.removePlaybackSource(playbackSource);
-                }
-            }
-
-            for (const altPlaybackSource of this.track.altPlaybackSources) {
-                if (altPlaybackSource.playbackSource.urls.includes(url)) {
-                    this.track.removeAltPlaybackSource(altPlaybackSource);
-                }
-            }
         };
 
         this.player.on("racerfail", this.onRacerFailCallback);
 
         this.onEndCallback = () => {
+            this.loading = true;
             rejectPlayback();
         };
 
         this.player.once("end", this.onEndCallback);
 
         this.onPlayErrorCallback = (soundId, err) => {
+            this.loading = true;
             rejectPlayback(err);
 
             if (this.resolveExistingLoadingPromise) {
@@ -490,6 +684,7 @@ export default class PlayerController implements IPlayerController {
         this.player.once("playerror", this.onPlayErrorCallback);
 
         this.onLoadErrorCallback = (soundId, err) => {
+            this.loading = true;
             rejectPlayback(err);
             this.stopLoading();
 
@@ -511,18 +706,16 @@ export default class PlayerController implements IPlayerController {
                 throw PlayerController.noPlayerError;
             }
 
-            if (this.track) {
-                const isOriginSource = this.track.playbackSources && this.track.playbackSources
+            if (track) {
+                const isOriginSource = track.playbackSources && track.playbackSources
                     .map((playbackSource) => playbackSource.urls)
-                    .flat()
-                    .map((url) => [url, `/proxy/${url}`])
                     .flat()
                     .reduce((matched, playbackSourceUrl) => matched || playbackSourceUrl === loadedUrl, false);
 
                 if (isOriginSource) {
-                    this.track.duration = this.player.duration * 1000;
-                    this.track.status = Status.Ok;
-                    this.track.messages.clear();
+                    track.duration = this.player.duration * 1000;
+                    track.status = Status.Ok;
+                    track.messages.clear();
                 } else {
                     this.privateUsingAltTrack = true;
                 }
@@ -542,6 +735,10 @@ export default class PlayerController implements IPlayerController {
             if (/^\/proxy/.test(loadedUrl)) {
                 // @ts-ignore
                 this.visualizer.listen(this.player.sound._sounds[0]._node);
+            }
+
+            if (callback) {
+                callback();
             }
         };
 
@@ -575,6 +772,7 @@ export default class PlayerController implements IPlayerController {
 
         if (this.onLoadCallback) {
             this.player.off("load", this.onLoadCallback);
+
             delete this.onLoadCallback;
         }
     }
@@ -582,23 +780,8 @@ export default class PlayerController implements IPlayerController {
     private loadPlaybackSources(playbackSources: PlaybackSource[]) {
         const timeToWait = (this.preference || config.defaultPreference).playback.timeToWait;
 
-        // this.timeouts.push(setTimeout(() => {
-        //     playbackSources.forEach((playbackSource) => {
-        //         const urls = playbackSource.urls.map((url) => `/proxy/${url}`);
-        //
-        //         this.timeouts.push(setTimeout(() => {
-        //             if (!this.player) {
-        //                 throw PlayerController.noPlayerError;
-        //             }
-        //
-        //             this.player.joinRace(urls, this.playbackId);
-        //             this.hasTrackAddedToPlayer = true;
-        //         }, Math.abs(this.expectedPlaybackQuality - playbackSource.quality) * timeToWait));
-        //     });
-        // }, 0));
-
-        this.timeouts.push(setTimeout(() => {
-            playbackSources.forEach((playbackSource) => {
+        const loadFilteredPlaybackSources = (filteredPlaybackSources: PlaybackSource[]) => {
+            filteredPlaybackSources.forEach((playbackSource) => {
                 this.timeouts.push(setTimeout(() => {
                     if (!this.player) {
                         throw PlayerController.noPlayerError;
@@ -608,6 +791,12 @@ export default class PlayerController implements IPlayerController {
                     this.hasTrackAddedToPlayer = true;
                 }, Math.abs(this.expectedPlaybackQuality - playbackSource.quality) * timeToWait));
             });
+        };
+
+        loadFilteredPlaybackSources(playbackSources.filter((playbackSource) => playbackSource.proxied));
+
+        this.timeouts.push(setTimeout(() => {
+            loadFilteredPlaybackSources(playbackSources.filter((playbackSource) => !playbackSource.proxied));
         }, timeToWait));
     }
 }

@@ -9,7 +9,7 @@ import applyCanvasMask from '../../../scripts/canvasMask';
 
 import Renderer from './Renderer';
 
-import { loadImage } from '../../../scripts/utils';
+import { loadImage, requestNetworkIdle } from '../../../scripts/utils';
 
 export default class ArtworkRenderer extends Renderer {
     init(mountPoint) {
@@ -30,24 +30,34 @@ export default class ArtworkRenderer extends Renderer {
         mountPoint.appendChild(this.root);
     }
 
-    async renderPicture(url) {
-        url = applyCanvasMask(scale({ width: 200, height: 200 }, await (async () => {
-            try {
-                return await loadImage(url);
-            } catch (e) {
-                console.log(e);
-
+    renderPicture(url) {
+        return new Promise((resolve, reject) => {
+            requestNetworkIdle(async () => {
                 try {
-                    return await loadImage(`/proxy/${config.defaultImage}`);
+                    const base64Url = applyCanvasMask(scale({ width: 200, height: 200 }, await (async () => {
+                        try {
+                            return await loadImage(url);
+                        } catch (e) {
+                            console.log(e);
+
+                            try {
+                                return await loadImage(`/proxy/${config.defaultImages[Math.floor(config.defaultImages.length * Math.random())]}`);
+                            } catch (e) {
+                                console.log(e);
+
+                                return await loadImage(config.defaultImages[Math.floor(config.defaultImages.length * Math.random())]);
+                            }
+                        }
+                    })()), await loadImage(require('../../../assets/mask.png')), 200, 200, true);
+
+                    this.root.style.backgroundImage = `url("${base64Url}")`;
+
+                    resolve();
                 } catch (e) {
-                    console.log(e);
-
-                    return await loadImage(config.defaultImage);
+                    reject(e);
                 }
-            }
-        })()), await loadImage(require('../../../assets/mask.png')), 200, 200, true);
-
-        this.root.style.backgroundImage = `url("${url}")`;
+            });
+        });
     }
 
     show() {

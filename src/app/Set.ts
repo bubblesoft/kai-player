@@ -6,7 +6,7 @@ import ISet from "./ISet";
 
 export default abstract class<T> implements ISet<T> {
     public name?: string;
-    public activeIndex: number|null;
+    public activeIndex: number;
     protected items: T[];
 
     get length() {
@@ -16,7 +16,7 @@ export default abstract class<T> implements ISet<T> {
     protected constructor({ name }: { name?: string } = {}) {
         this.name = name;
         this.items = [];
-        this.activeIndex = null;
+        this.activeIndex = -1;
     }
 
     public load(items: T|T[]) {

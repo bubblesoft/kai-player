@@ -27,8 +27,8 @@ export default class {
     private spinSpeed = 1;
     private svg: Selection<SVGSVGElement, any, null, undefined>;
     private arc: Selection<SVGPathElement, any, null, undefined>;
-    private arcGhostTop: Selection<SVGPathElement, any, null, undefined>;
-    private arcGhostBottom: Selection<SVGPathElement, any, null, undefined>;
+    private readonly arcGhostTop: Selection<SVGPathElement, any, null, undefined>;
+    private readonly arcGhostBottom: Selection<SVGPathElement, any, null, undefined>;
     private width = 0;
     private height = 0;
     private pColor = "#fff";

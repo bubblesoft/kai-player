@@ -1,7 +1,11 @@
 export default {
-    colorSet: ["#4ccfff", "#c5ff52", "#fc33ff", "#ffff1a", "#160d80", "#ffa60d"],
-    defaultIcon: "https://kaiplanet.net/favicon.ico",
-    defaultImage: "https://kaiplanet.net/lighthouse.jpg",
+        colorSet: ["#4ccfff", "#c0ff05", "#fc33ff", "#ffff00", "#0d0033", "#ffa60d"],
+    defaultIcon: "https://kai-player.oss-cn-shanghai.aliyuncs.com/kaiplanet.ico",
+    defaultImages: [
+        "https://kai-player.oss-cn-shanghai.aliyuncs.com/bay.jpg",
+        "https://kai-player.oss-cn-shanghai.aliyuncs.com/sea.jpg",
+        "https://kai-player.oss-cn-shanghai.aliyuncs.com/lighthouse.jpg",
+    ],
     defaultPreference: {
         graphicEffect: .6,
         playback: {
@@ -9,10 +13,11 @@ export default {
                 enable: true,
                 similarityRange: {
                     high: 1,
-                    low: .9,
+                    low: .8,
                 },
             },
             timeToWait: 3000,
+            timeout: 6000,
         },
     },
     queue: {

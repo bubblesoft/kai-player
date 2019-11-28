@@ -107,10 +107,9 @@ export default class CacheService implements ICacheService {
             return;
         }
 
-        this.lruCache.set(request.url, byteLength);
-
         await this.cache.put(request, response.clone());
 
+        this.lruCache.set(request.url, byteLength);
         this.saveLruCache(this.lruCache.dump());
     }
 

@@ -140,9 +140,10 @@
 
                 this[UPDATE_QUEUE]({
                     index: this.queueGroup.activeIndex,
-                    activeIndex: this.queue.length - 1,
+                    activeIndex: this.queue.getLastIndex(),
                 });
 
+                this[UPDATE_PLAYING_QUEUE_INDEX](this.queueGroup.activeIndex);
                 this[PLAY_TRACK]({ index: this.queue.activeIndex });
             },
 

@@ -41,9 +41,10 @@
         private tips = [
             "Panels are resizable/movable and can be closed/opened using the switches on the bottom control bar.",
             "Select the \"Listen Randomly\" playlist to start playing random tracks pushed by the app.",
-            "Pick a visualization effect from the drop-down on the control bar.",
+            "Pick up a visualization effect from the drop-down on the control bar (visualization may be inactive with sl" +
+                "ow network).",
             "Detailed preference settings available via the gear icon on the control bar.",
-            "More features are under development and will be added in feature releases.",
+            "More features are under continuous development.",
         ];
 
         private close() {

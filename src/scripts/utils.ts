@@ -5,6 +5,9 @@
 import { Howl } from "howler";
 import * as moment from "moment";
 
+// @ts-ignore
+import { networkIdleCallback } from "network-idle-callback";
+
 import config from "../config";
 
 import Artist from "../app/Artist";
@@ -19,11 +22,18 @@ const initHowlOnProgress = (howl: Howl) => {
     // @ts-ignore
     howl._onstream = [];
 
+    let playing = false;
+    let streaming = false;
     let interval: ReturnType<typeof setInterval>;
     let lastSeek: number;
-    let streaming = false;
 
     howl.on("play", (soundId) => {
+        if (playing) {
+            return;
+        }
+
+        playing = true;
+
         interval = setInterval(() => {
             const seek = (() => {
                 try {
@@ -66,14 +76,17 @@ const initHowlOnProgress = (howl: Howl) => {
 
     howl.on("pause", () => {
         clearInterval(interval);
+        playing = false;
     });
 
     howl.on("stop", () => {
         clearInterval(interval);
+        playing = false;
     });
 
     howl.on("end", () => {
         clearInterval(interval);
+        playing = false;
     });
 };
 
@@ -94,19 +107,26 @@ const getSourceById = (() => {
     };
 })();
 
-const getRecommendedTrack = async (track: Track, sources: Source[]): Promise<Track> => {
+interface IOptions {
+    abortSignal?: AbortSignal;
+}
+
+const getRecommendedTrack = async (track: Track, sources: Source[], { abortSignal }: IOptions = {}): Promise<Track> => {
     const recommendedTrack = (await (await fetch("/audio/recommend", {
         method: "POST",
 
         body: JSON.stringify({
+            retrievePlaybackSource: true,
             sources: sources.map((source) => source.id),
             track: track ? {
                 artists: track.artists.map((artist) => artist.name),
                 name: track.name,
             } : null,
+            withPlaybackSourceOnly: true,
         }),
 
         headers: new Headers({ "Content-Type": "application/json" }),
+        signal: abortSignal,
     })).json()).data;
 
     if (!recommendedTrack) {
@@ -169,7 +189,7 @@ const formatDuration = (val: number, formatStr: string) => {
 
 const generateLayout = (type: string, viewportWidth: number, viewportHeight: number) => {
     if (type === "desktop") {
-        let width = viewportWidth * .3;
+        let width = Math.min(viewportWidth * .3, viewportHeight * .5);
 
         if (width < 300) {
             width = 300;
@@ -191,22 +211,22 @@ const generateLayout = (type: string, viewportWidth: number, viewportHeight: num
                 mode: "bottom", opacity: .4, visible: true, width },
             source: { attach: "left", bottomY: viewportHeight * .4, height: 173, lock: false, mode: "bottom",
                 opacity: .4, visible: true, width: 258 },
-            tracks: { attach: false, bottomY: viewportHeight * .08, height: viewportHeight * .45, lock: false,
-                mode: "bottom", opacity: .4, ratioX: .5, visible: true, width: width * 1.1 },
+            tracks: { attach: false, bottomY: viewportHeight * .06, height: viewportHeight * .5, lock: false,
+                mode: "bottom", opacity: .4, ratioX: .5, visible: true, width: width * 1.2 },
         };
     } else if (type === "mobile") {
         if (viewportHeight < 580) {
             return {
-                list: { attach: "left", height: .45, lock: false, mode: "ratio", opacity: .4, visible: true, width: 1,
+                list: { attach: "left", height: .45, lock: false, mode: "ratio", opacity: .4, visible: false, width: 1,
                     y: .05 },
-                picture: { autoHide: true, height: .3, lock: false, mode: "ratio", opacity: .4, visible: false,
+                picture: { autoHide: true, height: .4, lock: false, mode: "ratio", opacity: .4, visible: false,
                     width: .5, x: .03, y: .03 },
-                playlist: { attach: "left", height: .28, lock: false, mode: "ratio", opacity: .4, visible: false,
-                    width: 1, y: .42 },
-                search: { attach: "left", height: .4, lock: false, mode: "ratio", opacity: .4, visible: false, width: 1,
-                    y: 0 },
-                source: { attach: "left", height: .3, lock: false, mode: "ratio", opacity: .4, visible: false, width: 1,
-                    y: .1 },
+                playlist: { attach: "left", height: .45, lock: false, mode: "ratio", opacity: .4, visible: true,
+                    width: 1, y: .05 },
+                search: { attach: "left", height: .45, lock: false, mode: "ratio", opacity: .4, visible: false,
+                    width: 1, y: .05 },
+                source: { attach: "left", height: .45, lock: false, mode: "ratio", opacity: .4, visible: false,
+                    width: 1, y: .05 },
                 tracks: { attach: "left", height: .5, lock: false, mode: "ratio", opacity: .4, visible: true, width: 1,
                     y: .5 },
             };
@@ -291,9 +311,6 @@ const requestNetworkIdle = (callback: () => void, timeout?: number) => {
     }
 
     (async () => {
-        // @ts-ignore
-        const { networkIdleCallback } = await import("network-idle-callback");
-
         networkIdleCallback(callback, { timeout });
     })();
 };

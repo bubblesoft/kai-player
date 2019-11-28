@@ -65,7 +65,7 @@
             },
 
             ...mapState({
-                queues: state => state.queueModule.queueGroup.get().filter(queue => queue.constructor !== RandomTrackQueue),
+                queues: state => state.queueModule.queueGroup.get(),
             })
         },
 

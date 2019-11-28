@@ -1,27 +1,35 @@
 <template lang="pug">
-    .picture-pane(:style="{ backgroundImage: `url(${track ? track.picture || defaultImage : defaultImage})` }")
+    .picture-pane(:style="{ backgroundImage: `url(${track ? (track.picture && (/^\\/proxy\\/\\s*http:/.test(track.picture) ? track.picture : track.picture.replace(/^\\/proxy\\//, ''))) || getDefaultImage() : getDefaultImage()})` }")
 </template>
 
-<script>
-    import { mapState } from "vuex";
+<script lang="ts">
+    import { Component, Vue } from "vue-property-decorator";
+    import { State } from "vuex-class";
+
+    import TrackQueue from "./TrackQueue";
+
+    import { requestNetworkIdle } from "../../scripts/utils";
 
     import config from "../../config";
 
-    export default {
-        data() {
-            return {
-                defaultImage: config.defaultImage,
-            }
-        },
+    @Component
+    export default class extends Vue {
+        @State((state) => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex || 0))
+        private queue!: TrackQueue;
+        private showImage = false;
 
-        computed: {
-            track() {
-                return this.queue && this.queue.get(this.queue.activeIndex);
-            },
+        private get track() {
+            return this.queue && this.queue.get(this.queue.activeIndex);
+        }
 
-            ...mapState({
-                queue: (state) => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex || 0),
-            })
+        private getDefaultImage() {
+            return config.defaultImages[Math.floor(config.defaultImages.length * Math.random())];
+        }
+
+        private created() {
+            requestNetworkIdle(() => {
+                this.showImage = true;
+            });
         }
     }
 </script>

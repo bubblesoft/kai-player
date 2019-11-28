@@ -1,6 +1,6 @@
 <template lang="pug">
     .error
-        div {{ $t('Error') }}
+        div {{ $t("Error, please refresh the page.") }}
 </template>
 
 <script>

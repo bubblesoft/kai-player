@@ -15,7 +15,7 @@
                     ) {{ $t('Search') }}
         .list-wrap(
             ref="list"
-            :class="{ blur: loading }"
+            :class="{ blur: searching }"
         )
             table.table-condensed.table.table-hover
                 draggable(
@@ -51,7 +51,7 @@
                             )
                                 path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
         vueLoading(
-            v-if="loading && !tracks.length"
+            v-if="loading"
             type="cylon"
             color="#fff"
         )
@@ -67,7 +67,7 @@
 
     import { getSourceById, formatDuration } from "../../scripts/utils";
 
-    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_VISUALIZER_TYPE, SWITCH_TO_VISUALIZER, VISUALIZER_LISTEN_TO, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
+    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_VISUALIZER_TYPE, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
     import { PLAY_TRACK } from "../../scripts/action-types";
 
     import PlaybackSource from "../PlaybackSource";
@@ -88,7 +88,8 @@
           return {
               keywords: '',
               tracksWithSimilarity: [],
-              loading: false
+              loading: false,
+              searching: false,
           }
         },
         computed: {
@@ -146,68 +147,90 @@
 
                 this.$nextTick(async () => {
                     controller = new AbortController;
-                    this.tracksWithSimilarity = [];
                     this.loading = true;
+                    this.searching = true;
 
-                    activeSources.forEach(async (activeSource) => {
-                        try {
-                            const tracksWithSimilarity = (await (await fetch('/audio/search', {
-                                method: 'POST',
-                                body: JSON.stringify({
-                                    keywords,
-                                    sources: [activeSource],
-                                }),
-                                headers: new Headers({
-                                    'Content-Type': 'application/json'
-                                }),
-                                signal: controller.signal
-                            })).json()).data.map((trackData) => {
-                                return [new Track(trackData.id, trackData.name, getSourceById(trackData.source, sources), {
-                                    duration: trackData.duration || null,
-                                    artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
+                    let hasResult = false;
 
-                                    picture: (() => {
-                                        if (!trackData.picture) {
-                                            return null;
-                                        }
+                    const searchPromises = activeSources.map(async (activeSource) => {
+                        const tracksWithSimilarity = (await (await fetch('/audio/search', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                keywords,
+                                sources: [activeSource],
+                            }),
+                            headers: new Headers({
+                                'Content-Type': 'application/json'
+                            }),
+                            signal: controller.signal
+                        })).json()).data.map((trackData) => {
+                            return [new Track(trackData.id, trackData.name, getSourceById(trackData.source, sources), {
+                                duration: trackData.duration || null,
+                                artists: trackData.artists.map(artist => new Artist({ name: artist.name })),
 
-                                        return `/proxy/${trackData.picture}`;
-
-                                    })(),
-
-                                    playbackSources: trackData.playbackSources && trackData.playbackSources
-                                        .map((playbackSource) => new PlaybackSource(playbackSource.urls.map((url) => `/proxy/${url}`), playbackSource.quality, {
-                                            proxied: true,
-                                            statical: playbackSource.statical,
-                                        }))
-                                        .concat((() => trackData.playbackSources
-                                            .map((playbackSource) => playbackSource.cached ? undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
-                                                proxied: false,
-                                                statical: playbackSource.statical,
-                                            }))
-                                            .filter((playbackSource) => playbackSource))()),
-
-                                    sources: this.sources,
-                                }), trackData.similarity];
-                            });
-
-                            this.tracksWithSimilarity = this.tracksWithSimilarity
-                                .concat(tracksWithSimilarity)
-                                .sort(([trackA, similarityA], [trackB, similarityB]) => {
-                                    if (similarityA !== similarityB) {
-                                        return similarityB - similarityA;
+                                picture: (() => {
+                                    if (!trackData.picture) {
+                                        return null;
                                     }
 
-                                    return trackB.source.priority - trackA.source.priority;
-                                });
+                                    return `/proxy/${trackData.picture}`;
 
-                            this.$refs.list.scrollTop = 0;
-                        } catch (e) {
-                            console.log(e);
+                                })(),
+
+                                playbackSources: trackData.playbackSources && trackData.playbackSources
+                                    .map((playbackSource) => new PlaybackSource(playbackSource.urls.map((url) => `/proxy/${url}`), playbackSource.quality, {
+                                        proxied: true,
+                                        statical: playbackSource.statical,
+                                    }))
+                                    .concat((() => trackData.playbackSources
+                                        .map((playbackSource) => playbackSource.cached ? undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                                            proxied: false,
+                                            statical: playbackSource.statical,
+                                        }))
+                                        .filter((playbackSource) => playbackSource))()),
+
+                                sources: this.sources,
+                            }), trackData.similarity];
+                        });
+
+                        if (!hasResult && tracksWithSimilarity.length) {
+                            hasResult = true;
+                            this.tracksWithSimilarity = [];
+                            this.loading = false;
                         }
+
+                        this.tracksWithSimilarity = this.tracksWithSimilarity
+                            .concat(tracksWithSimilarity)
+                            .sort(([trackA, similarityA], [trackB, similarityB]) => {
+                                if (similarityA !== similarityB) {
+                                    return similarityB - similarityA;
+                                }
+
+                                return trackB.source.priority - trackA.source.priority;
+                            });
+
+                        this.$refs.list.scrollTop = 0;
                     });
 
-                    this.loading = false;
+                    (async () => {
+                        try {
+                            await Promise.all(searchPromises);
+
+                            if (!hasResult) {
+                                this.loading = false;
+                            }
+
+                            this.searching = false;
+                        } catch (e) { }
+                    })();
+
+                    (async () => {
+                        await Promise.allSettled(searchPromises);
+
+                        if (!this.loading) {
+                            this.searching = false;
+                        }
+                    })();
                 });
             },
 
@@ -216,9 +239,10 @@
 
                 this[UPDATE_QUEUE]({
                     index: this.queueGroup.activeIndex,
-                    activeIndex: this.queue.length - 1,
+                    activeIndex: this.queue.getLastIndex(),
                 });
 
+                this[UPDATE_PLAYING_QUEUE_INDEX](this.queueGroup.activeIndex);
                 this[PLAY_TRACK]({ index: this.queue.activeIndex });
             },
 
@@ -243,8 +267,6 @@
                 ADD_TRACK,
                 UPDATE_TRACK,
                 UPDATE_ACTIVE_VISUALIZER_TYPE,
-                SWITCH_TO_VISUALIZER,
-                VISUALIZER_LISTEN_TO,
                 VISUALIZER_LOAD_RESOURCE
             ]),
 
