@@ -1,5 +1,8 @@
 <template lang="pug">
-    #control-bar(:style="{ backgroundImage: pic && 'url(' + require('../assets/highlight.svg') + '),linear-gradient(rgba(255,255,255,.15) 10%,rgba(255,255,255,0) 90%),url(' + pic + ')' }")
+    #control-bar(
+        :style="{ backgroundImage: performanceFactor >= .3 && pic && 'url(' + require('../assets/highlight.svg') + '),linear-gradient(rgba(255,255,255,.15) 10%,rgba(255,255,255,0) 90%),url(' + pic + ')' }"
+        :class="{ 'performance-factor-max-2': performanceFactor < .2 }"
+    )
         .tool-bar
             .options
                 select.form-control(
@@ -279,7 +282,9 @@
 
     import yoyoMarquee from './yoyo-marquee';
 
-    import { getRecommendedTrack, formatDuration, loadImage, requestNetworkIdle } from "../scripts/utils";
+    import { formatDuration, loadImage, requestNetworkIdle } from "../scripts/utils";
+
+    import config from "../config";
 
     export default {
         components: {
@@ -463,6 +468,10 @@
                 return this.sourceGroup.get();
             },
 
+            performanceFactor() {
+                return this.preference.performanceFactor;
+            },
+
             ...mapState({
                 playingQueueIndex: (state) => state.queueModule.playingQueueIndex,
                 queue: (state) => state.queueModule.queueGroup.get(state.queueModule.playingQueueIndex || 0),
@@ -471,7 +480,8 @@
                 visualizationInit: state => state.visualizationModule.init,
                 background: state => state.visualizationModule._background,
                 visualizer: state => state.visualizationModule._visualizer,
-                layout: state => state.generalModule.layout
+                layout: state => state.generalModule.layout,
+                preference: (state) => state.generalModule.preference || config.defaultPreference,
             })
         },
 
@@ -748,7 +758,7 @@
             align-items: center;
             justify-content: center;
 
-            .vue-slider-component {
+            .progress, .volume {
                 margin: 6px;
 
                 @media (max-width: 445px) {
@@ -840,6 +850,12 @@
 
         .loading {
             animation: loading .5s cubic-bezier(.5, .1, .5,.9) infinite alternate;
+        }
+
+        &.performance-factor-max-2 {
+            background: transparent none !important;
+            border-top: 1px solid #3c3c3c;
+            box-shadow: none;
         }
     }
 

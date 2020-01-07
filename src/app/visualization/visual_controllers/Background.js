@@ -31,11 +31,11 @@ export default class Background extends VisualController {
     constructor(type, renderers) {
         super(type);
 
-        const { threeRenderer, artworkRenderer } = renderers;
+        const { three, artwork } = renderers;
 
         this._renderers = {
-            three: threeRenderer,
-            artwork: artworkRenderer
+            three: three,
+            artwork: artwork,
         };
     }
 

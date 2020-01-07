@@ -1,6 +1,9 @@
 <template lang="pug">
-    .search-pane(v-if="sources.length")
-        .tool-bar
+    .search-pane(
+        v-if="sources.length"
+        :class="{ 'performance-factor-max-3': performanceFactor < .3 }"
+    )
+        .toolbar
             .input-group.input-group-sm
                 input.form-control(
                     v-model="keywords"
@@ -18,14 +21,15 @@
             :class="{ blur: searching }"
         )
             table.table-condensed.table.table-hover
-                draggable(
+                component(
+                    :is="performanceFactor >= .4 ? 'draggable' : 'tbody'"
                     v-model="tracks"
                     :options="{ group: { name: 'tracks', pull: 'clone', put: false }, sort: false, handle: '.drag-handle', forceFallback: true, fallbackOnBody: true }"
                     @start="fixDrag();"
                     element="tbody"
                 )
                     tr(
-                        v-for="track in tracks"
+                        v-for="track in tracksToRender"
                         v-interact:doubletap="() => { addToPlayback(track); }"
                         @contextmenu.prevent="handleContextMenu($event, track);"
                     )
@@ -43,23 +47,15 @@
                                 :alt="track.source.name"
                                 :title="track.source.name"
                             )
-                        td.drag-handle
+                        td.drag-handle(v-if="performanceFactor >= .4")
                             svg(
                                 width="20"
                                 height="20"
                                 viewBox="0 0 24 24"
                             )
                                 path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
-        vueLoading(
-            v-if="loading"
-            type="cylon"
-            color="#fff"
-        )
-    vueLoading(
-        v-else
-        type="cylon"
-        color="#fff"
-    )
+        loading(v-if="loading")
+    loading(v-else)
 </template>
 
 <script>
@@ -75,14 +71,17 @@
     import Artist from "../Artist";
 
     import draggable from 'vuedraggable';
-    import vueLoading from 'vue-loading-template';
+
+    import loading from "../loading";
+
+    import config from "../../config";
 
     let controller = new AbortController;
 
     export default {
         components: {
             draggable,
-            vueLoading
+            loading,
         },
         data() {
           return {
@@ -95,6 +94,16 @@
         computed: {
             tracks() {
                 return this.tracksWithSimilarity.map((trackWithSimilarity) => trackWithSimilarity[0]);
+            },
+
+            tracksToRender() {
+                if (this.performanceFactor < .1) {
+                    return this.tracks.slice(0, 10);
+                } else if (this.performanceFactor < .6) {
+                    return this.tracks.slice(0, this.performanceFactor * 100);
+                }
+
+                return this.tracks;
             },
 
             sources() {
@@ -127,13 +136,18 @@
                 }
             },
 
+            performanceFactor() {
+                return this.preference.performanceFactor;
+            },
+
             ...mapState({
                 sourceGroup: state => state.sourceModule.sourceGroup,
                 queueGroup: state => state.queueModule.queueGroup,
                 playerController: state => state.playerModule.playerController,
                 visualizer: state => state.visualizationModule.visualizer,
                 i18next: state => state.generalModule.i18next,
-                showSourceIcon: state => state.generalModule.showSourceIcon
+                showSourceIcon: state => state.generalModule.showSourceIcon,
+                preference: (state) => state.generalModule.preference || config.defaultPreference,
             })
         },
         methods: {
@@ -282,7 +296,7 @@
     .search-pane {
         height: 100%;
 
-        .tool-bar {
+        .toolbar {
             box-shadow: inset 0 -2px 1px -1.5px rgba(0, 0, 0, 0.2);
             padding-bottom: 6px;
         }
@@ -301,6 +315,18 @@
 
         .vue-loading {
             top: 36px;
+        }
+
+        &.performance-factor-max-3 {
+            .toolbar {
+                box-shadow: none;
+                border-bottom: 1px solid rgb(30, 30, 30);
+            }
+
+            .list-wrap {
+                box-shadow: none;
+                border-top: 1px solid rgb(60, 60, 60);
+            }
         }
     }
 

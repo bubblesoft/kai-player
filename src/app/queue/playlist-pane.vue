@@ -1,25 +1,22 @@
 <template lang="pug">
-    .playlist-pane
+    .playlist-pane(:class="{ 'performance-factor-max-3': performanceFactor < .3 }")
         .toolbar
-            .tool-button(v-interact:tap="() => { insert(typeof selectedIndex === 'number' ? selectedIndex + 1 : queueGroup.length); }")
+            .tool-button.glowing-button(v-interact:tap="() => { insert(typeof selectedIndex === 'number' ? selectedIndex + 1 : queueGroup.length); }")
                 svg(
                     width="20"
                     height="20"
                     viewBox="0 0 24 24"
                 )
                     path(d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z")
-            tooltip(
-                v-if="editMode"
-                effect="fadein"
-                placement="top"
-                :content="$t('Drag a playlist here to remove it')"
-            )
-                draggable.tool-button(
+            template(v-if="performanceFactor >= .4")
+                draggable.tool-button.glowing-button(
+                    v-if="editMode"
                     v-model="trashCan.data"
                     :options="{ group: 'queues', draggable: '' }"
                     @pointerover.native="trashCan.hover = true"
                     @pointerleave.native="trashCan.hover = false"
                     :class="{ active: dragging && trashCan.hover }"
+                    v-tooltip="performanceFactor >= .3 ? { content: $t('Drag a playlist here to remove it'),  ...tooltipConfig } : undefined"
                 )
                     svg(
                         width="20"
@@ -27,29 +24,28 @@
                         viewBox="0 0 24 24"
                     )
                         path(d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z")
-            tooltip(
-                effect="fadein"
-                placement="top"
-                :content="editMode ? $t('Exit edit mode') : $t('Enter edit mode')"
+            .tool-button.glowing-button(
+                v-interact:tap="() => { editMode = !editMode; }"
+                v-tooltip="performanceFactor >= .3 ? { content: editMode ? $t('Exit edit mode') : $t('Enter edit mode'),  ...tooltipConfig } : undefined"
             )
-                .tool-button(v-interact:tap="() => { editMode = !editMode; }")
-                    svg(
-                        v-if="editMode"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                    )
-                        path(d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z")
-                    svg(
-                        v-else
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                    )
-                        path(d="M20.71,7.04C21.1,6.65 21.1,6 20.72,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15,5.25L18.75,9M17.75,10L14,6.25L4,16.25V20H7.75L17.75,10Z")
+                svg(
+                    v-if="editMode"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                )
+                    path(d="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z")
+                svg(
+                    v-else
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                )
+                    path(d="M20.71,7.04C21.1,6.65 21.1,6 20.72,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15,5.25L18.75,9M17.75,10L14,6.25L4,16.25V20H7.75L17.75,10Z")
         .list-wrap
             table.table-condensed.table.table-hover
-                draggable(
+                component(
+                    :is="performanceFactor >= .4 ? 'draggable' : 'tbody'"
                     v-model="queues"
                     :options="{ group: 'queues', handle: '.drag-handle', forceFallback: true, fallbackOnBody: true }"
                     @sort="onSort"
@@ -66,13 +62,16 @@
                         ref="playlists"
                     )
                         td(style="width:18px")
-                            svg(
-                                v-if="index === playingIndex"
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M8 5v14l11-7z")
+                            template(v-if="performanceFactor >= .1")
+                                svg(
+                                    v-if="index === playingIndex"
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                )
+                                    path(d="M8 5v14l11-7z")
+                            template(v-else)
+                                template(v-if="index === playingIndex") >
                         td(style="padding: 0;")
                             editableBox(
                                 v-model="queue.name"
@@ -81,13 +80,14 @@
                             )
                         td(v-if="queue.constructor === RandomTrackQueue") ∞
                         td(v-else) {{ queue.length }}
-                        td.drag-handle(v-if="editMode")
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
+                        template(v-if="performanceFactor >= .4")
+                            td.drag-handle(v-if="editMode")
+                                svg(
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                )
+                                    path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
 </template>
 
 <script>
@@ -102,6 +102,8 @@
     import tooltip from 'vue-strap/src/tooltip';
 
     import editableBox from '../editable-box';
+
+    import config from "../../config";
 
     export default {
         components: {
@@ -119,6 +121,10 @@
                     data: []
                 },
                 dragging: false,
+                tooltipConfig: {
+                    delay: 500,
+                    trigger: "hover click focus",
+                },
                 RandomTrackQueue
             }
         },
@@ -151,9 +157,14 @@
                 }
             },
 
+            performanceFactor() {
+                return this.preference.performanceFactor;
+            },
+
             ...mapState({
-                queueGroup: state => state.queueModule.queueGroup,
-                player: state => state.playerModule.playerController.player
+                queueGroup: (state) => state.queueModule.queueGroup,
+                player: (state) => state.playerModule.playerController.player,
+                preference: (state) => state.generalModule.preference || config.defaultPreference,
             })
         },
         methods: {
@@ -327,24 +338,6 @@
 
             .tool-button {
                 margin: 2px;
-                line-height: 0;
-                cursor: pointer;
-
-                svg {
-                    fill: rgba(255, 255, 255, 0.6);
-                }
-
-                &:hover svg {
-                    fill: rgba(255, 255, 255, 0.9);
-                    -webkit-filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
-                    filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
-                    -ms-filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
-                    filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
-                }
-
-                &.active svg {
-                    fill: rgba(211, 101, 98, .9);
-                }
 
                 tr {
                     display: none;
@@ -362,41 +355,44 @@
             box-shadow: inset 0 2px 1px -1.5px rgba(255, 255, 255, 0.2);
             overflow: auto;
         }
-    }
 
-    tr {
-        cursor: default;
+        tr {
+            cursor: default;
 
-        &.active-queue {
-            background-color: rgba(0, 0, 0, .3);
-        }
-
-        svg {
-            width: 18px;
-            height: 18px;
-            margin-top: 1px;
-            fill: #fff;
-        }
-
-        .drag-handle {
-            width: 28px;
-            text-align: center;
-            cursor: move;
-            cursor: -webkit-grab;
-        }
-    }
-
-    .sortable-fallback {
-        display: table;
-        position: absolute;
-        color: #fff;
-        opacity: .5 !important;
-
-        td {
-            padding: 0 5px;
+            &.active-queue {
+                background-color: rgba(0, 0, 0, .3);
+            }
 
             svg {
-                transform: translateY(4px);
+                width: 18px;
+                height: 18px;
+                margin-top: 1px;
+                fill: #fff;
+            }
+
+            .drag-handle {
+                width: 28px;
+                text-align: center;
+                cursor: move;
+                cursor: -webkit-grab;
+            }
+        }
+
+        &.performance-factor-max-3 {
+            .toolbar {
+                box-shadow: none;
+                border-bottom: 1px solid rgb(30, 30, 30);
+            }
+
+            .list-wrap {
+                box-shadow: none;
+                border-top: 1px solid rgb(60, 60, 60);
+            }
+
+            tr {
+                &.active-queue {
+                    background-color: rgb(30, 30, 30);
+                }
             }
         }
     }

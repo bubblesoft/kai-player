@@ -625,6 +625,10 @@ export default class Player implements IPlayer {
     }
 
     private getLoadError(errorCode: number) {
+        if (!this.sound) {
+            return new Error(errorCode.toString());
+        }
+
         // @ts-ignore
         for (const sound of this.sound._sounds) {
             if (sound._node && sound._node.error && sound._node.error.code === errorCode) {

@@ -7,7 +7,7 @@ export default {
         "https://kai-player.oss-cn-shanghai.aliyuncs.com/lighthouse.jpg",
     ],
     defaultPreference: {
-        graphicEffect: .6,
+        performanceFactor: .8,
         playback: {
             alternativeTracks: {
                 enable: true,

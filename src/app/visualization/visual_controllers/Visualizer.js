@@ -50,16 +50,25 @@ export default class Visualizer extends VisualController {
     }
 
     constructor(type, renderers) {
-        const { threeRenderer, histogramRenderer, wavingRibbonRenderer, electricArcRenderer,
-            artworkRenderer } = renderers;
+        const { three, histogram, ribbon, electricArc, artwork } = renderers;
 
         const _renderers = {
-            three: threeRenderer,
-            histogram: histogramRenderer,
-            // ribbon: wavingRibbonRenderer,
-            electricArc: electricArcRenderer,
-            artwork: artworkRenderer
+            three,
+            histogram,
+            // ribbon,
+            electricArc,
+            artwork,
         };
+
+        for (const key in _renderers) {
+            if (!_renderers.hasOwnProperty(key)) {
+                continue;
+            }
+
+            if (!_renderers[key]) {
+                delete _renderers[key];
+            }
+        }
 
         if (type === 'random') {
             const rendererTypes = Object.keys(_renderers);

@@ -1,5 +1,6 @@
 {
   "messages": {
+    "loading...": "読み込み中...",
     "Error, please refresh the page.": "エラー、ページを再読み込みして下さい。",
     "Confirm": "確認",
     "Cancel": "キャンセル",
@@ -62,6 +63,9 @@
     "Background": "背景",
     "Upload": "アップロード",
     "Language": "言語",
+    "Power control": "電源管理",
+    "Power Saving": "省エネ",
+    "Visual": "視覚",
     "Drag & Drop you files or Browse": "ファイルをここに置いてください、或いはクリックして選択してください",
     "Select a language": "言語選択",
     "The audio source doesn't provide a playback URL for this track.": "媒体源はこのトラック再生URLを提供していません。",
@@ -70,10 +74,11 @@
     "The connection to the server is slow.": "サーバーへの接続が遅い。",
     "The connection to the server is unstable.": "サーバーへの接続が不安定。",
     "Unknown error.": "未確認エラー。",
-    "Panels are resizable/movable and can be closed/opened using the switches on the bottom control bar.": "パネルはサイズ調整・移動可能であり、下のコントロールバー上のスイッチを使用して開く・閉じることもできる。",
+    "Panels are resizable and movable.": "パネルはサイズ調整、移動可能。",
     "Select the \"Listen Randomly\" playlist to start playing random tracks pushed by the app.": "\"気軽に聴く\"というプレーリストを選択して、アプリによってプッシュされた音楽が連続再生できる。",
     "Pick up a visualization effect from the drop-down on the control bar (visualization may be inactive with slow network).": "コントロールバーのドロップダウンリストから視覚化効果を選択（不安定なネット接続では視覚化が非アクティブになる場合もあり）。",
     "Detailed preference settings available via the gear icon on the control bar.": "詳細設定ならコントロールバーの歯車アイコンをクリック。",
+    "If the battery runs out fast on mobile devices, please adjust the power option under \"Settings\" (some changes may require restarting the App for now).": "If the battery runs out fast on mobile devices, please adjust the power option under \"Settings\" (some changes may require restarting the App for now).",
     "More features are under continuous development.": "より多くの機能が開発中、長期的な追加予定である。"
   }
 }

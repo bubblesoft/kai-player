@@ -1,7 +1,7 @@
 <template lang="pug">
     .banner
         .icons(
-            v-if="showIcons"
+            v-if="showIcons && showSourceIcon"
             ref="icons"
             :style="{ opacity: iconOpacity }"
         )
@@ -44,6 +44,7 @@
         private showIcons = false;
         @State((state) => state.generalModule.mode) private mode!: string;
         @State((state) => state.generalModule.preference || config.defaultPreference) private preference!: any;
+        @State((state) => state.generalModule.showSourceIcon) private showSourceIcon!: boolean;
         @State((state) => state.sourceModule.sourceGroup) private sourceGroup!: SourceGroup;
 
         private get sources() {
@@ -79,11 +80,15 @@
         }
 
         private get iconOpacity() {
-            if (this.mode === "mobile" && this.preference.graphicEffect >= .6) {
+            if (this.mode === "mobile" && this.performanceFactor >= .6) {
                 return .6;
             }
 
             return "initial";
+        }
+
+        private get performanceFactor() {
+            return this.preference.performanceFactor;
         }
 
         private created() {

@@ -1,11 +1,11 @@
 <template lang="pug">
-    .tracks-pane
+    .tracks-pane(:class="{ 'performance-factor-max-3': performanceFactor < .3 }")
         .toolbar
             template(v-if="queue")
                 template(v-if="queue.constructor === RandomTrackQueue")
-                    .tool-button(
+                    .tool-button.glowing-button(
                         @click="copyToQueue(activeTrack)"
-                        v-tooltip="Object.assign({}, { content: $t('Add to a playlist') }, tooltipConfig)"
+                        v-tooltip="performanceFactor >= .3 ? { content: $t('Add to a playlist'),  ...tooltipConfig } : undefined"
                     )
                         svg(
                             width="20"
@@ -14,10 +14,10 @@
                         )
                             path(d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5a2 2 0 0 0-2 2v4h2V5h14v14H5v-4H3v4a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z")
                 template(v-else)
-                    .tool-button(
+                    .tool-button.glowing-button(
                         v-if="mode === 'shuffle'"
                         v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
-                        v-tooltip="Object.assign({}, { content: $t('Shuffle') }, tooltipConfig)"
+                        v-tooltip="performanceFactor >= .3 ? { content: $t('Shuffle'),  ...tooltipConfig } : undefined"
                     )
                         svg(
                             width="20"
@@ -26,9 +26,9 @@
                         )
                             path(d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z")
                     div(v-else-if="mode === 'repeatOne'")
-                        .tool-button(
+                        .tool-button.glowing-button(
                             v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
-                            v-tooltip="Object.assign({}, { content: $t('Repeat one') }, tooltipConfig)"
+                            v-tooltip="performanceFactor >= .3 ? { content: $t('Repeat one'),  ...tooltipConfig } : undefined"
                         )
                             svg(
                                 width="20"
@@ -38,9 +38,9 @@
                                 path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z")
                     div(v-else)
                         div
-                            .tool-button(
+                            .tool-button.glowing-button(
                                 v-interact:tap="() => { SWITCH_QUEUE_MODE(); }"
-                                v-tooltip="Object.assign({}, { content: $t('Repeat all') }, tooltipConfig)"
+                                v-tooltip="performanceFactor >= .3 ? { content: $t('Repeat all'),  ...tooltipConfig } : undefined"
                             )
                                 svg(
                                     width="20"
@@ -48,9 +48,9 @@
                                     viewBox="0 0 24 24"
                                 )
                                     path(d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z")
-                    .tool-button(
+                    .tool-button.glowing-button(
                         v-interact:tap="() => { removeDuplicated(); }"
-                        v-tooltip="Object.assign({}, { content: $t('Remove duplicated tracks') }, tooltipConfig)"
+                        v-tooltip="performanceFactor >= .3 ? { content: $t('Remove duplicated tracks'),  ...tooltipConfig } : undefined"
                     )
                         svg(
                             width="20"
@@ -58,24 +58,25 @@
                             viewBox="0 0 24 24"
                         )
                             path(d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z")
-                    draggable.tool-button(
-                        v-if="editMode"
-                        v-model="trashCan.data"
-                        :options="{ group: 'tracks', draggable: '' }"
-                        @pointerover.native="trashCan.hover = true"
-                        @pointerleave.native="trashCan.hover = false"
-                        :class="{ active: dragging && trashCan.hover }"
-                        v-tooltip="Object.assign({}, { content: $t('Drag a track here to remove it') }, tooltipConfig)"
-                    )
-                        svg(
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
+                    template(v-if="performanceFactor >= .4")
+                        draggable.tool-button.glowing-button(
+                            v-if="editMode"
+                            v-model="trashCan.data"
+                            :options="{ group: 'tracks', draggable: '' }"
+                            @pointerover.native="trashCan.hover = true"
+                            @pointerleave.native="trashCan.hover = false"
+                            :class="{ active: dragging && trashCan.hover }"
+                            v-tooltip="performanceFactor >= .3 ? { content: $t('Drag a track here to remove it'),  ...tooltipConfig } : undefined"
                         )
-                            path(d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z")
-                    .tool-button(
+                            svg(
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            )
+                                path(d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z")
+                    .tool-button.glowing-button(
                         v-interact:tap="() => { editMode = !editMode; }"
-                        v-tooltip="Object.assign({}, { content: editMode ? $t('Exit edit mode') : $t('Enter edit mode') }, tooltipConfig)"
+                        v-tooltip="performanceFactor >= .3 ? { content: editMode ? $t('Exit edit mode') : $t('Enter edit mode'),  ...tooltipConfig } : undefined"
                     )
                         svg(
                             v-if="editMode"
@@ -93,17 +94,23 @@
                             path(d="M20.71,7.04C21.1,6.65 21.1,6 20.72,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15,5.25L18.75,9M17.75,10L14,6.25L4,16.25V20H7.75L17.75,10Z")
         .list-wrap(v-if="queue")
             .random-queue-box(v-if="queue.constructor === RandomTrackQueue")
-                draggable.draggable(
-                    v-model="tracks"
-                    :options="{ group: 'tracks', draggable: '' }"
-                    @add="playTrack($event.newIndex);"
-                )
-                yoyoMarquee(
-                    v-if="activeTrack"
-                    style="width: 90%; text-align: center;"
-                    :title="activeTrack.name + '-' + (activeTrack.artists && activeTrack.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist'))"
-                )
+                mixin track
                     h5(v-if="activeTrack") {{ activeTrack.name + ' - ' + (activeTrack.artists && activeTrack.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist')) }}
+                template(v-if="performanceFactor >= .4")
+                    draggable.draggable(
+                        v-model="tracks"
+                        :options="{ group: 'tracks', draggable: '' }"
+                        @add="playTrack($event.newIndex);"
+                    )
+                    yoyoMarquee(
+                        v-if="activeTrack"
+                        style="width: 90%; text-align: center;"
+                        :title="activeTrack.name + '-' + (activeTrack.artists && activeTrack.artists.map(artist => artist.name).join(', ') || $t('Unknown Artist'))"
+                    )
+                        +track
+                template(v-else)
+                    div(style="width: 90%; text-align: center;")
+                        +track
                 .play-button.glowing-button(
                     v-if="activeTrack && !active || queueGroup.activeIndex !== playingQueueIndex"
                     v-interact:tap="() => { playTrack(activeIndex); }"
@@ -116,7 +123,8 @@
                         path(d="M8 5v14l11-7z")
                 .tips.text-muted {{ $t('Drag a track here and start random listening') }}
             table.table-condensed.table.table-hover(v-else)
-                draggable(
+                component(
+                    :is="performanceFactor >= .4 ? 'draggable' : 'tbody'"
                     v-model="tracks"
                     :options="{ group: 'tracks', handle: '.drag-handle', forceFallback: true, fallbackOnBody: true }"
                     @sort="handleSort"
@@ -135,27 +143,29 @@
                     )
                         td(style="width: 18px;")
                             template(v-if="queueGroup.activeIndex === playingQueueIndex && index === activeIndex")
-                                svg(
-                                    v-if="playing"
-                                    width="20"
-                                    height="20"
-                                    viewBox="0 0 24 24"
-                                )
-                                    path(d="M8 5v14l11-7z")
-                                svg(
-                                    v-else
-                                    width="20"
-                                    height="20"
-                                    viewBox="0 0 24 24"
-                                )
-                                    path(d="M6 19h4V5H6v14zm8-14v14h4V5h-4z")
+                                template(v-if="performanceFactor >= .1")
+                                    svg(
+                                        v-if="playing"
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                    )
+                                        path(d="M8 5v14l11-7z")
+                                    svg(
+                                        v-else
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                    )
+                                        path(d="M6 19h4V5H6v14zm8-14v14h4V5h-4z")
+                                template(v-else) {{ playing ? ">" : "II" }}
                         td
                             .track-name
                                 editableBox(
                                     v-model="track.name"
                                     :editable="editMode"
                                 )
-                                .track-notifications.glowing-button
+                                .track-notifications.glowing-button(v-if="performanceFactor >= .6 ? true : selectedIndex === index")
                                     v-popover(
                                         v-if="track.status === Status.Error"
                                         delay="300"
@@ -208,18 +218,21 @@
                         ) {{ track.duration | formatDuration('mm:ss') }}
                         td(v-else)
                         td(v-if="showSourceIcon")
-                            img(
-                                :src="track.source.icons[0] || defaultIcon"
-                                :alt="track.source.name"
-                                :title="track.source.name"
-                            )
-                        td.drag-handle(v-if="editMode")
-                            svg(
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            )
-                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
+                            template(v-if="performanceFactor >= .2")
+                                img(
+                                    :src="track.source.icons[0] || defaultIcon"
+                                    :alt="track.source.name"
+                                    :title="track.source.name"
+                                )
+                            template(v-else) {{ track.source.name }}
+                        template(v-if="performanceFactor >= .4")
+                            td.drag-handle(v-if="editMode")
+                                svg(
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                )
+                                    path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
 
                     tr(
                         slot="footer"
@@ -335,12 +348,17 @@
                 }
             },
 
+            performanceFactor() {
+                return this.preference.performanceFactor;
+            },
+
             ...mapState({
                 queueGroup: state => state.queueModule.queueGroup,
                 sources: state => state.sourceModule.sourceGroup.get(),
                 playerController: state => state.playerModule.playerController,
                 visualizer: state => state.visualizationModule.visualizer,
-                showSourceIcon: state => state.generalModule.showSourceIcon
+                showSourceIcon: state => state.generalModule.showSourceIcon,
+                preference: (state) => state.generalModule.preference || config.defaultPreference,
             })
         },
 
@@ -591,24 +609,6 @@
 
             .tool-button {
                 margin: 2px;
-                line-height: 0;
-                cursor: pointer;
-
-                svg {
-                    fill: rgba(255, 255, 255, 0.6);
-                }
-
-                &:hover svg {
-                    fill: rgba(255, 255, 255, 0.9);
-                    -webkit-filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
-                    filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
-                    -ms-filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
-                    filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
-                }
-
-                &.active svg {
-                    fill: rgba(211, 101, 98, .9);
-                }
 
                 tr {
                     display: none;
@@ -666,69 +666,62 @@
                 }
             }
         }
-    }
 
-    tr {
-        cursor: default;
-
-        &.sortable-ghost {
-            opacity: .5 !important;
-        }
-
-        svg {
-            width: 18px;
-            height: 18px;
-            margin-top: 1px;
-            fill: #fff;
-        }
-
-        img {
-            width: 15px;
-            height: 15px;
-            margin-top: -2px;
-            vertical-align: middle;
-        }
-
-        .track-name {
-            display: flex;
-            align-items: center;
-
-            .track-notifications {
-                display: flex;
-                flex-wrap: wrap;
-
-                svg {
-                    display: block;
-                    width: 16px;
-                    height: 16px;
-                }
-            }
-        }
-
-        .drag-handle {
-            width: 28px;
-            text-align: center;
-            cursor: move;
-            cursor: -webkit-grab;
-        }
-    }
-
-    .sortable-fallback {
-        display: table;
-        position: absolute;
-        color: #fff;
-        opacity: .5 !important;
-
-        td {
-            padding: 0 2px;
+        tr {
+            cursor: default;
 
             svg {
-                transform: translateY(4px);
+                width: 18px;
+                height: 18px;
+                margin-top: 1px;
+                fill: #fff;
+            }
+
+            img {
+                width: 15px;
+                height: 15px;
+                margin-top: -2px;
+                vertical-align: middle;
+            }
+
+            .track-name {
+                display: flex;
+                align-items: center;
+
+                .track-notifications {
+                    display: flex;
+                    flex-wrap: wrap;
+
+                    svg {
+                        display: block;
+                        width: 16px;
+                        height: 16px;
+                    }
+                }
+            }
+
+            .drag-handle {
+                width: 28px;
+                text-align: center;
+                cursor: move;
+                cursor: -webkit-grab;
             }
         }
-    }
 
-    .error-messages {
-        text-align: left;
+        .error-messages {
+            text-align: left;
+        }
+
+        &.performance-factor-max-3 {
+            .toolbar {
+                box-shadow: none;
+                border-bottom: 1px solid rgb(30, 30, 30);
+            }
+
+            .list-wrap {
+                box-shadow: none;
+                border-top: 1px solid rgb(60, 60, 60);
+            }
+        }
     }
 </style>

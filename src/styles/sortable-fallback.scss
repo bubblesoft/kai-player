@@ -1,0 +1,26 @@
+.sortable-fallback {
+  display: table;
+  position: absolute;
+  color: #fff;
+  opacity: .5 !important;
+  cursor: default;
+
+  td {
+    padding: 0 5px;
+
+    &.drag-handle {
+      width: 28px;
+      text-align: center;
+      cursor: move;
+      cursor: -webkit-grab;
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+      fill: #fff;
+      transform: translateY(4px);
+    }
+  }
+}

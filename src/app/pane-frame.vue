@@ -1,20 +1,24 @@
 <template lang="pug">
-    .pane-frame(:class="{ active: activePanelIndex === $el }")
+    .pane-frame(
+        :class="{ active: activePanelIndex === $el, 'performance-factor-max-4': performanceFactor < .4, 'performance-factor-max-2': performanceFactor < .2 }"
+    )
         .panel.panel-default(
             :style="{ backgroundColor }"
             :class="{ hide: autoHide }"
         )
         .panel-heading(
             :class="{ hide: autoHide }"
-            :style="{ backgroundPosition: (1 - ratioX + ratioY) * 50 + 10 + '% ' + '0' }"
+            :style="{ backgroundPosition: performanceFactor >= .4 && (1 - ratioX + ratioY) * 50 + 10 + '% ' + '0' }"
         )
-            div {{ heading }}
+            div
+                slot(name="heading")
         .control(
             v-if="activePanelIndex === $el"
             :class="{ hide: autoHide }"
         )
             .opacity-control
                 vueSlider(
+                    v-if="performanceFactor >= .2"
                     v-model="opacity"
                     :max="1"
                     :interval=".01"
@@ -27,6 +31,7 @@
                     :tooltip-style="{ backgroundColor: 'rgba(255, 255, 255, 0.6)', 'border-color': 'rgba(255, 255, 255, 0.6)', 'border-style': 'none' }"
                 )
             tooltip(
+                v-if="interactable"
                 v-interact:tap="() => lock = !lock"
                 effect="fadein"
                 placement="top"
@@ -57,7 +62,7 @@
 </template>
 
 <script>
-    import { mapMutations } from 'vuex';
+    import { mapState, mapMutations } from 'vuex';
 
     import interact from 'interactjs';
     import { scaleLinear } from 'd3';
@@ -66,6 +71,8 @@
     import vueSlider from 'vue-slider-component';
 
     import { UPDATE_ACTIVE_PANEL_INDEX, SET_ACTIVE_PANEL_INDEX_LOCK } from '../scripts/mutation-types';
+
+    import config from "../config";
 
     const scale = scaleLinear()
             .domain([0, .5, 1])
@@ -77,7 +84,7 @@
             heading: {
                 type: String,
                 default: 'Panel'
-            }
+            },
         },
 
         components: {
@@ -95,7 +102,9 @@
                 autoHide: false,
                 viewportWidth: 0,
                 viewportHeight: 0,
-                interactables: []
+                interactableInit: false,
+                interactables: [],
+                unwatchFunctions: [],
             }
         },
 
@@ -118,19 +127,193 @@
 
             ratioY() {
                 return this.bottomY / window.innerHeight;
-            }
+            },
+
+            performanceFactor() {
+                return this.preference.performanceFactor;
+            },
+
+            interactable() {
+                return this.performanceFactor >= .1;
+            },
+
+            ...mapState({
+                preference: (state) => state.generalModule.preference || config.defaultPreference,
+            }),
         },
 
         watch: {
             opacity() {
                 this.saveLayout();
             },
+
             lock() {
                 this.saveLayout();
+            },
+
+            performanceFactor() {
+                if (this.interactable && !this.interactableInit) {
+                    this.initInteractable();
+                } else if (!this.interactable && this.interactableInit) {
+                    this.destroyInteractable();
+                    interact(this.$el).on("down", this.activate);
+                }
             }
         },
 
         methods: {
+            initInteractable() {
+                this.destroyInteractable();
+                this.interactableInit = true;
+                window.addEventListener('resize', this.handleWindowResize);
+
+                const controlBarHeight = document.querySelector('#control-bar').offsetHeight;
+                const panel = this.$el;
+
+                const interactable = interact(panel)
+                    .on('down', () => {
+                        this.activate();
+                    })
+                    .draggable({
+                        enabled: !this.lock,
+                        ignoreFrom: '.panel-body, .control',
+                        restrict: {
+                            restriction: 'parent',
+                            endOnly: true
+                        },
+                        inertia: true,
+                        onmove: e => {
+                            const width = panel.offsetWidth;
+                            const height = panel.offsetHeight;
+
+                            // keep the dragged position in the data-x/data-y attributes
+                            const x = (+panel.getAttribute('data-x') || 0) + e.dx;
+                            const y = (+panel.getAttribute('data-y') || 0) + e.dy;
+
+                            panel.style.transform = 'translate(' + x + 'px, ' + y + 'px)'; // translate the element
+
+                            // update the posiion attributes
+                            panel.setAttribute('data-x', x);
+                            panel.setAttribute('data-y', y);
+
+                            this.ratioX = (x + width / 2) / this.viewportWidth;
+                            this.bottomY = this.viewportHeight - y - height;
+                            this.saveLayout();
+                        },
+                        snap: {
+                            targets: [
+                                (x, y) => {
+                                    if (this.value.mode !== 'leftTop') {
+                                        const width = panel.offsetWidth,
+                                            height = panel.offsetHeight;
+
+                                        if (Math.abs(x) < 30) {
+                                            this.attach = 'left';
+
+                                            return { x: 0, y: y };
+                                        } else if (this.attach === 'left') {
+                                            this.attach = false;
+
+                                            return;
+                                        }
+
+                                        if (Math.abs(x + width - this.viewportWidth) < 30) {
+                                            this.attach = 'right';
+
+                                            return { x: this.viewportWidth - width, y: y };
+                                        } else if (this.attach === 'right') {
+                                            this.attach = false;
+
+                                            return;
+                                        }
+
+                                        if (Math.abs(y) < 30) {
+                                            this.attach = 'top';
+
+                                            return { x: x, y: 0 };
+                                        } else if (this.attach === 'top') {
+                                            this.attach = false;
+
+                                            return;
+                                        }
+
+                                        if (Math.abs(y + height - this.viewportHeight - controlBarHeight) < 30) {
+                                            this.attach = 'bottom';
+
+                                            return { x: x, y: this.viewportHeight + controlBarHeight - height };
+                                        } else if (this.attach === 'bottom') {
+                                            this.attach = false;
+
+                                            return;
+                                        }
+
+                                        this.saveLayout();
+                                    }
+                                }
+                            ],
+                            relativePoints: [
+                                { x: 0, y: 0 } // snap relative to the element's top-left
+                            ]
+                        }
+                    })
+
+                    .resizable({
+                        enabled: !this.lock,
+                        ignoreFrom: '.panel-body, .control',
+                        edges: { left: true, right: true, bottom: true, top: true },
+                        restrictEdges: {
+                            outer: 'parent',
+                            endOnly: true
+                        },
+                        restrictSize: {
+                            min: { width: 200, height: 150 }
+                        },
+                        inertia: true,
+                        margin: 9
+                    })
+                    .on('resizemove', e => {
+                        const width = panel.offsetWidth,
+                            height = panel.offsetHeight;
+
+                        let x = (parseFloat(panel.getAttribute('data-x')) || 0),
+                            y = (parseFloat(panel.getAttribute('data-y')) || 0);
+
+                        // update the element's style
+                        panel.style.width = e.rect.width + 'px';
+                        panel.style.height = e.rect.height + 'px';
+
+                        // translate when resizing from top or left edges
+                        x += e.deltaRect.left;
+                        y += e.deltaRect.top;
+
+                        panel.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+
+                        panel.setAttribute('data-x', x);
+                        panel.setAttribute('data-y', y);
+
+                        this.ratioX = (x + width / 2) / this.viewportWidth;
+                        this.bottomY = this.viewportHeight - y - height;
+
+                        this.saveLayout();
+                    });
+
+                this.unwatchFunctions.push(this.$watch('lock', lock => {
+                    interactable.options.drag.enabled = !lock;
+                    interactable.options.resize.enabled = !lock;
+                }));
+
+                this.interactables.push(interactable);
+            },
+
+            destroyInteractable() {
+                this.interactableInit = false;
+                this.unwatchFunctions.forEach((unwatch) => unwatch());
+                this.unwatchFunctions = [];
+                this.interactables.forEach((interactable) => interactable.unset());
+                this.interactables = [];
+                window.removeEventListener("resize", this.handleWindowResize);
+            },
+
             saveLayout() {
                 const panel = this.$el;
 
@@ -293,140 +476,11 @@
             panel.style.width = width + 'px';
             panel.style.height = height + 'px';
 
-            window.addEventListener('resize', this.handleWindowResize);
-
-            const interactable = interact(panel)
-                .on('down', () => {
-                    this.activate();
-                })
-                .draggable({
-                    enabled: !this.lock,
-                    ignoreFrom: '.panel-body, .control',
-                    restrict: {
-                        restriction: 'parent',
-                        endOnly: true
-                    },
-                    inertia: true,
-                    onmove: e => {
-                        const height = panel.offsetHeight,
-
-                            // keep the dragged position in the data-x/data-y attributes
-                            x = (+panel.getAttribute('data-x') || 0) + e.dx,
-                            y = (+panel.getAttribute('data-y') || 0) + e.dy;
-
-                        panel.style.transform = 'translate(' + x + 'px, ' + y + 'px)'; // translate the element
-
-                        // update the posiion attributes
-                        panel.setAttribute('data-x', x);
-                        panel.setAttribute('data-y', y);
-
-                        this.ratioX = (x + width / 2) / this.viewportWidth;
-                        this.bottomY = this.viewportHeight - y - height;
-                        this.saveLayout();
-                    },
-                    snap: {
-                        targets: [
-                            (x, y) => {
-                                if (this.value.mode !== 'leftTop') {
-                                    const width = panel.offsetWidth,
-                                            height = panel.offsetHeight;
-
-                                    if (Math.abs(x) < 30) {
-                                        this.attach = 'left';
-
-                                        return { x: 0, y: y };
-                                    } else if (this.attach === 'left') {
-                                        this.attach = false;
-
-                                        return;
-                                    }
-
-                                    if (Math.abs(x + width - this.viewportWidth) < 30) {
-                                        this.attach = 'right';
-
-                                        return { x: this.viewportWidth - width, y: y };
-                                    } else if (this.attach === 'right') {
-                                        this.attach = false;
-
-                                        return;
-                                    }
-
-                                    if (Math.abs(y) < 30) {
-                                        this.attach = 'top';
-
-                                        return { x: x, y: 0 };
-                                    } else if (this.attach === 'top') {
-                                        this.attach = false;
-
-                                        return;
-                                    }
-
-                                    if (Math.abs(y + height - this.viewportHeight - controlBarHeight) < 30) {
-                                        this.attach = 'bottom';
-
-                                        return { x: x, y: this.viewportHeight + controlBarHeight - height };
-                                    } else if (this.attach === 'bottom') {
-                                        this.attach = false;
-
-                                        return;
-                                    }
-
-                                    this.saveLayout();
-                                }
-                            }
-                        ],
-                        relativePoints: [
-                            { x: 0, y: 0 } // snap relative to the element's top-left
-                        ]
-                    }
-                })
-
-                .resizable({
-                    enabled: !this.lock,
-                    ignoreFrom: '.panel-body, .control',
-                    edges: { left: true, right: true, bottom: true, top: true },
-                    restrictEdges: {
-                        outer: 'parent',
-                        endOnly: true
-                    },
-                    restrictSize: {
-                        min: { width: 200, height: 150 }
-                    },
-                    inertia: true,
-                    margin: 9
-                })
-                .on('resizemove', e => {
-                    const width = panel.offsetWidth,
-                        height = panel.offsetHeight;
-
-                    let x = (parseFloat(panel.getAttribute('data-x')) || 0),
-                        y = (parseFloat(panel.getAttribute('data-y')) || 0);
-
-                    // update the element's style
-                    panel.style.width = e.rect.width + 'px';
-                    panel.style.height = e.rect.height + 'px';
-
-                    // translate when resizing from top or left edges
-                    x += e.deltaRect.left;
-                    y += e.deltaRect.top;
-
-                    panel.style.transform = 'translate(' + x + 'px,' + y + 'px)';
-
-                    panel.setAttribute('data-x', x);
-                    panel.setAttribute('data-y', y);
-
-                    this.ratioX = (x + width / 2) / this.viewportWidth;
-                    this.bottomY = this.viewportHeight - y - height;
-
-                    this.saveLayout();
-                });
-
-            this.$watch('lock', lock => {
-                interactable.options.drag.enabled = !lock;
-                interactable.options.resize.enabled = !lock;
-            });
-
-            this.interactables.push(interactable);
+            if (this.interactable) {
+                this.initInteractable();
+            } else {
+                interact(this.$el).on("down", this.activate);
+            }
 
             const activate = () => {
                 document.removeEventListener('click', activate);
@@ -441,9 +495,7 @@
 
         },
         destroyed() {
-            this.interactables.forEach(interactable => interactable.unset());
-
-            window.removeEventListener('resize', this.handleWindowResize);
+            this.destroyInteractable();
         }
     }
 </script>
@@ -551,6 +603,24 @@
         svg {
              vertical-align: middle;
         }
+
+        &.performance-factor-max-4 {
+            .panel-heading {
+                background-image: none;
+            }
+        }
+
+        &.performance-factor-max-2 {
+            .panel {
+                background: transparent none !important;
+                border: 1px solid #3c3c3c;
+                box-shadow: none;
+            }
+
+            .panel-body {
+                background-color: #161616;
+            }
+        }
     }
 </style>
 
@@ -558,11 +628,22 @@
     .pane-frame {
         .panel-heading, td, input, select {
             color: rgba(255, 255, 255, .7);
+
+            svg {
+                width: 16px;
+                height: 16px;
+                margin-top: -2px;
+                fill: rgba(255, 255, 255, .7);
+            }
         }
 
         &.active {
             .panel-heading, td, input, select {
                 color: #fff;
+
+                svg {
+                    fill: #fff;
+                }
             }
         }
     }

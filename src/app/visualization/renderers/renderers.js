@@ -8,10 +8,10 @@ import WavingRibbonRenderer from "./WavingRibbonRenderer";
 import ElectricArcRenderer from './ElectricArcRenderer';
 import ArtworkRenderer from './ArtworkRenderer';
 
-const threeRenderer = new ThreeRenderer,
-    histogramRenderer = new HistogramRenderer,
-    wavingRibbonRenderer = new WavingRibbonRenderer,
-    electricArcRenderer = new ElectricArcRenderer,
-    artworkRenderer = new ArtworkRenderer;
+const three = new ThreeRenderer,
+    histogram = new HistogramRenderer,
+    ribbon = new WavingRibbonRenderer,
+    electricArc = new ElectricArcRenderer,
+    artwork = new ArtworkRenderer;
 
-export { threeRenderer, histogramRenderer, wavingRibbonRenderer, electricArcRenderer, artworkRenderer };
+export { three, histogram, ribbon, electricArc, artwork };

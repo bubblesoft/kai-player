@@ -15,23 +15,19 @@
                             :src="source.icons[0]"
                         )
                     td {{ source.name }}
-    vueLoading(
-        v-else
-        type="cylon"
-        color="#fff"
-    )
+    loading(v-else)
 </template>
 
 <script>
     import { mapState, mapMutations } from 'vuex';
 
-    import vueLoading from "vue-loading-template";
+    import loading from "../loading";
 
     import { UPDATE_SOURCE } from '../../scripts/mutation-types';
 
     export default {
         components: {
-            vueLoading,
+            loading,
         },
 
         data() {

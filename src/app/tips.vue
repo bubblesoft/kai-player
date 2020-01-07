@@ -13,7 +13,7 @@
             button.btn.btn-default.btn-sm(
                 v-interact:tap="close"
                 type="button"
-            ) {{ $t('Close') }}
+            ) {{ $t("Close") }}
 </template>
 
 <script lang="ts">
@@ -39,11 +39,13 @@
         }
 
         private tips = [
-            "Panels are resizable/movable and can be closed/opened using the switches on the bottom control bar.",
+            "Panels are resizable and movable.",
             "Select the \"Listen Randomly\" playlist to start playing random tracks pushed by the app.",
-            "Pick up a visualization effect from the drop-down on the control bar (visualization may be inactive with sl" +
-                "ow network).",
+            "Pick up a visualization effect from the drop-down on the control bar (visualization may be inactive with slo" +
+                "w network).",
             "Detailed preference settings available via the gear icon on the control bar.",
+            "If the battery runs out fast on mobile devices, please adjust the power option under \"Settings\" (some chan" +
+                "ges may require restarting the App for now).",
             "More features are under continuous development.",
         ];
 

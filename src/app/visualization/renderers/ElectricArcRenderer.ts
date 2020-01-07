@@ -26,7 +26,10 @@ export default class extends Renderer implements IRenderer {
 
         // How much nodes contained in a band.
         this.bandWidth = (() => {
-            const space = 30; // Expected space in px between two vertices.
+            const maxBandNum = 15;
+
+            // Expected space in px between two vertices.
+            const space = Math.max(30, (mountPoint.offsetWidth || window.innerWidth) / maxBandNum);
 
             let bandWidth = Math.ceil(128 * space / (mountPoint.offsetWidth || window.innerWidth));
 

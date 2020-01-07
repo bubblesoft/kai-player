@@ -17,7 +17,7 @@ import { requestNetworkIdle } from "../scripts/utils";
 import container from "./container";
 
 import "../styles/bootstrap";
-import "../styles/base";
+import "../styles/main";
 import "../styles/v-tooltip";
 import "../styles/pretty-checkbox";
 

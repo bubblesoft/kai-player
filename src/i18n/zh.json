@@ -1,5 +1,6 @@
 {
   "messages": {
+    "loading...": "加载中...",
     "Error, please refresh the page.": "错误，请刷新页面。",
     "Confirm": "确认",
     "Cancel": "取消",
@@ -62,6 +63,9 @@
     "Background": "背景",
     "Upload": "上传图片",
     "Language": "语言",
+    "Power control": "电源控制",
+    "Power Saving": "节能",
+    "Visual": "视觉",
     "Drag & Drop you files or Browse": "拖动文件到这里或者点击浏览文件",
     "Select a language": "选择语言",
     "The audio source doesn't provide a playback URL for this track.": "音频源未提供此音频的播放URL。",
@@ -70,10 +74,11 @@
     "The connection to the server is slow.": "服务器连接慢。",
     "The connection to the server is unstable.": "服务器连接不稳定。",
     "Unknown error.": "未知错误.",
-    "Panels are resizable/movable and can be closed/opened using the switches on the bottom control bar.": "面板可以移动/调整大小，使用下方控制面板上的开关打开/关闭。",
+    "Panels are resizable and movable.": "面板可以移动、调整大小。",
     "Select the \"Listen Randomly\" playlist to start playing random tracks pushed by the app.": "选择\"随便听听\"播放列表随机播放APP推送的音乐。",
     "Pick up a visualization effect from the drop-down on the control bar (visualization may be inactive with slow network).": "使用控制面板上的下拉菜单选择可视化效果（弱网络环境下可视化可能不被激活）。",
     "Detailed preference settings available via the gear icon on the control bar.": "详细偏好设置请点击控制面板上的齿轮图标。",
+    "If the battery runs out fast on mobile devices, please adjust the power option under \"Settings\" (some changes may require restarting the App for now).": "如果在移动设备上电池消耗较快，请在\"设置\"中调整电源选项。（目前部分更改需要重启应用）",
     "More features are under continuous development.": "更多功能持续开发中。"
   }
 }

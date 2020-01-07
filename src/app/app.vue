@@ -1,5 +1,8 @@
 <template lang="pug">
-    .app(:style="{ backgroundImage: `url(${backgroundImage})` }")
+    .app(
+        :style="{ backgroundImage: `url(${backgroundImage})` }"
+        :class="{ 'performance-factor-max-3': performanceFactor < .3 }"
+    )
         banner
         control-bar(@toggleSettingsModal="showSettings = !showSettings;")
         template(v-if="layout")
@@ -7,54 +10,96 @@
                 pane-frame(
                     v-if="picturePanelOpen"
                     v-model="pictureLayout"
-                    :heading="$t('Artwork')"
                     @close="picturePanelOpen = false;"
                 )
+                    template(v-slot:heading)
+                        svg(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z")
+                        span &nbsp;{{ $t('Artwork') }}
                     picturePane
             transition(name="fade")
                 pane-frame(
                     v-if="renderSourcePanel"
                     v-show="sourcePanelOpen"
                     v-model="sourceLayout"
-                    :heading="$t('Media Source')"
                     @close="sourcePanelOpen = false;"
                 )
+                    template(v-slot:heading)
+                        svg(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z")
+                        span &nbsp;{{ $t('Media Source') }}
                     sourcePane
             transition(name="fade")
                 pane-frame(
                     v-if="renderListPanel"
                     v-show="listPanelOpen"
                     v-model="listLayout"
-                    :heading="$t('Chart')"
                     @close="listPanelOpen = false;"
                 )
+                    template(v-slot:heading)
+                        svg(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z")
+                        span &nbsp;{{ $t('Chart') }}
                     listPane(@contextMenu="(e, callback) => { listContextMenuCallback = callback; $refs.listContextMenu.open(e); }")
             transition(name="fade")
                 pane-frame(
                     v-if="renderSearchPanel"
                     v-show="searchPanelOpen"
                     v-model="searchLayout"
-                    :heading="$t('Search')"
                     @close="searchPanelOpen = false;"
                 )
+                    template(v-slot:heading)
+                        svg(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z")
+                        span &nbsp;{{ $t('Search') }}
                     searchPane(@contextMenu="(e, callback) => { searchContextMenuCallback = callback; $refs.searchContextMenu.open(e); }")
             transition(name="fade")
                 pane-frame(
                     v-if="renderPlaylistPanel"
                     v-show="playlistPanelOpen"
                     v-model="playlistLayout"
-                    :heading="$t('Playlist')"
                     @close="playlistPanelOpen = false;"
                 )
+                    template(v-slot:heading)
+                        svg(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M4 14h4v-4H4v4zm0 5h4v-4H4v4zM4 9h4V5H4v4zm5 5h12v-4H9v4zm0 5h12v-4H9v4zM9 5v4h12V5H9z")
+                        span &nbsp;{{ $t('Playlist') }}
                     playlistPane(@contextMenu="(e, callback) => { playlistContextMenuCallback = callback; $refs.playlistContextMenu.open(e); }")
             transition(name="fade")
                 pane-frame(
                     v-if="renderTracksPanel"
                     v-show="tracksPanelOpen"
                     v-model="tracksLayout"
-                    :heading="`${$t('Tracks')}(${queue && queue.name})`"
                     @close="tracksPanelOpen = false;"
                 )
+                    template(v-slot:heading)
+                        svg(
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                        )
+                            path(d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z")
+                        span &nbsp;{{ `${$t('Tracks')}(${queue && queue.name})` }}
                     tracksPane(
                         @openQueueModal="selectQueueModalCallback = $event; showSelectQueueModal = true;"
                         @contextMenu="(e, callback) => { trackContextMenuCallback = callback; $refs.trackContextMenu.open(e); }"
@@ -92,6 +137,8 @@
 
     import interact from 'interactjs';
 
+    import "../styles/app";
+
     import { INIT, INIT_PLAYER_MODULE, INIT_QUEUE_MODULE, FETCH_SOURCES } from "../scripts/action-types";
     import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, BACKGROUND_LOAD_RESOURCE } from "../scripts/mutation-types";
 
@@ -109,7 +156,19 @@
     import paneFrame from './pane-frame';
     import selectQueueModal from './select-queue-modal';
 
+    import config from "../config";
+
     const DESTROY_INSTANCE_TIMEOUT = 5 * 10000;
+
+    const settingsComponentPromise = new Promise((resolve, reject) => {
+        requestNetworkIdle(async () => {
+            try {
+                resolve(await import('./settings'));
+            } catch (e) {
+                reject(e);
+            }
+        });
+    });
 
     let that;
 
@@ -158,10 +217,10 @@
                     timeout: 30000
             }),
             settings: () => ({
-                component: import('./settings'),
+                component: settingsComponentPromise,
                 loading,
                 error,
-                timeout: 30000
+                timeout: 30000,
             }),
             selectQueueModal,
         },
@@ -366,6 +425,10 @@
                 return this.queueGroup.get(this.queueGroup.activeIndex || 0);
             },
 
+            performanceFactor() {
+                return this.preference.performanceFactor;
+            },
+
             ...mapState({
                 panels: state => state.generalModule.panels,
                 lockActivePanelIndex: state => state.generalModule.activePanel.lock,
@@ -376,6 +439,7 @@
                 mode: state => state.generalModule.mode,
                 layout: state => state.generalModule.layout,
                 backgroundImage: state => state.generalModule.backgroundImage,
+                preference: (state) => state.generalModule.preference || config.defaultPreference,
             })
         },
 
@@ -412,6 +476,7 @@
             showSettings(showSettings) {
                 if (this.renderSettingsTimeout) {
                     clearTimeout(this.renderSettingsTimeout);
+
                     delete this.renderSettingsTimeout;
                 }
 
@@ -420,6 +485,7 @@
                 } else if (showSettings === false) {
                     this.renderSettingsTimeout = setTimeout(() => {
                         delete this.renderSettingsTimeout;
+
                         this.renderSettings = false;
                     }, 2000);
                 }
@@ -538,8 +604,6 @@
                     });
                 }
             });
-
-            requestNetworkIdle(() => this.renderSettings = true);
         },
 
         mounted() {
@@ -599,6 +663,12 @@
                 background-color: #eee;
             }
         }
+
+        svg {
+            width: 16px;
+            height: 16px;
+            margin-top: -2px;
+        }
     }
 
 
@@ -614,12 +684,5 @@
 
     .fade-enter, .fade-leave-active {
         opacity: 0 !important;
-    }
-</style>
-
-<style lang="scss">
-    .blur {
-        filter: blur(1px);
-        transition-duration: 0s;
     }
 </style>

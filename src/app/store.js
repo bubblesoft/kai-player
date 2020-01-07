@@ -27,10 +27,16 @@ import TrackList from "./source/TrackList";
 import Background from './visualization/visual_controllers/Background';
 import Visualizer from './visualization/visual_controllers/Visualizer';
 
+import ThreeRenderer from "./visualization/renderers/ThreeRenderer";
+import HistogramRenderer from "./visualization/renderers/HistogramRenderer";
+import ElectricArcRenderer from "./visualization/renderers/ElectricArcRenderer";
+
+const PREFERENCE_PERSISTENCE_KEY = "kaiplayerpreference";
+
 Vue.use(Vuex);
 
 const locale = localStorage.getItem('kaiplayerlocale') || window.navigator.language || 'en-US';
-const storedPreference = localStorage.getItem("kaiplayerpreference");
+const storedPreference = localStorage.getItem(PREFERENCE_PERSISTENCE_KEY);
 const preference = storedPreference ? JSON.parse(storedPreference) : config.defaultPreference;
 
 const playerController = new PlayerController;
@@ -250,6 +256,9 @@ const generalModule = {
     },
 
     mutations: {
+        [mutationTypes.PERSIST_PREFERENCE] (state) {
+            localStorage.setItem(PREFERENCE_PERSISTENCE_KEY, JSON.stringify(state.preference));
+        },
         [mutationTypes.UPDATE_ACTIVE_PANEL_INDEX] (state, index) {
             state.activePanel.index = index;
         },
@@ -281,6 +290,10 @@ const generalModule = {
         [mutationTypes.SET_SHOW_TIPS] (state, showTips) {
             state.showTips = showTips;
         },
+        [mutationTypes.SET_PERFORMANCE_FACTOR] (state, performanceFactor) {
+            state.preference.performanceFactor = performanceFactor;
+            this.commit(mutationTypes.PERSIST_PREFERENCE, state);
+        }
     },
     actions: {
         [actionTypes.INIT] () {
@@ -713,13 +726,10 @@ const queueModule = {
     },
 };
 
-const backgroundType = localStorage.getItem('kaisoftbackgroundtype') || 'three',
-    visualizerType = localStorage.getItem('kaisoftvisualizertype') || 'random';
-
 const visualizationModule = {
     state: {
-        backgroundType,
-        visualizerType,
+        backgroundType: null,
+        visualizerType: null,
         init: false,
         _background: null,
         _visualizer: null,
@@ -727,8 +737,20 @@ const visualizationModule = {
     },
     mutations: {
         [mutationTypes.INIT_VISUALIZATION](state, renderers) {
-            state._background = new Background(backgroundType, renderers);
-            state._visualizer = new Visualizer(visualizerType, renderers);
+            state.backgroundType = localStorage.getItem('kaisoftbackgroundtype') || 'three';
+            state.visualizerType = localStorage.getItem('kaisoftvisualizertype') || 'random';
+
+            if (!(state.backgroundType in renderers)) {
+                state.backgroundType = Object.keys(renderers)[0];
+            }
+
+            if (!(state.visualizerType in renderers) && state.visualizerType !== "random") {
+                state.visualizerType = Object.keys(renderers)[0];
+            }
+
+            state._background = new Background(state.backgroundType, renderers);
+            state._visualizer = new Visualizer(state.visualizerType, renderers);
+
             playerModule.state.playerController.visualizer = state._visualizer;
             playerModule.state.playerController.background = state._background;
             state.init = true;
@@ -757,8 +779,27 @@ const visualizationModule = {
         }
     },
     actions: {
-        async initVisualization({ commit, state }, mountPoint) {
-            const renderers = await import('./visualization/renderers/renderers');
+        async initVisualization({ commit, state, rootState, rootState: { generalModule : { preference } } }, mountPoint) {
+            const renderers = await (async () => {
+                let renderers = Object.entries(await import('./visualization/renderers/renderers'));
+
+                if (preference.performanceFactor < .8) {
+                    renderers = renderers.filter(([, renderer]) => !(renderer instanceof ThreeRenderer));
+                }
+
+                if (preference.performanceFactor < .6) {
+                    renderers = renderers.filter((([, renderer]) => !(renderer instanceof ElectricArcRenderer)));
+                }
+
+                if (preference.performanceFactor < .5) {
+                    renderers = renderers.filter((([, renderer]) => !(renderer instanceof HistogramRenderer)));
+                }
+
+                return renderers.reduce((map, [key, renderer]) => ({
+                    [key]: renderer,
+                    ...map,
+                }), {});
+            })();
 
             Object.values(renderers).forEach((renderer) => {
                 try {
@@ -767,6 +808,10 @@ const visualizationModule = {
             });
 
             commit(mutationTypes.INIT_VISUALIZATION, renderers);
+
+            // this._vm.$watch(() => preference.performanceFactor, (performanceFactor) => {
+            //
+            // });
 
             const playing = playerModule.state.playing;
 

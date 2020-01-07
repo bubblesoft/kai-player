@@ -6,38 +6,85 @@
   cursor: pointer;
 
   svg {
-    fill: rgba(255, 255, 255, .6);
+    fill: rgba(255, 255, 255, .6) !important;
 
     &.error {
-      fill: rgba(211, 101, 98, .6);
+      fill: rgba(211, 101, 98, .6) !important;
     }
 
     &.warning {
-      fill: rgba(255, 166, 0, .6);
+      fill: rgba(255, 166, 0, .6) !important;
     }
 
     &.info {
-      fill: rgba(89, 192, 255, .6);
+      fill: rgba(89, 192, 255, .6) !important;
     }
   }
 
   &:hover svg {
-    fill: rgba(255, 255, 255, 0.9);
+    fill: rgba(255, 255, 255, 0.9) !important;
     -webkit-filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
     filter: drop-shadow(2px 2px 10px rgba(150, 150, 150, 1));
     -ms-filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
     filter: "progid:DXImageTransform.Microsoft.Dropshadow(OffX=2, OffY=2, Color='rgba(150, 150, 150, 1)')";
 
     &.error {
-      fill: rgba(211, 101, 98, .9);
+      fill: rgba(211, 101, 98, .9) !important;
     }
 
     &.warning {
-      fill: rgba(255, 166, 0, .9);
+      fill: rgba(255, 166, 0, .9) !important;
     }
 
     &.info {
-      fill: rgba(89, 192, 255, .9);
+      fill: rgba(89, 192, 255, .9) !important;
+    }
+  }
+
+  &.active svg {
+    fill: rgba(211, 101, 98, .9) !important;
+  }
+}
+
+.performance-factor-max-3 {
+  .glowing-button {
+    svg {
+      fill: rgb(153, 153, 153) !important;
+      -webkit-filter: none;
+      -ms-filter: none;
+      filter: none;
+
+      &.error {
+        fill: rgb(127, 61, 59) !important;
+      }
+
+      &.warning {
+        fill: rgb(153, 100, 0) !important;
+      }
+
+      &.info {
+        fill: rgb(53, 115, 153) !important;
+      }
+    }
+
+    &:hover svg {
+      fill: rgb(230, 230, 230) !important;
+
+      &.error {
+        fill: rgb(190, 91, 88) !important;
+      }
+
+      &.warning {
+        fill: rgb(230, 149, 0) !important;
+      }
+
+      &.info {
+        fill: rgb(80, 173, 230) !important;
+      }
+    }
+
+    &.active svg {
+      fill: rgb(190, 91, 88) !important;
     }
   }
 }
