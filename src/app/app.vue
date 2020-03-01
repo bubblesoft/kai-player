@@ -98,63 +98,92 @@
                             height="16"
                             viewBox="0 0 24 24"
                         )
-                            path(d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z")
+                            use(xlink:href="#icon_mini-disc")
                         span &nbsp;{{ `${$t('Tracks')}(${queue && queue.name})` }}
-                    tracksPane(
-                        @openQueueModal="selectQueueModalCallback = $event; showSelectQueueModal = true;"
-                        @contextMenu="(e, callback) => { trackContextMenuCallback = callback; $refs.trackContextMenu.open(e); }"
-                    )
+                    tracksPane(@contextMenu="handleContextMenu")
         settings(
             v-if="renderSettings"
             v-model="showSettings"
         )
-        selectQueueModal(
-            v-model="showSelectQueueModal"
-            :callback="selectQueueModalCallback"
+        modal(
+            v-model="modalOpen"
+            :large="modal.size === 'large'"
+            :small="modal.size === 'small'"
+            :title="$t(modal.title)"
+            effect="zoom"
         )
+            .modal-body(slot="modal-body")
+                component(
+                    :is="modal.component"
+                    :input="modal.inputValue"
+                    v-model="modalReturnValue"
+                )
+            .modal-footer(slot="modal-footer")
+                button.btn.btn-sm(
+                    v-for="button in modal.buttons"
+                    :class="[`btn-${button.type}`]"
+                    v-interact:tap="() => handleModalButtonClick(button)"
+                    v-t="button.text"
+                    type="button"
+                )
         contextMenu(ref="listContextMenu")
             li(v-interact:tap="() => { listContextMenuCallback('add'); }") {{ $t('Add to playlist') }}
             li(v-interact:tap="() => { listContextMenuCallback('import'); }") {{ $t('Import all as a playlist') }}
         contextMenu(ref="searchContextMenu")
             li(v-interact:tap="() => { searchContextMenuCallback('add'); }") {{ $t('Add to playlist') }}
-        contextMenu(ref="trackContextMenu")
-            li(v-interact:tap="() => { trackContextMenuCallback('play'); }") {{ $t('Play') }}
-            li(v-interact:tap="() => { trackContextMenuCallback('up'); }") {{ $t('Move up') }}
-            li(v-interact:tap="() => { trackContextMenuCallback('down'); }") {{ $t('Move down') }}
-            li(v-interact:tap="() => { trackContextMenuCallback('move'); }") {{ $t('Move to...') }}
-            li(v-interact:tap="() => { trackContextMenuCallback('copy'); }") {{ $t('Copy to...') }}
-            li(v-interact:tap="() => { trackContextMenuCallback('remove'); }") {{ $t('Remove') }}
         contextMenu(ref="playlistContextMenu")
             li(v-interact:tap="() => { playlistContextMenuCallback('open'); }") {{ $t('Select') }}
             li(v-interact:tap="() => { playlistContextMenuCallback('up'); }") {{ $t('Move up') }}
             li(v-interact:tap="() => { playlistContextMenuCallback('down'); }") {{ $t('Move down') }}
             li(v-interact:tap="() => { playlistContextMenuCallback('create'); }") {{ $t('New') }}
             li(v-interact:tap="() => { playlistContextMenuCallback('remove'); }") {{ $t('Remove') }}
+        contextMenu(ref="contextMenu")
+            template(v-for="(group, groupIndex) in contextMenuOptions")
+                li(
+                    v-for="(option, optionIndex) in group"
+                    v-interact:tap="() => { contextMenuCallback(groupIndex, optionIndex); }"
+                    :style="option.width && { width: `${option.width[$i18n.locale]}px` }"
+                )
+                    span(v-t="option.text")
+                    template(v-if="option.moreAction") ...
+                    svg(
+                        v-if="option.icon"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                    )
+                        use(:xlink:href="'#icon_' + option.icon")
+                li.divider(v-if="groupIndex < contextMenuOptions.length - 1")
+        icons
 </template>
 
 <script>
-    import { mapState, mapMutations, mapActions } from 'vuex';
+    import { mapState, mapMutations, mapActions } from "vuex";
 
-    import interact from 'interactjs';
+    import * as queryString from "querystring";
+    import interact from "interactjs";
 
     import "../styles/app";
 
     import { INIT, INIT_PLAYER_MODULE, INIT_QUEUE_MODULE, FETCH_SOURCES } from "../scripts/action-types";
-    import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, BACKGROUND_LOAD_RESOURCE } from "../scripts/mutation-types";
+    import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_ACTIVE_PANEL_INDEX, SET_MODE, LOAD_LAYOUT, SET_MODAL_OPEN, SET_MODAL_RETURN_VALUE, BACKGROUND_LOAD_RESOURCE } from "../scripts/mutation-types";
 
     import TrackQueue from './queue/TrackQueue';
     import RandomTrackQueue from './queue/RandomTrackQueue';
 
-    import { getRecommendedTrack, requestNetworkIdle } from '../scripts/utils';
+    import { getRecommendedTrack, createTrackFromTrackData, requestNetworkIdle } from "../scripts/utils";
 
     import contextMenu from 'vue-context-menu';
 
+    import icons from "./icons";
     import loading from './loading';
     import error from './error';
     import banner from './banner';
     import controlBar from './control-bar';
     import paneFrame from './pane-frame';
-    import selectQueueModal from './select-queue-modal';
+    import modal from "vue-strap/src/modal";
+    import selectQueue from "./select-queue";
+    import share from "./queue/share";
 
     import config from "../config";
 
@@ -174,6 +203,7 @@
 
     export default {
         components: {
+            icons,
             loading,
             error,
             contextMenu,
@@ -222,7 +252,9 @@
                 error,
                 timeout: 30000,
             }),
-            selectQueueModal,
+            modal,
+            selectQueue,
+            share,
         },
 
         data() {
@@ -233,11 +265,12 @@
                 renderSettings: false,
                 renderSettingsTimeout: undefined,
                 showSelectQueueModal: false,
+                contextMenuOptions: [],
                 listContextMenuCallback: () => {},
                 searchContextMenuCallback: () => {},
-                selectQueueModalCallback: () => {},
                 trackContextMenuCallback: () => {},
                 playlistContextMenuCallback: () => {},
+                contextMenuCallback: () => {},
                 renderSourcePanel: false,
                 renderListPanel: false,
                 renderSearchPanel: false,
@@ -421,6 +454,26 @@
                 }
             },
 
+            modalOpen: {
+                get() {
+                    return this.modal.open;
+                },
+
+                set(open) {
+                    this[SET_MODAL_OPEN](open);
+                }
+            },
+
+            modalReturnValue: {
+                get() {
+                    return this.modal.returnValue;
+                },
+
+                set(returnValue) {
+                    this[SET_MODAL_RETURN_VALUE](returnValue);
+                }
+            },
+
             queue() {
                 return this.queueGroup.get(this.queueGroup.activeIndex || 0);
             },
@@ -438,7 +491,8 @@
                 visualizer: state => state.visualizationModule._visualizer,
                 mode: state => state.generalModule.mode,
                 layout: state => state.generalModule.layout,
-                backgroundImage: state => state.generalModule.backgroundImage,
+                modal: (state) => state.generalModule.modal,
+                backgroundImage: (state) => state.generalModule.backgroundImage,
                 preference: (state) => state.generalModule.preference || config.defaultPreference,
             })
         },
@@ -450,14 +504,28 @@
                 }
             },
 
+            handleContextMenu(e, options, callback) {
+                this.contextMenuCallback = callback;
+                this.contextMenuOptions = options;
+                this.$refs.contextMenu.open(e);
+            },
+
+            handleModalButtonClick(button) {
+                button.callback && button.callback(this.modalReturnValue);
+                button.close && this[SET_MODAL_OPEN](false);
+            },
+
             ...mapMutations([
                 UPDATE_QUEUE_GROUP,
                 INSERT_QUEUE,
+                UPDATE_QUEUE,
                 UPDATE_PLAYING_QUEUE_INDEX,
                 ADD_TRACK,
                 UPDATE_ACTIVE_PANEL_INDEX,
                 SET_MODE,
                 LOAD_LAYOUT,
+                SET_MODAL_OPEN,
+                SET_MODAL_RETURN_VALUE,
                 BACKGROUND_LOAD_RESOURCE
             ]),
 
@@ -565,6 +633,55 @@
                 this[UPDATE_PLAYING_QUEUE_INDEX](1);
             }
 
+            const queries = queryString.parse(window.location.search.replace(/^\s*\?/, ""));
+
+            if (queries.track) {
+                const activeQueueIndex = this.queueGroup.activeIndex;
+                const track = createTrackFromTrackData(JSON.parse(queries.track));
+                const queue = this.queueGroup.get(activeQueueIndex);
+
+                const matchedIndex = queue.get().reduce((matchedIndex, existingTrack, index) => {
+                    if (matchedIndex !== null) {
+                        return matchedIndex;
+                    }
+
+                    if (existingTrack.id === track.id) {
+                        return index;
+                    }
+
+                    return null;
+                }, null);
+
+                this[UPDATE_PLAYING_QUEUE_INDEX](activeQueueIndex);
+
+                if (matchedIndex !== null) {
+                    this[UPDATE_QUEUE]({
+                        index: activeQueueIndex,
+                        activeIndex: matchedIndex,
+                    });
+                } else {
+                    this[ADD_TRACK]({
+                        track,
+                        queueIndex: activeQueueIndex,
+                    });
+
+                    this[UPDATE_QUEUE]({
+                        index: activeQueueIndex,
+                        activeIndex: this.queue.getLastIndex(),
+                    });
+                }
+
+                delete queries.track;
+
+                const newUrl = window.location.href.split("?")[0] + "?" + queryString.stringify(queries);
+
+                if (window.history) {
+                    history.replaceState({}, document.title, newUrl);
+                } else {
+                    window.location.href = newUrl;
+                }
+            }
+
             if (this.queue && !this.queue.length && this.queue.name === this.$t("Temp Playlist")) {
                 const track = await (async () => {
                     while (true) {
@@ -655,12 +772,30 @@
             background-color: #3e3e3e;
         }
 
-        .ctx-menu-container li {
-            padding: 5px 10px;
-            font-size: 14px;
+        .ctx-menu-container {
+            li {
+                position: relative;
+                padding: 0 10px 0 30px;
+                font-size: 14px;
 
-            &:hover {
-                background-color: #eee;
+                &:hover {
+                    background-color: #eee;
+                }
+
+                &:active {
+                    background-color: #ddd;
+                }
+
+                &.divider {
+                    margin: 5px;
+                    border-bottom: solid #eee 1px;
+                }
+
+                svg {
+                    position: absolute;
+                    left: 6px;
+                    top: 3px;
+                }
             }
         }
 

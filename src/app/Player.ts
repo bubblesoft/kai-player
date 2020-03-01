@@ -461,6 +461,7 @@ export default class Player implements IPlayer {
                                 this.lastError = err;
                                 this.lastErrorSoundId = soundId;
 
+                                // @ts-ignore
                                 this.onRacerFailCallbacks.forEach((callback) => callback(sound._src, err));
                             });
 
@@ -477,6 +478,7 @@ export default class Player implements IPlayer {
                         this.lastErrorSoundId = soundId;
                         this.lastErrorSound = sound;
 
+                        // @ts-ignore
                         this.onRacerFailCallbacks.forEach((callback) => callback(sound._src, err));
                     });
             }))]);
@@ -506,6 +508,7 @@ export default class Player implements IPlayer {
                 }
 
                 this.sound = sound;
+                // @ts-ignore
                 setTimeout(() => this.onLoadCallbacks.forEach((callback) => callback(sound._src)), 0);
                 this.setup();
             } else {
@@ -518,6 +521,7 @@ export default class Player implements IPlayer {
                 this.altSound = sound;
             }
 
+            // @ts-ignore
             if (/^\/proxy/.test(sound._src)) {
                 this.stopRace();
             } else {
@@ -542,6 +546,7 @@ export default class Player implements IPlayer {
                         return;
                     }
 
+                    // @ts-ignore
                     if (/^\/proxy/.test(soundInRace._src)) {
                         return;
                     }

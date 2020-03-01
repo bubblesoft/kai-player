@@ -17,8 +17,7 @@
 </template>
 
 <script lang="ts">
-    import Component from "vue-class-component";
-    import { Prop, Vue } from "vue-property-decorator";
+    import { Component, Prop, Vue } from "vue-property-decorator";
 
     import modal from "vue-strap/src/modal.vue";
 

@@ -48,7 +48,7 @@ export default class Track implements ITrack {
     public readonly id: string;
     public readonly name: string;
     public readonly artists: Artist[];
-    public readonly source: Source|string;
+    public readonly source: Source;
     public readonly messages: Set<Message> = new Set();
     public readonly picture?: string;
     public status: Status;

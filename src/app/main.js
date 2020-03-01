@@ -53,6 +53,15 @@ if (!window["Promise"]) {
         await import("url-polyfill");
     }
 
+    if (!window.navigator["clipboard"]) {
+        window.navigator["clipboard"] = (await import("clipboard-polyfill")).default;
+    }
+
+    if (!window.location["origin"]) {
+        window.location.origin = window.location.protocol + "//" + window.location.hostname +
+            (window.location.port ? ":" + window.location.port: "");
+    }
+
     const registerServiceWorkerPromise = (async() => {
         if ("serviceWorker" in navigator) {
             if (process.env.NODE_ENV === "development") {

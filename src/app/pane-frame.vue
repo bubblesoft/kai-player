@@ -547,6 +547,7 @@
         .panel-heading {
             display: flex;
             justify-content: space-between;
+            padding: 10px;
             background-color: transparent;
             background-image: url(../assets/highlight.svg);
             background-size: auto 100%;
@@ -559,11 +560,11 @@
             align-items: center;
             position: absolute;
             top: 2px;
-            right: 2px;
+            right: 6px;
             width: 50%;
             max-width: 200px;
             height: 25px;
-            margin: 6px 6px 6px 0;
+            margin: 6px 0;
 
             .opacity-control {
                 flex-grow: 1;

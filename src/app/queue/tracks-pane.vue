@@ -73,7 +73,7 @@
                                 height="20"
                                 viewBox="0 0 24 24"
                             )
-                                path(d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z")
+                                use(xlink:href="#icon_trash-can")
                     .tool-button.glowing-button(
                         v-interact:tap="() => { editMode = !editMode; }"
                         v-tooltip="performanceFactor >= .3 ? { content: editMode ? $t('Exit edit mode') : $t('Enter edit mode'),  ...tooltipConfig } : undefined"
@@ -137,7 +137,7 @@
                         v-for="(track, index) in tracks"
                         v-interact:doubletap="() => { playTrack(index); }"
                         v-interact:tap="() => { select(index); }"
-                        @contextmenu.prevent="handleContextMenu($event, track, index);"
+                        @contextmenu.prevent="handleTrackContextMenu($event, track, index);"
                         :class="{ active: selectedIndex === index }"
                         ref="tracks"
                     )
@@ -256,8 +256,8 @@
     import RandomTrackQueue from './RandomTrackQueue';
     import Status from "../Status";
 
-    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, VISUALIZER_LOAD_RESOURCE } from "../../scripts/mutation-types";
-    import { PLAY_TRACK, STOP_PLAYBACK } from "../../scripts/action-types";
+    import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, SET_MODAL_OPEN, VISUALIZER_LOAD_RESOURCE } from "../../scripts/mutation-types";
+    import { LOAD_MODAL, PLAY_TRACK, STOP_PLAYBACK } from "../../scripts/action-types";
 
     import yoyoMarquee from '../yoyo-marquee';
     import editableBox from '../editable-box';
@@ -474,44 +474,76 @@
             },
 
             copyToQueue(track, callback) {
-                this.$emit('openQueueModal', (queue) => {
-                    this[ADD_TRACK]({ track, queue });
+                this[LOAD_MODAL]({
+                    component: "select-queue",
+                    buttons: [{
+                        callback: (queue) => {
+                            this[ADD_TRACK]({ track, queue });
 
-                    if (queue instanceof RandomTrackQueue) {
-                        const queueIndex = (() => {
-                            const queues = this.queueGroup.get();
+                            if (queue instanceof RandomTrackQueue) {
+                                const queueIndex = (() => {
+                                    const queues = this.queueGroup.get();
 
-                            for (let i = 0; i < queues.length; i++) {
-                                if (queues[i] === queue) {
-                                    return i;
+                                    for (let i = 0; i < queues.length; i++) {
+                                        if (queues[i] === queue) {
+                                            return i;
+                                        }
+                                    }
+
+                                    return -1;
+                                })();
+
+                                if (queueIndex !== -1) {
+                                    this[PLAY_TRACK]({ index: queue.goTo(queue.getLastIndex()), queueIndex });
                                 }
                             }
 
-                            return -1;
-                        })();
-
-                        if (queueIndex !== -1) {
-                            this[PLAY_TRACK]({ index: queue.goTo(queue.getLastIndex()), queueIndex });
-                        }
-                    }
-
-                    if (callback) {
-                        callback();
-                    }
+                            if (callback) {
+                                callback();
+                            }
+                        },
+                        text: "Confirm",
+                        type: "primary",
+                        close: true,
+                    }, {
+                        text: "Cancel",
+                        type: "default",
+                        close: true,
+                    }],
+                    title: "Select a playlist",
+                    size: "small",
                 });
+
+                this[SET_MODAL_OPEN](true);
             },
 
-            handleContextMenu(e, track, index) {
+            handleTrackContextMenu(e, track, index) {
                 this.selectedIndex = index;
 
-                this.$emit("contextMenu", e, (type) => {
-                    if (type === "play") {
+                this.$emit("contextMenu", e, [
+                    [{ text: "Play", icon: "play" }],
+                    [{ text: "Share", icon: "share", moreAction: true }],
+                    [{ text: "Move up" }, { text: "Move down" }],
+                    [{ text: "Move to", moreAction: true }, { text: "Copy to", moreAction: true, width: { ja: 180 } }],
+                    [{ text: "Remove", icon: "trash-can" }],
+                ], (groupIndex, optionIndex) => {
+                    if (groupIndex === 0 && optionIndex === 0) {
                         this.playTrack(index);
-                    } else if (type === "move") {
-                        this.copyToQueue(track, () => this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1)));
-                    } else if (type === "copy") {
-                        this.copyToQueue(track);
-                    } else if (type === "up") {
+                    } else if (groupIndex === 1 && optionIndex === 0) {
+                        this[LOAD_MODAL]({
+                            component: "share",
+                            buttons: [{
+                                text: "Close",
+                                type: "default",
+                                close: true,
+                            }],
+                            inputValue: track,
+                            title: "Share",
+                            size: "small",
+                        });
+
+                        this[SET_MODAL_OPEN](true);
+                    } else if (groupIndex === 2 && optionIndex === 0) {
                         if (index > 0) {
                             this.$set(this.tracks, index, this.tracks[index - 1]);
                             this.$set(this.tracks, index - 1, track);
@@ -529,7 +561,7 @@
                                 this.selectedIndex--;
                             }
                         }
-                    } else if (type === "down") {
+                    } else if (groupIndex === 2 && optionIndex === 1) {
                         if (index + 1 < this.tracks.length) {
                             this.$set(this.tracks, index, this.tracks[index + 1]);
                             this.$set(this.tracks, index + 1, track);
@@ -547,7 +579,11 @@
                                 this.selectedIndex--;
                             }
                         }
-                    } else if (type === "remove") {
+                    } else if (groupIndex === 3 && optionIndex === 0) {
+                        this.copyToQueue(track, () => this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1)));
+                    } else if (groupIndex === 3 && optionIndex === 1) {
+                        this.copyToQueue(track);
+                    } else if (groupIndex === 4 && optionIndex === 0) {
                         this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1));
                         this.trashCan.data.push(track);
                         this.handleTrackRemove(index);
@@ -573,10 +609,12 @@
                 ADD_TRACK,
                 UPDATE_TRACK,
                 SWITCH_QUEUE_MODE,
+                SET_MODAL_OPEN,
                 VISUALIZER_LOAD_RESOURCE
             ]),
 
             ...mapActions([
+                LOAD_MODAL,
                 PLAY_TRACK,
                 STOP_PLAYBACK,
             ])

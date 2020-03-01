@@ -18,7 +18,8 @@ module.exports = {
         contentBase: path.resolve(rootDir, 'build'),
         proxy: {
             '/audio': 'http://kaiplanet.net:3000',
-            '/proxy': 'http://kaiplanet.net:3000'
+            '/proxy': 'http://kaiplanet.net:3000',
+            '/shorten': 'http://kaiplanet.net:3000'
         }
     },
     devtool: 'source-map',

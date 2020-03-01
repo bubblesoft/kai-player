@@ -1,23 +1,19 @@
 import Vue from 'vue';
 import Vuex from "vuex";
 
+import * as queryString from "querystring";
+
 import config from "../config";
 
 import * as mutationTypes from '../scripts/mutation-types';
 import * as actionTypes from '../scripts/action-types';
 
 import { loadLocale } from './i18n';
-import { getRecommendedTrack, generateLayout, fetchData, requestNetworkIdle } from "../scripts/utils";
+import { getRecommendedTrack, generateLayout, transformTrackForStringify, createTrackFromTrackData, fetchData, requestNetworkIdle } from "../scripts/utils";
 
-import Status from "./Status";
 import PlayerStatus from "./PlayerStatus";
 import Player from "./Player";
 import PlayerController from "./PlayerController";
-import TrackError from "./TrackError";
-import TrackInfo from "./TrackInfo";
-import PlaybackSource from "./PlaybackSource";
-import Artist from "./Artist";
-import Track from "./Track";
 import Queue from "./Queue";
 import Source from "./source/Source";
 import SourceGroup from './source/SourceGroup';
@@ -203,7 +199,7 @@ const playerModule = {
                         }
                     })();
 
-                    commit(mutationTypes.ADD_TRACK, { track: nextTrack, queueIndex: playingQueueIndex });
+                    commit(mutationTypes.ADD_TRACK, { track: nextTrack, queueIndex: queueIndex });
                 }
 
                 dispatch(actionTypes.PLAY_TRACK, { index: commit(mutationTypes.NEXT_TRACK) });
@@ -244,6 +240,15 @@ const generalModule = {
         },
         mode: null,
         layout: null,
+        modal: {
+            open: false,
+            component: "",
+            inputValue: null,
+            returnValue: null,
+            buttons: [],
+            title: "",
+            size: "medium",
+        },
         backgroundImage: localStorage.getItem('kaiplayerbackgroundimage') || 'https://bubblesoft.oss-ap-southeast-1.aliyuncs.com/1d69083104fb0c7d0e3a568d72f3eff8_numendil-333089-unsplash.jpg',
         showSourceIcon: (() => {
             const showSourceIcon = localStorage.getItem('kaiplayershowsouceicon');
@@ -259,37 +264,77 @@ const generalModule = {
         [mutationTypes.PERSIST_PREFERENCE] (state) {
             localStorage.setItem(PREFERENCE_PERSISTENCE_KEY, JSON.stringify(state.preference));
         },
+
         [mutationTypes.UPDATE_ACTIVE_PANEL_INDEX] (state, index) {
             state.activePanel.index = index;
         },
+
         [mutationTypes.SET_ACTIVE_PANEL_INDEX_LOCK] (state, boolean) {
             state.activePanel.lock = boolean;
         },
+
         [mutationTypes.SET_MODE] (state, mode) {
             state.mode = mode;
         },
+
         [mutationTypes.LOAD_LAYOUT] (state, layout) {
             state.layout = layout;
         },
+
         [mutationTypes.SAVE_LAYOUT] (state, { index, layout }) {
             state.layout[index] = layout;
         },
+
+        [mutationTypes.SET_MODAL_OPEN] (state, open) {
+            state.modal.open = open;
+        },
+
+        [mutationTypes.SET_MODAL_BODY_COMPONENT] (state, componentName) {
+            state.modal.component = componentName;
+        },
+
+        [mutationTypes.SET_MODAL_INPUT_VALUE] (state, value) {
+            state.modal.inputValue = value;
+        },
+
+        [mutationTypes.SET_MODAL_RETURN_VALUE] (state, value) {
+            state.modal.returnValue = value;
+        },
+
+        [mutationTypes.SET_MODAL_BUTTONS] (state, buttons) {
+            state.modal.buttons = buttons;
+        },
+
+        [mutationTypes.SET_MODAL_APPEARANCE] (state, { title, size }) {
+            if (title) {
+                state.modal.title = title;
+            }
+
+            if (size) {
+                state.modal.size = size;
+            }
+        },
+
         [mutationTypes.SET_BACKGROUND_IMAGE] (state, url) {
             state.backgroundImage = url;
             localStorage.setItem('kaiplayerbackgroundimage', url);
         },
+
         [mutationTypes.SET_LOCALE] (state, locale) {
             loadLocale(locale);
             state.locale = locale;
             localStorage.setItem('kaiplayerlocale', locale);
         },
+
         [mutationTypes.SET_SHOW_SOURCE_ICON] (state, showSourceIcon) {
             state.showSourceIcon = showSourceIcon;
             localStorage.setItem('kaiplayershowsouceicon', Number(showSourceIcon));
         },
+
         [mutationTypes.SET_SHOW_TIPS] (state, showTips) {
             state.showTips = showTips;
         },
+
         [mutationTypes.SET_PERFORMANCE_FACTOR] (state, performanceFactor) {
             state.preference.performanceFactor = performanceFactor;
             this.commit(mutationTypes.PERSIST_PREFERENCE, state);
@@ -299,6 +344,7 @@ const generalModule = {
         [actionTypes.INIT] () {
             localStorage.setItem("kaiplayerinitiated", JSON.stringify(true));
         },
+
         loadLayout({ commit, state }, { mode = state.mode }) {
             const layoutData = localStorage.getItem('kaiplayerlayout' + mode);
 
@@ -311,10 +357,19 @@ const generalModule = {
                 commit(mutationTypes.LOAD_LAYOUT, generateLayout(mode, viewportWidth, viewportHeight));
             }
         },
+
         saveLayout({ commit, state }, { index, layout }) {
             commit(mutationTypes.SAVE_LAYOUT, { index, layout });
             localStorage.setItem('kaiplayerlayout' + state.mode, JSON.stringify(state.layout));
         },
+
+        [actionTypes.LOAD_MODAL] ({ commit }, { component, buttons, inputValue, title, size }) {
+            commit(mutationTypes.SET_MODAL_BODY_COMPONENT, component);
+            commit(mutationTypes.SET_MODAL_BUTTONS, buttons);
+            commit(mutationTypes.SET_MODAL_INPUT_VALUE, inputValue);
+            commit(mutationTypes.SET_MODAL_APPEARANCE, { title, size });
+        },
+
         [actionTypes.CLOSE_TIPS] ({ commit }) {
             commit(mutationTypes.SET_SHOW_TIPS, false);
         }
@@ -429,60 +484,21 @@ const sourceModule = {
 
 const saveQueueData = (queueGroup, playingQueueIndex) => {
     localStorage.setItem('kaiplayerplayingqueues', JSON.stringify({
-        queues: queueGroup.get().map(queue => {
-            return {
-                type: (() => {
-                    switch (queue.constructor) {
-                        case RandomTrackQueue:
-                            return 'random';
+        queues: queueGroup.get().map((queue) => ({
+            type: (() => {
+                switch (queue.constructor) {
+                    case RandomTrackQueue:
+                        return 'random';
 
-                        case TrackQueue:
-                        default:
-                            return 'basic';
-                    }
-                })(),
-                name: queue.name,
-                tracks: queue.get().map(track => ({
-                    id: track.id,
-                    name: track.name,
-                    source: track.source.id,
-                    artists: track.artists.map(artist => ({ name: artist.name })),
-                    duration: track.duration,
-                    playbackSources: track.playbackSources && track.playbackSources.length ? track.playbackSources
-                        .filter((playbackSource) => playbackSource.proxied || playbackSource.statical)
-                        .map((playbackSource) => ({
-                            urls: playbackSource.urls,
-                            quality: playbackSource.quality,
-                            proxied: playbackSource.proxied,
-                            statical: playbackSource.statical,
-                        })) : undefined,
-                    picture: track.picture,
-                    status: track.status.id,
-                    messages: track.messages && Array.from(track.messages).map((message) => ({
-                        level: ((message) => {
-                            if (message instanceof TrackError) {
-                                return "error";
-                            } else {
-                                return "unknown";
-                            }
-                        })(message),
-                        code: message.code,
-                    })),
-                    altPlaybackSources: track.altPlaybackSources.length ? track.altPlaybackSources
-                        .filter(({ playbackSource }) => playbackSource.proxied || playbackSource.statical)
-                        .map((altPlaybackSource) => ({
-                            playbackSource: {
-                                urls: altPlaybackSource.playbackSource.urls,
-                                quality: altPlaybackSource.playbackSource.quality,
-                                proxied: altPlaybackSource.playbackSource.proxied,
-                                statical: altPlaybackSource.playbackSource.statical,
-                            },
-                            similarity: altPlaybackSource.similarity,
-                        })) : undefined,
-                })),
-                activeIndex: queue.activeIndex
-            }
-        }),
+                    case TrackQueue:
+                    default:
+                        return 'basic';
+                }
+            })(),
+            name: queue.name,
+            tracks: queue.get().map((track) => transformTrackForStringify(track)),
+            activeIndex: queue.activeIndex
+        })),
 
         activeIndex: queueGroup.activeIndex,
         playingQueueIndex,
@@ -510,42 +526,7 @@ const restoreQueueData = () => {
             })();
 
             if (queueData.tracks.length) {
-                queue.add(queueData.tracks.map((trackData) => new Track(trackData.id, trackData.name, new Source(trackData.source, { name: trackData.source }), {
-                    artists: trackData.artists.map(artistData => new Artist({ name: artistData.name })),
-                    duration: trackData.duration,
-                    picture: trackData.picture,
-
-                    playbackSources: trackData.playbackSources && trackData.playbackSources.length ? trackData.playbackSources
-                        .map((playbackSource) => playbackSource.urls && playbackSource.urls.length && new PlaybackSource(playbackSource.urls, playbackSource.quality, {
-                            proxied: playbackSource.proxied,
-                            statical: playbackSource.statical,
-                        }))
-                        .filter((playbackSource) => playbackSource) : undefined,
-
-                    status: Status.fromId(trackData.status),
-
-                    messages: trackData.messages && trackData.messages.map((messageData) => {
-                        if (messageData.level === "error") {
-                            return TrackError.fromCode(messageData.code);
-                        }
-
-                        return TrackInfo.fromCode(messageData.code);
-                    }),
-
-                    altPlaybackSources: trackData.altPlaybackSources && trackData.altPlaybackSources.length ? trackData.altPlaybackSources.map(({ playbackSource, similarity }) => {
-                        if (!playbackSource.urls || !playbackSource.urls.length) {
-                            return;
-                        }
-
-                        return {
-                            playbackSource: new PlaybackSource(playbackSource.urls, playbackSource.quality, {
-                                proxied: playbackSource.proxied,
-                                statical: playbackSource.statical,
-                            }),
-                            similarity,
-                        };
-                    }).filter((altPlaybackSource) => altPlaybackSource) : [],
-                })));
+                queue.add(queueData.tracks.map((trackData) => createTrackFromTrackData(trackData)));
             }
 
             queue.activeIndex = queueData.activeIndex;
@@ -737,8 +718,10 @@ const visualizationModule = {
     },
     mutations: {
         [mutationTypes.INIT_VISUALIZATION](state, renderers) {
-            state.backgroundType = localStorage.getItem('kaisoftbackgroundtype') || 'three';
-            state.visualizerType = localStorage.getItem('kaisoftvisualizertype') || 'random';
+            const queries = queryString.parse(window.location.search.replace(/^\s*\?/, ""));
+
+            state.backgroundType = queries.backgroundtype || localStorage.getItem("kaisoftbackgroundtype") || "three";
+            state.visualizerType = queries.visualizertype || localStorage.getItem("kaisoftvisualizertype") || "random";
 
             if (!(state.backgroundType in renderers)) {
                 state.backgroundType = Object.keys(renderers)[0];
@@ -754,6 +737,17 @@ const visualizationModule = {
             playerModule.state.playerController.visualizer = state._visualizer;
             playerModule.state.playerController.background = state._background;
             state.init = true;
+
+            delete queries.backgroundtype;
+            delete queries.visualizertype;
+
+            const newUrl = window.location.href.split("?")[0] + "?" + queryString.stringify(queries);
+
+            if (window.history) {
+                history.replaceState({}, document.title, newUrl);
+            } else {
+                window.location.href = newUrl;
+            }
         },
 
         [mutationTypes.UPDATE_ACTIVE_BACKGROUND_TYPE](state, type) {

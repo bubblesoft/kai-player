@@ -13,7 +13,108 @@ import config from "../config";
 import Artist from "../app/Artist";
 import PlaybackSource from "../app/PlaybackSource";
 import Source from "../app/source/Source";
+import Status from "../app/Status";
 import Track from "../app/Track";
+import TrackError from "../app/TrackError";
+import TrackInfo from "../app/TrackInfo";
+
+const fetchData = async (path: string, options: any = {}) => {
+    const res = await (async () => {
+        try {
+            return await fetch(path, {
+                ...options,
+
+                method: "POST",
+
+                headers: new Headers({ "Content-Type": "application/json" }),
+
+                body: JSON.stringify(options.body),
+            });
+        } catch (e) {
+            // console.log(e);
+
+            throw e;
+        }
+    })();
+
+    const jsonRes = await (async (resToParse) => {
+        try {
+            return await resToParse.json();
+        } catch (e) {
+            // console.log(e);
+
+            throw e;
+        }
+    })(res);
+
+    if (!jsonRes) {
+        throw new Error("No response.");
+    }
+
+    return jsonRes;
+};
+
+const formatDuration = (val: number, formatStr: string) => {
+    const prefix = (num: number): string => {
+        if (num < 10) {
+            return "0" + num;
+        } else {
+            return String(num);
+        }
+    };
+
+    const duration = moment.duration(val);
+
+    if (formatStr.match("hh")) {
+        formatStr = formatStr.replace("hh", prefix(duration.get("hours")));
+        formatStr = formatStr.replace("mm", prefix(duration.get("minutes")));
+    } else {
+        formatStr = formatStr.replace("mm", prefix(Math.floor(duration.asMinutes())));
+    }
+    formatStr = formatStr.replace("ss", prefix(duration.get("seconds")));
+
+    return formatStr;
+};
+
+const loadImage = (url: string) => {
+    return new Promise((resolve, reject) => {
+        try {
+            const image = new Image();
+
+            image.onload = () => {
+                resolve(image);
+            };
+
+            image.onerror = (e) => {
+                reject(e);
+            };
+
+            image.src = url;
+        } catch (e) {
+            reject(e);
+        }
+    });
+};
+
+const requestNetworkIdle = (callback: () => void, timeout?: number) => {
+    if (!(window as any).serviceWorkerEnabled || !navigator.serviceWorker) {
+        return setTimeout(callback, timeout || 0);
+    }
+
+    (async () => {
+        networkIdleCallback(callback, { timeout });
+    })();
+};
+
+const shorten = async (data: string) => {
+    const res = await fetchData("/shorten", { body: { data } });
+
+    if (res.code !== 1) {
+        throw new Error(res.message);
+    }
+
+    return res.data;
+};
 
 const initHowlOnProgress = (howl: Howl) => {
     // @ts-ignore
@@ -165,28 +266,6 @@ const getRecommendedTrack = async (track: Track, sources: Source[], { abortSigna
     });
 };
 
-const formatDuration = (val: number, formatStr: string) => {
-    const prefix = (num: number): string => {
-        if (num < 10) {
-            return "0" + num;
-        } else {
-            return String(num);
-        }
-    };
-
-    const duration = moment.duration(val);
-
-    if (formatStr.match("hh")) {
-        formatStr = formatStr.replace("hh", prefix(duration.get("hours")));
-        formatStr = formatStr.replace("mm", prefix(duration.get("minutes")));
-    } else {
-        formatStr = formatStr.replace("mm", prefix(Math.floor(duration.asMinutes())));
-    }
-    formatStr = formatStr.replace("ss", prefix(duration.get("seconds")));
-
-    return formatStr;
-};
-
 const generateLayout = (type: string, viewportWidth: number, viewportHeight: number) => {
     if (type === "desktop") {
         let width = Math.min(viewportWidth * .3, viewportHeight * .5);
@@ -201,119 +280,145 @@ const generateLayout = (type: string, viewportWidth: number, viewportHeight: num
 
         return {
             list: { attach: "right", bottomY: viewportHeight * .35, height: viewportHeight * .45, lock: false,
-                mode: "bottom", opacity: .4, visible: true, width },
+                mode: "bottom", opacity: .5, visible: true, width },
             picture: { autoHide: true, height: Math.min(viewportWidth * .25, 360), lock: false,
-                mode: "leftTop", opacity: .4, visible: true, width: Math.min(viewportWidth * .25, 360),
+                mode: "leftTop", opacity: .5, visible: true, width: Math.min(viewportWidth * .25, 360),
                 x: viewportWidth * .03, y: viewportWidth * .03 - 40 },
-            playlist: { attach: "right", bottomY: 0, height: viewportHeight * .35, mode: "bottom", opacity: .4,
+            playlist: { attach: "right", bottomY: 0, height: viewportHeight * .35, mode: "bottom", opacity: .5,
                 visible: true, width },
             search: { attach: "left", bottomY: viewportHeight * .03, height: viewportHeight * .35, lock: false,
-                mode: "bottom", opacity: .4, visible: true, width },
+                mode: "bottom", opacity: .5, visible: true, width },
             source: { attach: "left", bottomY: viewportHeight * .4, height: 173, lock: false, mode: "bottom",
-                opacity: .4, visible: true, width: 258 },
+                opacity: .5, visible: true, width: 258 },
             tracks: { attach: false, bottomY: viewportHeight * .06, height: viewportHeight * .5, lock: false,
-                mode: "bottom", opacity: .4, ratioX: .5, visible: true, width: width * 1.2 },
+                mode: "bottom", opacity: .5, ratioX: .5, visible: true, width: width * 1.2 },
         };
     } else if (type === "mobile") {
         if (viewportHeight < 580) {
             return {
-                list: { attach: "left", height: .45, lock: false, mode: "ratio", opacity: .4, visible: false, width: 1,
+                list: { attach: "left", height: .45, lock: false, mode: "ratio", opacity: .5, visible: false, width: 1,
                     y: .05 },
-                picture: { autoHide: true, height: .4, lock: false, mode: "ratio", opacity: .4, visible: false,
+                picture: { autoHide: true, height: .4, lock: false, mode: "ratio", opacity: .5, visible: false,
                     width: .5, x: .03, y: .03 },
-                playlist: { attach: "left", height: .45, lock: false, mode: "ratio", opacity: .4, visible: true,
+                playlist: { attach: "left", height: .45, lock: false, mode: "ratio", opacity: .5, visible: true,
                     width: 1, y: .05 },
-                search: { attach: "left", height: .45, lock: false, mode: "ratio", opacity: .4, visible: false,
+                search: { attach: "left", height: .45, lock: false, mode: "ratio", opacity: .5, visible: false,
                     width: 1, y: .05 },
-                source: { attach: "left", height: .45, lock: false, mode: "ratio", opacity: .4, visible: false,
+                source: { attach: "left", height: .45, lock: false, mode: "ratio", opacity: .5, visible: false,
                     width: 1, y: .05 },
-                tracks: { attach: "left", height: .5, lock: false, mode: "ratio", opacity: .4, visible: true, width: 1,
+                tracks: { attach: "left", height: .5, lock: false, mode: "ratio", opacity: .5, visible: true, width: 1,
                     y: .5 },
             };
         } else {
             return {
-                list: { attach: "left", height: .37, lock: false, mode: "ratio", opacity: .4, visible: true, width: 1,
+                list: { attach: "left", height: .37, lock: false, mode: "ratio", opacity: .5, visible: true, width: 1,
                     y: .05 },
-                picture: { autoHide: true, height: .3, lock: false, mode: "ratio", opacity: .4, visible: false,
+                picture: { autoHide: true, height: .3, lock: false, mode: "ratio", opacity: .5, visible: false,
                     width: .5, x: .03, y: .03 },
-                playlist: { attach: "left", height: .28, lock: false, mode: "ratio", opacity: .4, visible: true,
+                playlist: { attach: "left", height: .28, lock: false, mode: "ratio", opacity: .5, visible: true,
                     width: 1, y: .42 },
-                search: { attach: "left", height: .4, lock: false, mode: "ratio", opacity: .4, visible: false, width: 1,
+                search: { attach: "left", height: .4, lock: false, mode: "ratio", opacity: .5, visible: false, width: 1,
                     y: 0 },
-                source: { attach: "left", height: .3, lock: false, mode: "ratio", opacity: .4, visible: false, width: 1,
+                source: { attach: "left", height: .3, lock: false, mode: "ratio", opacity: .5, visible: false, width: 1,
                     y: .1 },
-                tracks: { attach: "left", height: .3, lock: false, mode: "ratio", opacity: .4, visible: true, width: 1,
+                tracks: { attach: "left", height: .3, lock: false, mode: "ratio", opacity: .5, visible: true, width: 1,
                     y: .7 },
             };
         }
     }
 };
 
-const loadImage = (url: string) => {
-    return new Promise((resolve, reject) => {
-        try {
-            const image = new Image();
+const transformTrackForStringify = (track: Track) => {
+    return {
+        altPlaybackSources: track.altPlaybackSources.length ? track.altPlaybackSources
+            .filter(({ playbackSource }: { playbackSource: PlaybackSource }) =>
+                playbackSource.proxied || playbackSource.statical)
+            .map((altPlaybackSource: { playbackSource: PlaybackSource; similarity: number }) => ({
+                playbackSource: {
+                    proxied: altPlaybackSource.playbackSource.proxied,
+                    quality: altPlaybackSource.playbackSource.quality,
+                    statical: altPlaybackSource.playbackSource.statical,
+                    urls: altPlaybackSource.playbackSource.urls,
+                },
+                similarity: altPlaybackSource.similarity,
+            })) : undefined,
 
-            image.onload = () => {
-                resolve(image);
-            };
+        artists: track.artists.map((artist: Artist) => ({ name: artist.name })),
+        duration: track.duration,
+        id: track.id,
 
-            image.onerror = (e) => {
-                reject(e);
-            };
+        messages: track.messages && (Array.from(track.messages) as Array<TrackError|TrackInfo>)
+            .map((message: TrackError|TrackInfo) => ({
+                code: message.code,
 
-            image.src = url;
-        } catch (e) {
-            reject(e);
-        }
+                level: (() => {
+                    if (message instanceof TrackError) {
+                        return "error";
+                    } else if (message instanceof TrackInfo) {
+                        return "info";
+                    } else {
+                        return "unknown";
+                    }
+                })(),
+            })),
+
+        name: track.name,
+        picture: track.picture,
+
+        playbackSources: track.playbackSources && track.playbackSources.length ? track.playbackSources
+            .filter((playbackSource: PlaybackSource) => playbackSource.proxied || playbackSource.statical)
+            .map((playbackSource: PlaybackSource) => ({
+                proxied: playbackSource.proxied,
+                quality: playbackSource.quality,
+                statical: playbackSource.statical,
+                urls: playbackSource.urls,
+            })) : undefined,
+
+        source: track.source.id,
+        status: track.status.id,
+    };
+};
+
+const createTrackFromTrackData = (trackData: any) => {
+    return new Track(trackData.id, trackData.name, new Source(trackData.source, { name: trackData.source }), {
+        artists: trackData.artists.map((artistData: any) => new Artist({ name: artistData.name })),
+        duration: trackData.duration,
+        picture: trackData.picture,
+
+        playbackSources: trackData.playbackSources && trackData.playbackSources.length ? trackData.playbackSources
+            .map((playbackSource: any) => playbackSource.urls && playbackSource.urls.length
+                && new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                    proxied: playbackSource.proxied,
+                    statical: playbackSource.statical,
+                }))
+            .filter((playbackSource: any) => playbackSource) : undefined,
+
+        status: Status.fromId(trackData.status) || undefined,
+
+        messages: trackData.messages && trackData.messages.map((messageData: any) => {
+            if (messageData.level === "error") {
+                return TrackError.fromCode(messageData.code);
+            }
+
+            return TrackInfo.fromCode(messageData.code);
+        }),
+
+        altPlaybackSources: trackData.altPlaybackSources && trackData.altPlaybackSources.length ?
+            trackData.altPlaybackSources.map(({ playbackSource, similarity }: any) => {
+                if (!playbackSource.urls || !playbackSource.urls.length) {
+                    return;
+                }
+
+                return {
+                    playbackSource: new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                        proxied: playbackSource.proxied,
+                        statical: playbackSource.statical,
+                    }),
+                    similarity,
+                };
+            }).filter((altPlaybackSource: any) => altPlaybackSource) : [],
     });
 };
 
-const fetchData = async (path: string, options: any = {}) => {
-    const res = await (async () => {
-        try {
-            return await fetch(path, {
-                ...options,
-
-                method: "POST",
-
-                headers: new Headers({ "Content-Type": "application/json" }),
-
-                body: JSON.stringify(options.body),
-            });
-        } catch (e) {
-            // console.log(e);
-
-            throw e;
-        }
-    })();
-
-    const jsonRes = await (async (resToParse) => {
-        try {
-            return await resToParse.json();
-        } catch (e) {
-            // console.log(e);
-
-            throw e;
-        }
-    })(res);
-
-    if (!jsonRes) {
-       throw new Error("No response.");
-    }
-
-    return jsonRes;
-};
-
-const requestNetworkIdle = (callback: () => void, timeout?: number) => {
-    if (!(window as any).serviceWorkerEnabled || !navigator.serviceWorker) {
-        return setTimeout(callback, timeout || 0);
-    }
-
-    (async () => {
-        networkIdleCallback(callback, { timeout });
-    })();
-};
-
-export { initHowlOnProgress, getSourceById, getRecommendedTrack, formatDuration, generateLayout, loadImage, fetchData,
-    requestNetworkIdle };
+export { fetchData, formatDuration, loadImage, requestNetworkIdle, shorten, initHowlOnProgress, getSourceById,
+    getRecommendedTrack, generateLayout, transformTrackForStringify, createTrackFromTrackData };
