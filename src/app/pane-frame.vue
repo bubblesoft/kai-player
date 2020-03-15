@@ -105,12 +105,17 @@
                 interactableInit: false,
                 interactables: [],
                 unwatchFunctions: [],
+                active: false,
             }
         },
 
         computed: {
             activePanelIndex: {
                 get() {
+                    if (this.$store.state.generalModule.activePanel.index !== this.$el) {
+                        this.active = false;
+                    }
+
                     return this.$store.state.generalModule.activePanel.index;
                 },
                 set(index) {
@@ -169,6 +174,10 @@
 
                 const controlBarHeight = document.querySelector('#control-bar').offsetHeight;
                 const panel = this.$el;
+
+                panel.addEventListener("mousewheel", () => {
+                    this.activate();
+                });
 
                 const interactable = interact(panel)
                     .on('down', () => {
@@ -396,6 +405,11 @@
             },
 
             activate() {
+                if (this.active) {
+                    return;
+                }
+
+                this.active = true;
                 this.activePanelIndex = this.$el;
             },
 

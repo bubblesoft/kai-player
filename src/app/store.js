@@ -55,22 +55,23 @@ const playerModule = {
 
         duration: 0,
         progress: 0,
+        liveStreamRetryTimeout: 1,
         _updateVisualiztionTrigger: false,
     },
     mutations: {
-        [mutationTypes.UPDATE_PROGRESS](state, progress) {
+        [mutationTypes.UPDATE_PROGRESS] (state, progress) {
             state.playerController.progress = progress;
         },
 
-        [mutationTypes.UPDATE_STATE_DURATION](state, duration) {
+        [mutationTypes.UPDATE_STATE_DURATION] (state, duration) {
             state.duration = duration;
         },
 
-        [mutationTypes.UPDATE_STATE_PROGRESS](state, progress) {
+        [mutationTypes.UPDATE_STATE_PROGRESS] (state, progress) {
             state.progress = progress;
         },
 
-        [mutationTypes.STOP_PLAYBACK](state) {
+        [mutationTypes.STOP_PLAYBACK] (state) {
             if (state.playerController.status !== PlayerStatus.Unloaded) {
                 state.playerController.stop();
             }
@@ -79,7 +80,7 @@ const playerModule = {
             state._updateVisualiztionTrigger = false;
         },
 
-        [mutationTypes.PAUSE_PLAYBACK](state) {
+        [mutationTypes.PAUSE_PLAYBACK] (state) {
             state.playerController.pause();
 
             const progress = state.progress;
@@ -88,6 +89,10 @@ const playerModule = {
             state.progress = progress;
             state._updateVisualiztionTrigger = true;
             state._updateVisualiztionTrigger = false;
+        },
+
+        [mutationTypes.SET_LIVE_STREAMING_RETRY_TIMEOUT] (state, timeout) {
+            state.liveStreamRetryTimeout = timeout;
         }
     },
     actions: {
@@ -108,7 +113,11 @@ const playerModule = {
             state.playerController.player.on("progress", onProgress);
         },
 
-        async [actionTypes.PLAY_TRACK]({ dispatch, commit, state, rootState, rootState: { queueModule : { queueGroup, playingQueueIndex } }, rootGetters: { sources } }, { index = queueGroup.get(playingQueueIndex).activeIndex, queueIndex = playingQueueIndex }) {
+        async [actionTypes.PLAY_TRACK]({ dispatch, commit, state, rootState, rootState: { queueModule : { queueGroup, playingQueueIndex } }, rootGetters: { sources } }, { index = queueGroup.get(playingQueueIndex).activeIndex, queueIndex = playingQueueIndex, resetRetryTimeout = true } = {}) {
+            if (resetRetryTimeout) {
+                commit(mutationTypes.SET_LIVE_STREAMING_RETRY_TIMEOUT, 1);
+            }
+
             const queue = queueGroup.get(queueIndex);
             const track = queue.get(index);
 
@@ -186,23 +195,30 @@ const playerModule = {
 
                 randomQueuePreloadEnded = true;
 
-                if (!queue.getNext()) {
-                    const nextTrack = await (async () => {
-                        while (true) {
-                            const track = await randomQueueNextTrackPromise;
+                if (track.live) {
+                    await new Promise((r) => setTimeout(r, state.liveStreamRetryTimeout));
 
-                            if (track) {
-                                return track;
+                    commit(mutationTypes.SET_LIVE_STREAMING_RETRY_TIMEOUT, state.liveStreamRetryTimeout * 2);
+                    dispatch(actionTypes.PLAY_TRACK, { resetRetryTimeout: false });
+                } else {
+                    if (!queue.getNext()) {
+                        const nextTrack = await (async () => {
+                            while (true) {
+                                const track = await randomQueueNextTrackPromise;
+
+                                if (track) {
+                                    return track;
+                                }
+
+                                randomQueueNextTrackPromise = getNextTrack();
                             }
+                        })();
 
-                            randomQueueNextTrackPromise = getNextTrack();
-                        }
-                    })();
+                        commit(mutationTypes.ADD_TRACK, { track: nextTrack, queueIndex: queueIndex });
+                    }
 
-                    commit(mutationTypes.ADD_TRACK, { track: nextTrack, queueIndex: queueIndex });
+                    dispatch(actionTypes.PLAY_TRACK, { index: commit(mutationTypes.NEXT_TRACK) });
                 }
-
-                dispatch(actionTypes.PLAY_TRACK, { index: commit(mutationTypes.NEXT_TRACK) });
             }
 
             abortController.abort();
@@ -381,6 +397,7 @@ const sourceGroup = new SourceGroup({ name: "Global" });
 const sourceModule = {
     state: {
         sourceGroup,
+        fetchSourceTimeout: 1,
     },
     getters: {
         sources: (state) => state.sourceGroup.get(),
@@ -390,6 +407,7 @@ const sourceModule = {
             state.sourceGroup.add(sources);
             playerController.sources = state.sourceGroup.get();
         },
+
         [mutationTypes.UPDATE_SOURCE] (state, { index, active }) {
             if (typeof active !== "undefined") {
                 state.sourceGroup.get(index).active = active;
@@ -409,15 +427,21 @@ const sourceModule = {
 
             state.sourceGroup = null;
             state.sourceGroup = sourceGroup;
+        },
+
+        [mutationTypes.SET_FETCH_SOURCES_TIMEOUT] (state, timeout) {
+            state.fetchSourceTimeout = timeout;
         }
     },
     actions: {
-        async [actionTypes.FETCH_SOURCES] ({ dispatch, commit }) {
+        async [actionTypes.FETCH_SOURCES] ({ state, dispatch, commit }) {
             try {
                 const sourcesRes = await fetchData("/audio/sources");
 
                 if (sourcesRes.code !== 1) {
-                    await new Promise((resolve) => setTimeout(resolve, 100));
+                    await new Promise((r) => setTimeout(r, state.fetchSourceTimeout));
+
+                    commit(mutationTypes.SET_FETCH_SOURCES_TIMEOUT);
 
                     return await dispatch(actionTypes.FETCH_SOURCES);
                 }
@@ -474,7 +498,9 @@ const sourceModule = {
             } catch (e) {
                 console.log(e);
 
-                await new Promise((resolve) => setTimeout(resolve, 100));
+                await new Promise((r) => setTimeout(r, state.fetchSourceTimeout));
+
+                commit(mutationTypes.SET_FETCH_SOURCES_TIMEOUT, state.fetchSourceTimeout * 2);
 
                 return await dispatch(actionTypes.FETCH_SOURCES);
             }

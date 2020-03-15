@@ -175,7 +175,7 @@
                     height="24"
                     viewBox="0 0 24 24"
                 )
-                    path(d="M8 5v14l11-7z")
+                    use(xlink:href="#icon_play")
             .control-button.control-button_big.glowing-button(
                 v-else
                 v-interact:tap="pause"
@@ -208,7 +208,7 @@
                 width="30%"
                 :max="duration"
                 :speed=".2"
-                :disabled="!ready()"
+                :disabled="!ready() || track.live"
                 tooltip="hover"
                 :formatter="(v) => `${formatDuration(v * 1000, 'mm:ss')}`"
                 :bg-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)' }"
@@ -216,7 +216,10 @@
                 :process-style="{ 'background-color': 'rgba(255, 255, 255, 0.9)', filter: 'drop-shadow(2px 2px 10px rgba(150, 150, 150, 1))' }"
                 :tooltip-style="{ 'background-color': 'rgba(255, 255, 255, 0.6)', 'border-color': 'rgba(255, 255, 255, 0.6)', 'border-style': 'none' }"
             )
-            .time {{ formatDuration(progress * 1000, 'mm:ss') }} / {{ formatDuration(duration * 1000, 'mm:ss') }}
+            .time {{ formatDuration(progress * 1000, 'mm:ss') }}
+                template(v-if="track && (track.live || duration === Infinity)")
+                    liveIcon(color="rgb(0, 255, 0)")
+                template(v-else) &nbsp;/ {{ formatDuration(duration * 1000, 'mm:ss') }}
             vue-slider.volume(
                 v-model="volume"
                 width="10%"
@@ -280,7 +283,8 @@
     import vueSlider from 'vue-slider-component';
     import checkbox from 'vue-strap/src/checkbox';
 
-    import yoyoMarquee from './yoyo-marquee';
+    import yoyoMarquee from "./yoyo-marquee";
+    import liveIcon from "./live-icon";
 
     import { formatDuration, loadImage, requestNetworkIdle } from "../scripts/utils";
 
@@ -290,7 +294,8 @@
         components: {
             vueSlider,
             checkbox,
-            yoyoMarquee
+            yoyoMarquee,
+            liveIcon,
         },
 
         data: () => {
@@ -527,24 +532,28 @@
             async play() {
                 if (this.playerController.status === PlayerStatus.Paused) {
                     this[RESUME_PLAYBACK]();
-                } else {
-                    if (this.queue.activeIndex !== null) {
-                        this[PLAY_TRACK]({ index: this.queue.activeIndex });
-                    } else {
-                        this.loading = true;
 
-                        this[PLAY_TRACK]({
-                            index: await new Promise((resolve) => {
-                                const unwatch = this.$watch("track", () => {
-                                    unwatch();
-                                    this.loading = false;
-
-                                    resolve(this.queue.activeIndex);
-                                });
-                            })
-                        });
-                    }
+                    return;
                 }
+
+                if (this.queue.activeIndex !== null) {
+                    this[PLAY_TRACK]({ index: this.queue.activeIndex });
+
+                    return;
+                }
+
+                this.loading = true;
+
+                this[PLAY_TRACK]({
+                    index: await new Promise((resolve) => {
+                        const unwatch = this.$watch("track", () => {
+                            unwatch();
+                            this.loading = false;
+
+                            resolve(this.queue.activeIndex);
+                        });
+                    })
+                });
             },
 
             pause() {
@@ -773,6 +782,10 @@
             }
 
             .time {
+                display: flex;
+                align-items: center;
+                justify-content: space-around;
+                width: 83px;
                 color: #fff;
                 text-align: center;
                 white-space: nowrap;

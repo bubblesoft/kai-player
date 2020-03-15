@@ -9,7 +9,7 @@ import applyCanvasMask from '../../../scripts/canvasMask';
 
 import Renderer from './Renderer';
 
-import { loadImage, requestNetworkIdle } from '../../../scripts/utils';
+import { loadImage, requestNetworkIdle, generateProxiedUrl } from '../../../scripts/utils';
 
 export default class ArtworkRenderer extends Renderer {
     init(mountPoint) {
@@ -41,7 +41,7 @@ export default class ArtworkRenderer extends Renderer {
                             console.log(e);
 
                             try {
-                                return await loadImage(`/proxy/${config.defaultImages[Math.floor(config.defaultImages.length * Math.random())]}`);
+                                return await loadImage(generateProxiedUrl(config.defaultImages[Math.floor(config.defaultImages.length * Math.random())]));
                             } catch (e) {
                                 console.log(e);
 

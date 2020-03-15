@@ -44,6 +44,10 @@ const initialize = (self: ServiceWorkerGlobalScope): void => {
                         return networkResponse;
                     }
 
+                    if (networkResponse.headers.get("Cache-Control") === "no-cache") {
+                        return networkResponse;
+                    }
+
                     const contentRangeHeader = networkResponse.headers.get("Content-Range");
 
                     if (networkResponse.status === 206 && contentRangeHeader) {

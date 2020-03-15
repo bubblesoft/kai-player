@@ -4,6 +4,7 @@
 
 import { Howl } from "howler";
 import * as moment from "moment";
+import * as queryString from "querystring";
 
 // @ts-ignore
 import { networkIdleCallback } from "network-idle-callback";
@@ -116,6 +117,14 @@ const shorten = async (data: string) => {
     return res.data;
 };
 
+const unifyUrl = (url: string) => {
+    return `${url}?`.split("?").slice(0, 2).map((component, i) => i === 0 ? component : queryString.stringify({
+        ...queryString.parse(component),
+
+        [new Date().getTime()]: undefined,
+    })).join("?");
+};
+
 const initHowlOnProgress = (howl: Howl) => {
     // @ts-ignore
     howl._onprogress = [];
@@ -191,6 +200,14 @@ const initHowlOnProgress = (howl: Howl) => {
     });
 };
 
+const generateProxiedUrl = (url: string) => {
+    if (url.search(/:/) > 5) {
+        return `/proxy/${btoa(url)}`;
+    }
+
+    return `/proxy/${url}`;
+};
+
 const getSourceById = (() => {
     const unkownSource = new Source("unkown", {
         icons: [config.defaultIcon],
@@ -245,23 +262,20 @@ const getRecommendedTrack = async (track: Track, sources: Source[], { abortSigna
                 return;
             }
 
-            return `/proxy/${recommendedTrack.picture}`;
+            return generateProxiedUrl(recommendedTrack.picture);
         })(),
 
-        playbackSources: recommendedTrack.playbackSources && recommendedTrack.playbackSources
-            .map((playbackSource: any) =>
-                new PlaybackSource(playbackSource.urls.map((url: string) =>
-                    `/proxy/${url}`), playbackSource.quality, {
-                    proxied: true,
-                    statical: playbackSource.statical,
-                }))
-            .concat((() => recommendedTrack.playbackSources
-                .map((playbackSource: any): PlaybackSource|undefined => playbackSource.cached ?
-                    undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
-                        proxied: false,
-                        statical: playbackSource.statical,
-                    }))
-                .filter((playbackSource?: PlaybackSource) => playbackSource))()),
+        playbackSources: recommendedTrack.playbackSources && recommendedTrack.playbackSources.map((p: any) =>
+            new PlaybackSource(p.urls.map((u: string) => generateProxiedUrl(u)), p.quality, {
+                live: p.live,
+                proxied: true,
+                statical: p.statical,
+            })).concat((() => recommendedTrack.playbackSources.map((p: any) => p.cached ?
+                undefined : new PlaybackSource(p.urls, p.quality, {
+                live: p.live,
+                proxied: false,
+                statical: p.statical,
+            })).filter((p?: PlaybackSource) => p))()),
         sources,
     });
 };
@@ -333,14 +347,15 @@ const transformTrackForStringify = (track: Track) => {
         altPlaybackSources: track.altPlaybackSources.length ? track.altPlaybackSources
             .filter(({ playbackSource }: { playbackSource: PlaybackSource }) =>
                 playbackSource.proxied || playbackSource.statical)
-            .map((altPlaybackSource: { playbackSource: PlaybackSource; similarity: number }) => ({
+            .map(({ playbackSource, similarity }: { playbackSource: PlaybackSource; similarity: number }) => ({
                 playbackSource: {
-                    proxied: altPlaybackSource.playbackSource.proxied,
-                    quality: altPlaybackSource.playbackSource.quality,
-                    statical: altPlaybackSource.playbackSource.statical,
-                    urls: altPlaybackSource.playbackSource.urls,
+                    live: playbackSource.live,
+                    proxied: playbackSource.proxied,
+                    quality: playbackSource.quality,
+                    statical: playbackSource.statical,
+                    urls: playbackSource.urls,
                 },
-                similarity: altPlaybackSource.similarity,
+                similarity,
             })) : undefined,
 
         artists: track.artists.map((artist: Artist) => ({ name: artist.name })),
@@ -366,12 +381,13 @@ const transformTrackForStringify = (track: Track) => {
         picture: track.picture,
 
         playbackSources: track.playbackSources && track.playbackSources.length ? track.playbackSources
-            .filter((playbackSource: PlaybackSource) => playbackSource.proxied || playbackSource.statical)
-            .map((playbackSource: PlaybackSource) => ({
-                proxied: playbackSource.proxied,
-                quality: playbackSource.quality,
-                statical: playbackSource.statical,
-                urls: playbackSource.urls,
+            .filter((p: PlaybackSource) => p.proxied || p.statical)
+            .map(({ proxied, quality, statical, urls, live }: PlaybackSource) => ({
+                live,
+                proxied,
+                quality,
+                statical,
+                urls,
             })) : undefined,
 
         source: track.source.id,
@@ -385,13 +401,12 @@ const createTrackFromTrackData = (trackData: any) => {
         duration: trackData.duration,
         picture: trackData.picture,
 
-        playbackSources: trackData.playbackSources && trackData.playbackSources.length ? trackData.playbackSources
-            .map((playbackSource: any) => playbackSource.urls && playbackSource.urls.length
-                && new PlaybackSource(playbackSource.urls, playbackSource.quality, {
-                    proxied: playbackSource.proxied,
-                    statical: playbackSource.statical,
-                }))
-            .filter((playbackSource: any) => playbackSource) : undefined,
+        playbackSources: trackData.playbackSources && trackData.playbackSources.length ?
+            trackData.playbackSources.map((p: any) => p.urls && p.urls.length && new PlaybackSource(p.urls, p.quality, {
+                live: p.live,
+                proxied: p.proxied,
+                statical: p.statical,
+            })).filter((p: any) => p) : undefined,
 
         status: Status.fromId(trackData.status) || undefined,
 
@@ -411,6 +426,7 @@ const createTrackFromTrackData = (trackData: any) => {
 
                 return {
                     playbackSource: new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                        live: playbackSource.live,
                         proxied: playbackSource.proxied,
                         statical: playbackSource.statical,
                     }),
@@ -420,5 +436,6 @@ const createTrackFromTrackData = (trackData: any) => {
     });
 };
 
-export { fetchData, formatDuration, loadImage, requestNetworkIdle, shorten, initHowlOnProgress, getSourceById,
-    getRecommendedTrack, generateLayout, transformTrackForStringify, createTrackFromTrackData };
+export { fetchData, formatDuration, loadImage, requestNetworkIdle, shorten, unifyUrl, initHowlOnProgress,
+    generateProxiedUrl, getSourceById, getRecommendedTrack, generateLayout, transformTrackForStringify,
+    createTrackFromTrackData };

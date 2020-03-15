@@ -4,6 +4,7 @@ interface IOptions {
     proxied?: boolean;
     generated?: boolean;
     statical?: boolean;
+    live?: boolean;
 }
 
 export default class PlaybackSource implements IPlabackSource {
@@ -12,11 +13,14 @@ export default class PlaybackSource implements IPlabackSource {
     public readonly proxied: boolean;
     public readonly generated: boolean;
     public readonly statical: boolean;
+    public readonly live: boolean;
 
     constructor(urls: string[]|string, quality: number, {
         proxied = false,
         generated = false,
-        statical = false }: IOptions = {}) {
+        statical = false,
+        live = false,
+    }: IOptions = {}) {
         if (Array.isArray(urls)) {
             this.urls = urls;
         } else {
@@ -27,5 +31,6 @@ export default class PlaybackSource implements IPlabackSource {
         this.proxied = proxied;
         this.generated = generated;
         this.statical = statical;
+        this.live = live;
     }
 }

@@ -212,8 +212,10 @@
                                             path(d="M12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,11A1,1 0 0,1 13,12A1,1 0 0,1 12,13A1,1 0 0,1 11,12A1,1 0 0,1 12,11M12,8C14.63,8 17,9.57 18,12C16.62,15.31 12.81,16.88 9.5,15.5C7.92,14.84 6.66,13.58 6,12C7,9.57 9.37,8 12,8M12,9.5A2.5,2.5 0 0,0 9.5,12A2.5,2.5 0 0,0 12,14.5A2.5,2.5 0 0,0 14.5,12A2.5,2.5 0 0,0 12,9.5")
                                         div(slot="popover") Available in next release.
                         td {{ track.artists.map(artist => artist.name).join(', ') }}
+                        td(v-if="track && (track.live || track.duration === Infinity)")
+                            liveIcon(color="rgb(89, 192, 255)" style="width: auto; height: auto;")
                         td(
-                            v-if="track.duration"
+                            v-else-if="track.duration"
                             style="width:46px"
                         ) {{ track.duration | formatDuration('mm:ss') }}
                         td(v-else)
@@ -259,8 +261,9 @@
     import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, SWITCH_QUEUE_MODE, SET_MODAL_OPEN, VISUALIZER_LOAD_RESOURCE } from "../../scripts/mutation-types";
     import { LOAD_MODAL, PLAY_TRACK, STOP_PLAYBACK } from "../../scripts/action-types";
 
-    import yoyoMarquee from '../yoyo-marquee';
-    import editableBox from '../editable-box';
+    import yoyoMarquee from "../yoyo-marquee";
+    import editableBox from "../editable-box";
+    import liveIcon from "../live-icon";
 
     export default {
         components: {
@@ -268,7 +271,8 @@
             tooltip,
             modal,
             yoyoMarquee,
-            editableBox
+            editableBox,
+            liveIcon,
         },
 
         data() {
@@ -390,7 +394,9 @@
 
             handleTrackRemove(index) {
                 if (index === this.activeIndex) {
-                    this[STOP_PLAYBACK]();
+                    if (this.playingQueueIndex === this.queueGroup.activeIndex) {
+                        this[STOP_PLAYBACK]();
+                    }
 
                     if (index > 0) {
                         this.activeIndex--;
@@ -711,8 +717,8 @@
             svg {
                 width: 18px;
                 height: 18px;
-                margin-top: 1px;
                 fill: #fff;
+                vertical-align: middle;
             }
 
             img {

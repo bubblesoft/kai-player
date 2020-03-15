@@ -7,6 +7,8 @@ import PlaybackSource from "../PlaybackSource";
 import Track from "../Track";
 import Source from "./Source";
 
+import { generateProxiedUrl } from "../../scripts/utils";
+
 interface IOptions {
     get?: () => Track[];
     sources?: Source[];
@@ -53,23 +55,23 @@ export default class TrackList {
                         return;
                     }
 
-                    return `/proxy/${trackData.picture}`;
+                    return generateProxiedUrl(trackData.picture);
                 })(),
 
                 playbackSources: trackData.playbackSources && trackData.playbackSources
-                    .map((playbackSource: any) =>
-                        new PlaybackSource(playbackSource.urls.map((url: string) =>
-                            `/proxy/${url}`), playbackSource.quality, {
-                            proxied: true,
-                            statical: playbackSource.statical,
-                        }))
+                    .map((p: any) => new PlaybackSource(p.urls.map((u: string) => generateProxiedUrl(u)), p.quality, {
+                        live: p.live,
+                        proxied: true,
+                        statical: p.statical,
+                    }))
                     .concat((() => trackData.playbackSources
-                        .map((playbackSource: any): PlaybackSource|undefined => playbackSource.cached ? undefined
-                            : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                        .map((p: any): PlaybackSource|undefined => p.cached ? undefined
+                            : new PlaybackSource(p.urls, p.quality, {
+                                live: p.live,
                                 proxied: false,
-                                statical: playbackSource.statical,
+                                statical: p.statical,
                             }))
-                        .filter((playbackSource?: PlaybackSource) => playbackSource))()),
+                        .filter((p?: PlaybackSource) => p))()),
 
                 sources: this.sources,
             });

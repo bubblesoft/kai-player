@@ -53,6 +53,10 @@ if (!window["Promise"]) {
         await import("url-polyfill");
     }
 
+    if (!window["btoa"]) {
+        window["btoa"] = (await import("abab")).btoa;
+    }
+
     if (!window.navigator["clipboard"]) {
         window.navigator["clipboard"] = (await import("clipboard-polyfill")).default;
     }

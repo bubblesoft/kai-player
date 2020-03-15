@@ -12,6 +12,8 @@ import PlaybackSource from "./PlaybackSource";
 import Source from "./source/Source";
 import Status from "./Status";
 
+import { generateProxiedUrl } from "../scripts/utils";
+
 import config from "../config";
 
 interface IOptions {
@@ -51,6 +53,11 @@ export default class Track implements ITrack {
     public readonly source: Source;
     public readonly messages: Set<Message> = new Set();
     public readonly picture?: string;
+
+    public get live() {
+        return this.playbackSources.reduce((live: boolean, p) => live || p.live, false);
+    }
+
     public status: Status;
     public duration?: number;
     public playbackSources: PlaybackSource[] = [];
@@ -290,24 +297,22 @@ export default class Track implements ITrack {
                 return await this.getPlaybackSources();
             }
 
-            return data && data
-                .map((playbackSource: any): PlaybackSource|undefined => playbackSource.cached ? undefined
-                    : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
-                        proxied: false,
-                        statical: playbackSource.statical,
-                    }))
-                .filter((playbackSource?: PlaybackSource) => playbackSource);
+            return data && data.map((p: any) => p.cached ? undefined : new PlaybackSource(p.urls, p.quality, {
+                live: p.live,
+                proxied: false,
+                statical: p.statical,
+            })).filter((p?: PlaybackSource) => p);
         })();
 
-        const hasProxied = Boolean(this.playbackSources.filter((source) => source.proxied && !source.generated).length);
+        const hasProxied = Boolean(this.playbackSources.filter((p) => p.proxied && !p.generated).length);
 
         if (playbackSources && playbackSources.length) {
             if (!hasProxied) {
-                this.playbackSources.push(...playbackSources.map((playbackSource: PlaybackSource) =>
-                    new PlaybackSource(playbackSource.urls
-                        .map((url: string) => `/proxy/${url}`), playbackSource.quality, {
+                this.playbackSources.push(...playbackSources.map((p: PlaybackSource) =>
+                    new PlaybackSource(p.urls.map((u: string) => generateProxiedUrl(u)), p.quality, {
+                        live: p.live,
                         proxied: true,
-                        statical: playbackSource.statical,
+                        statical: p.statical,
                     })));
             }
 
@@ -323,22 +328,20 @@ export default class Track implements ITrack {
                 return await this.getPlaybackSources();
             }
 
-            return data && data
-                .map((playbackSource: any): PlaybackSource|undefined => !playbackSource.cached ? undefined
-                    : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
-                        proxied: false,
-                        statical: playbackSource.statical,
-                    }))
-                .filter((playbackSource?: PlaybackSource) => playbackSource);
+            return data && data.map((p: any) => !p.cached ? undefined : new PlaybackSource(p.urls, p.quality, {
+                live: p.live,
+                proxied: false,
+                statical: p.statical,
+            })).filter((p?: PlaybackSource) => p);
         })();
 
         if (cachedPlaybackSources && cachedPlaybackSources.length) {
             if (!hasProxied) {
-                this.playbackSources.push(...cachedPlaybackSources.map((playbackSource: PlaybackSource) =>
-                    new PlaybackSource(playbackSource.urls
-                        .map((url: string) => `/proxy/${url}`), playbackSource.quality, {
+                this.playbackSources.push(...cachedPlaybackSources.map((c: PlaybackSource) =>
+                    new PlaybackSource(c.urls.map((u: string) => generateProxiedUrl(u)), c.quality, {
+                        live: c.live,
                         proxied: true,
-                        statical: playbackSource.statical,
+                        statical: c.statical,
                     })));
             }
         }
@@ -470,23 +473,24 @@ export default class Track implements ITrack {
                         return;
                     }
 
-                    return `/proxy/${picture}`;
+                    return generateProxiedUrl(picture);
                 })(),
 
                 playbackSources: playbackSources && playbackSources
-                    .map((playbackSource: any) =>
-                        new PlaybackSource(playbackSource.urls.map((url: string) =>
-                            `/proxy/${url}`), playbackSource.quality, {
+                    .map((p: any) =>
+                        new PlaybackSource(p.urls.map((u: string) => generateProxiedUrl(u)), p.quality, {
+                            live: p.live,
                             proxied: true,
-                            statical: playbackSource.statical,
+                            statical: p.statical,
                         }))
                     .concat((() => playbackSources
-                        .map((playbackSource: any): PlaybackSource|undefined => playbackSource.cached ?
-                            undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                        .map((p: any): PlaybackSource|undefined => p.cached ?
+                            undefined : new PlaybackSource(p.urls, p.quality, {
+                                live: p.live,
                                 proxied: false,
-                                statical: playbackSource.statical,
+                                statical: p.statical,
                             }))
-                        .filter((playbackSource?: PlaybackSource) => playbackSource))()),
+                        .filter((p?: PlaybackSource) => p))()),
 
                 sources: this.sources,
             }));

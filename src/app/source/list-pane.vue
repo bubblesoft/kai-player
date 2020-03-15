@@ -45,8 +45,10 @@
                         td(style="padding: 0;")
                         td {{ track.name }}
                         td {{ track.artists.map(artist => artist.name).join(', ') }}
+                        td(v-if="track && (track.live || track.duration === Infinity)")
+                            liveIcon(color="rgb(89, 192, 255)" style="width: auto; height: auto;")
                         td(
-                            v-if="track.duration"
+                            v-else-if="track.duration"
                             style="width:46px"
                         ) {{ track.duration | formatDuration('mm:ss') }}
                         td(v-else)
@@ -76,6 +78,7 @@
     import draggable from 'vuedraggable';
 
     import loading from "../loading";
+    import liveIcon from "../live-icon";
 
     import config from "../../config";
 
@@ -83,6 +86,7 @@
         components: {
             draggable,
             loading,
+            liveIcon,
         },
 
         data() {
@@ -322,6 +326,7 @@
                 width: 18px;
                 height: 18px;
                 fill: #fff;
+                vertical-align: middle;
             }
         }
     }

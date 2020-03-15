@@ -3,7 +3,7 @@ import PlayerStatus from "./PlayerStatus";
 import Player from "./Player";
 
 export default interface IPlayer {
-    player: Player|null;
+    player?: Player;
     readonly status: PlayerStatus;
     readonly duration: number;
     progress: number;

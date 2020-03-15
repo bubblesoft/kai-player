@@ -4,7 +4,7 @@
 
 import config from "../config";
 
-import {fetchData, getSourceById, requestNetworkIdle} from "../scripts/utils";
+import { fetchData, generateProxiedUrl, getSourceById, unifyUrl } from "../scripts/utils";
 
 import IPlayerController from "./IPlayerController";
 
@@ -20,8 +20,9 @@ import TrackInfo from "./TrackInfo";
 
 export default class PlayerController implements IPlayerController {
     private static noPlayerError = new Error("No player connected.");
+    private static streamTimeoutError = new Error("Stream timeout.");
 
-    public player: Player|null = null;
+    public player?: Player;
     public visualizer: any|null;
     public background: any|null;
     public preference?: any;
@@ -33,6 +34,10 @@ export default class PlayerController implements IPlayerController {
 
         if (!this.player) {
             return PlayerStatus.Unloaded;
+        }
+
+        if (this.player.status !== PlayerStatus.Streaming && this.streamTimeout) {
+            clearTimeout(this.streamTimeout);
         }
 
         return this.player.status;
@@ -81,6 +86,10 @@ export default class PlayerController implements IPlayerController {
         return this.privateUsingAltTrack;
     }
 
+    public get live() {
+        return this.track && this.track.live;
+    }
+
     private track?: Track;
     private privateUsingAltTrack = false;
     private loading = false;
@@ -93,14 +102,16 @@ export default class PlayerController implements IPlayerController {
     private hasTrackAddedToPlayer = false;
     private onRacerFailCallback?: (url: string) => void;
     private onEndCallback?: () => void;
-    private onPlayErrorCallback?: (soundId: number, err: Error) => void;
-    private onLoadErrorCallback?: (soundId: number, err: Error) => void;
+    private onPlayErrorCallback?: (soundId?: number, err?: Error) => void;
+    private onLoadErrorCallback?: (soundId?: number, err?: Error) => void;
     private onLoadCallback?: (loadedUrl: string) => void;
+    private onStreamCallback?: (src: string) => void;
     private originSourceFailed = false;
     private proxiedOriginSourceFailed = false;
     private stoppedJoinRace = false;
     private timeout = false;
     private abortController = new AbortController();
+    private streamTimeout?: ReturnType<typeof setTimeout>;
 
     private get active() {
         return this.status === PlayerStatus.Playing
@@ -229,6 +240,8 @@ export default class PlayerController implements IPlayerController {
 
         const loadPlaybackSourcesPromise = (async () => {
             const fetchPlaybackSources = async () => {
+                let failToFetch = false;
+
                 const playbackSources = await (async () => {
                     try {
                         return await track.loadPlaybackSources({
@@ -254,23 +267,21 @@ export default class PlayerController implements IPlayerController {
                             return;
                         }
 
+                        failToFetch = true;
+
                         if (e === Track.fetchTimeoutError) {
                             this.timeout = true;
-
-                            return track.playbackSources;
-                        }
-
-                        // console.log(e);
-
-                        if (track.status !== Status.Error) {
+                        } else if (track.status !== Status.Error) {
                             track.status = Status.Warning;
 
                             if (track.status !== Status.Warning) {
                                 track.messages.clear();
                             }
 
-                            track.messages.add(TrackInfo.USTABLE_CONNECTION);
+                            track.messages.add(TrackInfo.UNSTABLE_CONNECTION);
                         }
+
+                        return track.playbackSources;
                     }
                 })();
 
@@ -280,7 +291,7 @@ export default class PlayerController implements IPlayerController {
 
                 if (playbackSources && playbackSources.length) {
                     this.loadPlaybackSources(playbackSources);
-                } else if (!this.timeout) {
+                } else if (!this.timeout && !failToFetch) {
                     track.status = Status.Error;
                     track.messages.clear();
                     track.messages.add(TrackError.NO_AVAILABLE_SOURCE);
@@ -313,6 +324,10 @@ export default class PlayerController implements IPlayerController {
         const timeToWait = preference.playback.timeToWait;
 
         if (!preference.playback.alternativeTracks.enable) {
+            return;
+        }
+
+        if (track.live) {
             return;
         }
 
@@ -362,23 +377,20 @@ export default class PlayerController implements IPlayerController {
                                 return;
                             }
 
-                            return `/proxy/${picture}`;
+                            return generateProxiedUrl(picture);
                         })(),
 
-                        playbackSources: playbackSources && playbackSources
-                            .map((playbackSource: any) =>
-                                new PlaybackSource(playbackSource.urls.map((url: string) =>
-                                    `/proxy/${url}`), playbackSource.quality, {
-                                    proxied: true,
-                                    statical: playbackSource.statical,
-                                }))
-                            .concat((() => playbackSources
-                                .map((playbackSource: any): PlaybackSource|undefined => playbackSource.cached ?
-                                    undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
-                                        proxied: false,
-                                        statical: playbackSource.statical,
-                                    }))
-                                .filter((playbackSource?: PlaybackSource) => playbackSource))()),
+                        playbackSources: playbackSources && playbackSources.map((p: any) =>
+                            new PlaybackSource(p.urls.map((u: string) => generateProxiedUrl(u)), p.quality, {
+                                live: p.live,
+                                proxied: true,
+                                statical: p.statical,
+                            })).concat((() => playbackSources.map((p: any) => p.cached ?
+                                undefined : new PlaybackSource(p.urls, p.quality, {
+                                    live: p.live,
+                                    proxied: false,
+                                    statical: p.statical,
+                                })).filter((p?: PlaybackSource) => p))()),
 
                         sources: this.sources,
                     }));
@@ -576,6 +588,8 @@ export default class PlayerController implements IPlayerController {
         }
 
         const track = this.track;
+        const preference = this.preference || config.defaultPreference;
+        const timeToWait = preference.playback.timeToWait;
 
         let originSourceFailed = false;
         let proxiedOriginSourceFailed = false;
@@ -591,9 +605,6 @@ export default class PlayerController implements IPlayerController {
                     rejectPlayback();
                 }, milliseconds));
             };
-
-            const preference = this.preference || config.defaultPreference;
-            const timeToWait = preference.playback.timeToWait;
 
             if (!track || !track.playbackSources || !track.playbackSources.length) {
                 rejectPlaybackAfterMilliseconds(timeToWait);
@@ -672,7 +683,7 @@ export default class PlayerController implements IPlayerController {
 
         this.player.once("end", this.onEndCallback);
 
-        this.onPlayErrorCallback = (soundId, err) => {
+        const onPlayErrorCallback: (soundId?: number, err?: Error) => void = (soundId, err) => {
             this.loading = true;
             rejectPlayback(err);
 
@@ -680,6 +691,8 @@ export default class PlayerController implements IPlayerController {
                 this.resolveExistingLoadingPromise();
             }
         };
+
+        this.onPlayErrorCallback = onPlayErrorCallback;
 
         this.player.once("playerror", this.onPlayErrorCallback);
 
@@ -708,9 +721,9 @@ export default class PlayerController implements IPlayerController {
 
             if (track) {
                 const isOriginSource = track.playbackSources && track.playbackSources
-                    .map((playbackSource) => playbackSource.urls)
+                    .map((p) => p.urls)
                     .flat()
-                    .reduce((matched, playbackSourceUrl) => matched || playbackSourceUrl === loadedUrl, false);
+                    .reduce((matched, u) => matched || u.split("?")[0] === loadedUrl.split("?")[0], false);
 
                 if (isOriginSource) {
                     track.duration = this.player.duration * 1000;
@@ -734,7 +747,7 @@ export default class PlayerController implements IPlayerController {
 
             if (/^\/proxy/.test(loadedUrl)) {
                 // @ts-ignore
-                this.visualizer.listen(this.player.sound._sounds[0]._node);
+                this.timeouts.push(setTimeout(() => this.visualizer.listen(this.player.sound._sounds[0]._node), 0));
             }
 
             if (callback) {
@@ -743,6 +756,29 @@ export default class PlayerController implements IPlayerController {
         };
 
         this.player.once("load", this.onLoadCallback);
+
+        this.onStreamCallback = (src) => {
+            this.streamTimeout = setTimeout(() => {
+                if (this.live) {
+                    if (!this.player) {
+                        return;
+                    }
+
+                    const url = src || this.player.loadedUrl;
+                    const raceId = this.player.startRace();
+
+                    this.previousPlaying = true;
+                    this.watchPlayer(resolvePlayback, rejectPlayback, callback);
+                    this.player.joinRace(unifyUrl(url), raceId);
+
+                    return;
+                }
+
+                onPlayErrorCallback(undefined, PlayerController.streamTimeoutError);
+            }, timeToWait);
+        };
+
+        this.player.on("stream", this.onStreamCallback);
     }
 
     private unwatchPlayer() {
@@ -775,6 +811,12 @@ export default class PlayerController implements IPlayerController {
 
             delete this.onLoadCallback;
         }
+
+        if (this.onStreamCallback) {
+            this.player.off("stream", this.onStreamCallback);
+
+            delete this.onStreamCallback;
+        }
     }
 
     private loadPlaybackSources(playbackSources: PlaybackSource[]) {
@@ -787,7 +829,9 @@ export default class PlayerController implements IPlayerController {
                         throw PlayerController.noPlayerError;
                     }
 
-                    this.player.joinRace(playbackSource.urls, this.playbackId);
+                    const urls = ((p) => p.live ? p.urls.map((u) => unifyUrl(u)) : p.urls)(playbackSource);
+
+                    this.player.joinRace(urls, this.playbackId);
                     this.hasTrackAddedToPlayer = true;
                 }, Math.abs(this.expectedPlaybackQuality - playbackSource.quality) * timeToWait));
             });

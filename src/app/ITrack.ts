@@ -28,6 +28,7 @@ export default interface Track {
     readonly messages: Set<Message>;
     readonly streamUrl?: string;
     readonly picture?: string;
+    readonly live: boolean;
     status: Status;
     duration?: number;
     preference?: any;

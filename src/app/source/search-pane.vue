@@ -36,8 +36,10 @@
                         td(style="padding: 0;")
                         td {{ track.name }}
                         td {{ track.artists.map(artist => artist.name).join(', ') }}
+                        td(v-if="track && (track.live || track.duration === Infinity)")
+                            liveIcon(color="rgb(89, 192, 255)" style="width: auto; height: auto;")
                         td(
-                            v-if="track.duration"
+                            v-else-if="track.duration"
                             style="width:46px"
                         ) {{ track.duration | formatDuration('mm:ss') }}
                         td(v-else)
@@ -61,7 +63,7 @@
 <script>
     import { mapState, mapMutations, mapActions } from "vuex";
 
-    import { getSourceById, formatDuration } from "../../scripts/utils";
+    import { getSourceById, formatDuration, generateProxiedUrl } from "../../scripts/utils";
 
     import { UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK, UPDATE_TRACK, UPDATE_ACTIVE_VISUALIZER_TYPE, VISUALIZER_LOAD_RESOURCE } from '../../scripts/mutation-types';
     import { PLAY_TRACK } from "../../scripts/action-types";
@@ -73,6 +75,7 @@
     import draggable from 'vuedraggable';
 
     import loading from "../loading";
+    import liveIcon from "../live-icon";
 
     import config from "../../config";
 
@@ -82,6 +85,7 @@
         components: {
             draggable,
             loading,
+            liveIcon,
         },
         data() {
           return {
@@ -187,21 +191,23 @@
                                         return null;
                                     }
 
-                                    return `/proxy/${trackData.picture}`;
+                                    return generateProxiedUrl(trackData.picture);
 
                                 })(),
 
                                 playbackSources: trackData.playbackSources && trackData.playbackSources
-                                    .map((playbackSource) => new PlaybackSource(playbackSource.urls.map((url) => `/proxy/${url}`), playbackSource.quality, {
+                                    .map((p) => new PlaybackSource(p.urls.map((u) => generateProxiedUrl(u)), p.quality, {
                                         proxied: true,
-                                        statical: playbackSource.statical,
+                                        statical: p.statical,
+                                        live: p.live,
                                     }))
                                     .concat((() => trackData.playbackSources
-                                        .map((playbackSource) => playbackSource.cached ? undefined : new PlaybackSource(playbackSource.urls, playbackSource.quality, {
+                                        .map((p) => p.cached ? undefined : new PlaybackSource(p.urls, p.quality, {
                                             proxied: false,
-                                            statical: playbackSource.statical,
+                                            statical: p.statical,
+                                            live: p.live,
                                         }))
-                                        .filter((playbackSource) => playbackSource))()),
+                                        .filter((p) => p))()),
 
                                 sources: this.sources,
                             }), trackData.similarity];
@@ -352,6 +358,7 @@
                 width: 18px;
                 height: 18px;
                 fill: #fff;
+                vertical-align: middle;
             }
 
             img {
