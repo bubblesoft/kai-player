@@ -472,7 +472,7 @@ export default class Player implements IPlayer {
                         if (successEvent === "progress") {
                             initHowlOnProgress(sound);
 
-                            sound.once("progress", (soundId: any, seek: any) => {
+                            sound.once("progress", () => {
                                 resolve(sound);
                             });
 

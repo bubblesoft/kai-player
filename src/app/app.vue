@@ -52,7 +52,7 @@
                         )
                             path(d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z")
                         span &nbsp;{{ $t('Chart') }}
-                    listPane(@contextMenu="(e, callback) => { listContextMenuCallback = callback; $refs.listContextMenu.open(e); }")
+                    listPane(@contextMenu="handleContextMenu")
             transition(name="fade")
                 pane-frame(
                     v-if="renderSearchPanel"
@@ -68,7 +68,7 @@
                         )
                             path(d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z")
                         span &nbsp;{{ $t('Search') }}
-                    searchPane(@contextMenu="(e, callback) => { searchContextMenuCallback = callback; $refs.searchContextMenu.open(e); }")
+                    searchPane(@contextMenu="handleContextMenu")
             transition(name="fade")
                 pane-frame(
                     v-if="renderPlaylistPanel"
@@ -126,11 +126,6 @@
                     v-t="button.text"
                     type="button"
                 )
-        contextMenu(ref="listContextMenu")
-            li(v-interact:tap="() => { listContextMenuCallback('add'); }") {{ $t('Add to playlist') }}
-            li(v-interact:tap="() => { listContextMenuCallback('import'); }") {{ $t('Import all as a playlist') }}
-        contextMenu(ref="searchContextMenu")
-            li(v-interact:tap="() => { searchContextMenuCallback('add'); }") {{ $t('Add to playlist') }}
         contextMenu(ref="playlistContextMenu")
             li(v-interact:tap="() => { playlistContextMenuCallback('open'); }") {{ $t('Select') }}
             li(v-interact:tap="() => { playlistContextMenuCallback('up'); }") {{ $t('Move up') }}
@@ -140,9 +135,9 @@
         contextMenu(ref="contextMenu")
             template(v-for="(group, groupIndex) in contextMenuOptions")
                 li(
-                    v-for="(option, optionIndex) in group"
-                    v-interact:tap="() => { contextMenuCallback(groupIndex, optionIndex); }"
-                    :style="option.width && { width: `${option.width[$i18n.locale]}px` }"
+                    v-for="option in group"
+                    v-interact:tap="() => { option.callback(); }"
+                    :style="option.width && option.width[$i18n.locale] && { width: `${option.width[$i18n.locale]}px` }"
                 )
                     span(v-t="option.text")
                     template(v-if="option.moreAction") ...
@@ -266,9 +261,6 @@
                 renderSettingsTimeout: undefined,
                 showSelectQueueModal: false,
                 contextMenuOptions: [],
-                listContextMenuCallback: () => {},
-                searchContextMenuCallback: () => {},
-                trackContextMenuCallback: () => {},
                 playlistContextMenuCallback: () => {},
                 contextMenuCallback: () => {},
                 renderSourcePanel: false,
@@ -504,8 +496,7 @@
                 }
             },
 
-            handleContextMenu(e, options, callback) {
-                this.contextMenuCallback = callback;
+            handleContextMenu(e, options) {
                 this.contextMenuOptions = options;
                 this.$refs.contextMenu.open(e);
             },
@@ -788,7 +779,7 @@
 
                 &.divider {
                     margin: 5px;
-                    border-bottom: solid #eee 1px;
+                    border-bottom: solid #ddd 1px;
                 }
 
                 svg {

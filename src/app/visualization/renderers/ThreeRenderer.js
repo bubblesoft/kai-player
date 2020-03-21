@@ -26,6 +26,7 @@ const color = (() => {
 
 export default class ThreeRenderer extends Renderer {
     mode;
+    animating = false;
     animateTimeout;
     tileAnimateTimeouts = [];
 
@@ -45,6 +46,10 @@ export default class ThreeRenderer extends Renderer {
     }
 
     renderAudio(bands) {
+        if (this.animating) {
+            this.stopAnimate();
+        }
+
         if (this.mode === 'basic') {
             this.mode = 'physics';
             this.threeAudioVisualization.switchMode('physics');
@@ -90,6 +95,12 @@ export default class ThreeRenderer extends Renderer {
     animate() {
         super.animate();
 
+        if (this.animating) {
+            this.stopAnimate();
+        }
+
+        this.animating = true;
+
         requestAnimationFrame(async () => {
             if (!this.animating) {
                 return;
@@ -127,6 +138,8 @@ export default class ThreeRenderer extends Renderer {
 
     stopAnimate() {
         super.stopAnimate();
+
+        this.animating = false;
 
         clearTimeout(this.animateTimeout);
 

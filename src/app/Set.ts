@@ -59,8 +59,8 @@ export default abstract class<T> implements ISet<T> {
     }
 
     public get(index: number): T;
-    public get(index: undefined|null): T[];
-    public get(index: number|undefined|null) {
+    public get(index?: null): T[];
+    public get(index?: number|null) {
         if (typeof index === "number") {
             return this.items[index];
         }

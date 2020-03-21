@@ -1,3 +1,5 @@
+import PlayTrackOptions from "./PlayTrackOptions";
+
 import Track from "./Track";
 import PlayerStatus from "./PlayerStatus";
 import Player from "./Player";
@@ -8,7 +10,7 @@ export default interface IPlayer {
     readonly duration: number;
     progress: number;
     volume: number;
-    playTrack(track: Track): Promise<void>;
+    playTrack(track: Track, options?: PlayTrackOptions, callback?: () => void): Promise<void>;
     pause(): number;
     stop(): void;
 }

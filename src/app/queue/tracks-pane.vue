@@ -385,10 +385,11 @@
         },
 
         methods: {
-            async playTrack(index) {
+            async playTrack(index, force = false) {
                 this[PLAY_TRACK]({
                     index: this.queue.goTo(index),
                     queueIndex: this.queueGroup.activeIndex,
+                    force,
                 });
             },
 
@@ -526,16 +527,10 @@
             handleTrackContextMenu(e, track, index) {
                 this.selectedIndex = index;
 
-                this.$emit("contextMenu", e, [
-                    [{ text: "Play", icon: "play" }],
-                    [{ text: "Share", icon: "share", moreAction: true }],
-                    [{ text: "Move up" }, { text: "Move down" }],
-                    [{ text: "Move to", moreAction: true }, { text: "Copy to", moreAction: true, width: { ja: 180 } }],
-                    [{ text: "Remove", icon: "trash-can" }],
-                ], (groupIndex, optionIndex) => {
-                    if (groupIndex === 0 && optionIndex === 0) {
-                        this.playTrack(index);
-                    } else if (groupIndex === 1 && optionIndex === 0) {
+                this.$emit("contextMenu", e, [[
+                    { text: "Play", icon: "play", callback: () => { this.playTrack(index); } },
+                    { text: "Force playing", icon: "play", callback: () => { this.playTrack(index, true); } },
+                ], [{ text: "Share", icon: "share", moreAction: true, callback: () => {
                         this[LOAD_MODAL]({
                             component: "share",
                             buttons: [{
@@ -549,7 +544,9 @@
                         });
 
                         this[SET_MODAL_OPEN](true);
-                    } else if (groupIndex === 2 && optionIndex === 0) {
+                    } }], [{
+                    text: "Move up",
+                    callback: () => {
                         if (index > 0) {
                             this.$set(this.tracks, index, this.tracks[index - 1]);
                             this.$set(this.tracks, index - 1, track);
@@ -567,7 +564,11 @@
                                 this.selectedIndex--;
                             }
                         }
-                    } else if (groupIndex === 2 && optionIndex === 1) {
+                    },
+                }, {
+                    text: "Move down",
+
+                    callback: () => {
                         if (index + 1 < this.tracks.length) {
                             this.$set(this.tracks, index, this.tracks[index + 1]);
                             this.$set(this.tracks, index + 1, track);
@@ -585,16 +586,29 @@
                                 this.selectedIndex--;
                             }
                         }
-                    } else if (groupIndex === 3 && optionIndex === 0) {
+                    },
+                }], [{
+                    text: "Move to",
+                    moreAction: true,
+
+                    callback: () => {
                         this.copyToQueue(track, () => this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1)));
-                    } else if (groupIndex === 3 && optionIndex === 1) {
-                        this.copyToQueue(track);
-                    } else if (groupIndex === 4 && optionIndex === 0) {
+                    },
+                }, {
+                    text: "Copy to",
+                    moreAction: true,
+                    width: { ja: 180 },
+                    callback: () => { this.copyToQueue(track); },
+                }], [{
+                    text: "Remove",
+                    icon: "trash-can",
+
+                    callback: () => {
                         this.tracks = this.tracks.slice(0, index).concat(this.tracks.slice(index + 1));
                         this.trashCan.data.push(track);
                         this.handleTrackRemove(index);
                     }
-                });
+                }]]);
             },
 
             fixDrag() {

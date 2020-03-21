@@ -1,5 +1,5 @@
 export default {
-        colorSet: ["#4ccfff", "#c0ff05", "#fc33ff", "#ffff00", "#0d0033", "#ffa60d"],
+    colorSet: ["#4ccfff", "#c0ff05", "#fc33ff", "#ffff00", "#0d0033", "#ffa60d"],
     defaultIcon: "https://kai-player.oss-cn-shanghai.aliyuncs.com/kaiplanet.ico",
     defaultImages: [
         "https://kai-player.oss-cn-shanghai.aliyuncs.com/bay.jpg",

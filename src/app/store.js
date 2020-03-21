@@ -113,7 +113,7 @@ const playerModule = {
             state.playerController.player.on("progress", onProgress);
         },
 
-        async [actionTypes.PLAY_TRACK]({ dispatch, commit, state, rootState, rootState: { queueModule : { queueGroup, playingQueueIndex } }, rootGetters: { sources } }, { index = queueGroup.get(playingQueueIndex).activeIndex, queueIndex = playingQueueIndex, resetRetryTimeout = true } = {}) {
+        async [actionTypes.PLAY_TRACK]({ dispatch, commit, state, rootState, rootState: { queueModule : { queueGroup, playingQueueIndex } }, rootGetters: { sources } }, { index = queueGroup.get(playingQueueIndex).activeIndex, queueIndex = playingQueueIndex, force = false, resetRetryTimeout = true } = {}) {
             if (resetRetryTimeout) {
                 commit(mutationTypes.SET_LIVE_STREAMING_RETRY_TIMEOUT, 1);
             }
@@ -189,7 +189,7 @@ const playerModule = {
             }
 
             try {
-                await playerController.playTrack(track, () => commit(mutationTypes.UPDATE_STATE_DURATION, state.playerController.duration));
+                await playerController.playTrack(track, { force }, () => commit(mutationTypes.UPDATE_STATE_DURATION, state.playerController.duration));
             } catch(e) {
                 console.log(e);
 

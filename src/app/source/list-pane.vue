@@ -11,6 +11,7 @@
                 ) {{ $t('Select a media source') }}
                 option(
                     v-for="source in sources"
+                    v-if="!demo || source.demo"
                     :value="source"
                 ) {{ source.name }}
             select.form-control.input-sm(
@@ -28,6 +29,7 @@
         .list-wrap(
             ref="list"
             :class="performanceFactor >= .7 ? { blur: loading } : undefined"
+            @contextmenu.prevent="handleContextMenuOnPanel($event);"
         )
             table.table-condensed.table.table-hover
                 component(
@@ -39,8 +41,8 @@
                 )
                     tr(
                         v-for="track in tracksToRender"
-                        v-interact:doubletap="() => { addToPlayback(track); }"
-                        @contextmenu.prevent="handleContextMenu($event, track);"
+                        v-interact:doubletap="() => { addToQueueAndPlay(track); }"
+                        @contextmenu.prevent="handleContextMenuOnItem($event, track);"
                     )
                         td(style="padding: 0;")
                         td {{ track.name }}
@@ -58,159 +60,177 @@
                                 height="20"
                                 viewBox="0 0 24 24"
                             )
-                                path(d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z")
+                                use(xlink:href="#icon_menu")
         loading(v-if="loading")
     loading(v-else)
 </template>
 
-<script>
-    import { mapState, mapMutations, mapActions } from "vuex";
+<script lang="ts">
+    import { Component, Vue, Watch } from "vue-property-decorator";
+    import { Action, Mutation, State } from "vuex-class";
 
-    import moment from 'moment';
+    import * as moment from "moment";
 
-    import { formatDuration } from '../../scripts/utils';
+    import ActionFunction from "../ActionFunction";
+    import MutationFunction from "../MutationFunction";
+    import Preference from "../Preference";
 
-    import { UPDATE_QUEUE_GROUP, INSERT_QUEUE, UPDATE_QUEUE, UPDATE_PLAYING_QUEUE_INDEX, ADD_TRACK ,UPDATE_ACTIVE_VISUALIZER_TYPE, VISUALIZER_LOAD_RESOURCE } from "../../scripts/mutation-types";
+    import PlayerController from "../PlayerController";
+    import Queue from "../Queue";
+    import TrackQueue from "../queue/TrackQueue";
+    import Track from "../Track";
+    import Source from "./Source";
+    import SourceGroup from "./SourceGroup";
+    import TrackList from "./TrackList";
+
     import { PLAY_TRACK } from "../../scripts/action-types";
+    import { ADD_TRACK, INSERT_QUEUE, UPDATE_ACTIVE_VISUALIZER_TYPE, UPDATE_PLAYING_QUEUE_INDEX, UPDATE_QUEUE,
+        UPDATE_QUEUE_GROUP, VISUALIZER_LOAD_RESOURCE } from "../../scripts/mutation-types";
 
-    import TrackQueue from '../queue/TrackQueue';
+    import { formatDuration } from "../../scripts/utils";
 
-    import draggable from 'vuedraggable';
+    // @ts-ignore
+    import draggable from "vuedraggable";
 
-    import loading from "../loading";
     import liveIcon from "../live-icon";
+    import loading from "../loading";
 
     import config from "../../config";
 
-    export default {
-        components: {
-            draggable,
-            loading,
-            liveIcon,
-        },
+    @Component({ components: { draggable, loading, liveIcon }, filters: { formatDuration } })
+    export default class extends Vue {
+        @State((state) => state.sourceModule.sourceGroup) private sourceGroup!: SourceGroup;
+        @State((state) => state.queueModule.queueGroup) private queueGroup!: Queue<TrackQueue>;
+        @State((state) => state.playerModule.playerController) private playerController!: PlayerController;
+        @State((state) => state.visualizationModule.visualizerType) private visualizerType!: string;
+        @State((state) => state.generalModule.preference || config.defaultPreference) private preference!: Preference;
+        private sourceSelected: Source = new Source("");
+        private trackListSelected: TrackList = new TrackList("", "", this.sourceSelected);
+        private tracks = [];
+        private loading = false;
+        private demo = process.env.DEMO || false;
 
-        data() {
-            return {
-                sourceSelected: null,
-                trackListSelected: null,
-                tracks: [],
-                loading: false,
+        private get tracksToRender() {
+            if (this.performanceFactor < .1) {
+                return this.tracks.slice(0, 10);
+            } else if (this.performanceFactor < .6) {
+                return this.tracks.slice(0, this.performanceFactor * 100);
             }
-        },
 
-        computed: {
-            tracksToRender() {
-                if (this.performanceFactor < .1) {
-                    return this.tracks.slice(0, 10);
-                } else if (this.performanceFactor < .6) {
-                    return this.tracks.slice(0, this.performanceFactor * 100);
-                }
+            return this.tracks;
+        }
 
-                return this.tracks;
-            },
+        private get sources() {
+            return this.sourceGroup.get();
+        }
 
-            sources() {
-              return this.sourceGroup.get();
-            },
+        private get queue() {
+            return this.queueGroup.get(this.queueGroup.activeIndex || 0);
+        }
 
-            queue() {
-                return this.queueGroup.get(this.queueGroup.activeIndex || 0);
-            },
+        private get player() {
+            return this.playerController.player;
+        }
 
-            player() {
-                return this.playerController.player;
-            },
+        private get playingQueueIndex() {
+            return this.$store.state.queueModule.playingQueueIndex;
+        }
 
-            playingQueueIndex: {
-                get() {
-                    return this.$store.state.queueModule.playingQueueIndex;
+        private set playingQueueIndex(index) {
+            this.UPDATE_PLAYING_QUEUE_INDEX(index);
+        }
+
+        private get activeVisualizerType() {
+            return this.visualizerType;
+        }
+
+        private set activeVisualizerType(type) {
+            this[UPDATE_ACTIVE_VISUALIZER_TYPE](type);
+        }
+
+        private get performanceFactor() {
+            return this.preference.performanceFactor;
+        }
+
+        @Mutation(UPDATE_QUEUE_GROUP) private UPDATE_QUEUE_GROUP!: MutationFunction;
+        @Mutation(INSERT_QUEUE) private INSERT_QUEUE!: MutationFunction;
+        @Mutation(UPDATE_QUEUE) private UPDATE_QUEUE!: MutationFunction;
+        @Mutation(UPDATE_PLAYING_QUEUE_INDEX) private UPDATE_PLAYING_QUEUE_INDEX!: MutationFunction;
+        @Mutation(ADD_TRACK) private ADD_TRACK!: MutationFunction;
+        @Mutation(UPDATE_ACTIVE_VISUALIZER_TYPE) private UPDATE_ACTIVE_VISUALIZER_TYPE!: MutationFunction;
+        @Mutation(VISUALIZER_LOAD_RESOURCE) private VISUALIZER_LOAD_RESOURCE!: MutationFunction;
+        @Action(PLAY_TRACK) private PLAY_TRACK!: ActionFunction;
+
+        private getContextMenuConfig() {
+            return [[{
+                icon: "playlist-plus",
+                width: { "en": 180, "en-US": 180, "ja": 210, "ko": 190, "zh": 170, "zh-CN": 170 },
+
+                callback: () => {
+                    this[INSERT_QUEUE]({
+                        index: this.queueGroup.length,
+
+                        queue: new TrackQueue({ name: `${this.trackListSelected && this.trackListSelected.name}` +
+                                `(${moment().format("YYYY-MM-DD")})` }),
+                    });
+
+                    this[UPDATE_QUEUE_GROUP]({activeIndex: this.queueGroup.length - 1});
+
+                    this.addToQueueAndPlay(this.tracks[0]);
+
+                    this.tracks.slice(1).forEach((track) => {
+                        this[ADD_TRACK]({ track });
+                    });
                 },
-                set(index) {
-                    this[UPDATE_PLAYING_QUEUE_INDEX](index);
-                }
-            },
+            }]];
+        }
 
-            activeVisualizerType: {
-                get() {
-                    return this.visualizerType;
-                },
-                set(type) {
-                    this[UPDATE_ACTIVE_VISUALIZER_TYPE](type);
-                }
-            },
+        private addToQueue(track: Track) {
+            this[ADD_TRACK]({ track });
 
-            performanceFactor() {
-                return this.preference.performanceFactor;
-            },
+            this[UPDATE_QUEUE]({
+                activeIndex: this.queue.getLastIndex(),
+                index: this.queueGroup.activeIndex,
+            });
 
-            ...mapState({
-                sourceGroup: state => state.sourceModule.sourceGroup,
-                queueGroup: state => state.queueModule.queueGroup,
-                playerController: state => state.playerModule.playerController,
-                visualizerType: state => state.visualizationModule.visualizerType,
-                preference: (state) => state.generalModule.preference || config.defaultPreference,
-            })
-        },
+            this.UPDATE_PLAYING_QUEUE_INDEX(this.queueGroup.activeIndex);
+        }
 
-        methods: {
-            async addToPlayback(track) {
-                this[ADD_TRACK]({ track });
+        private addToQueueAndPlay(track: Track, force = false) {
+            this.addToQueue(track);
+            this[PLAY_TRACK]({ index: this.queue.activeIndex, force });
+        }
 
-                this[UPDATE_QUEUE]({
-                    index: this.queueGroup.activeIndex,
-                    activeIndex: this.queue.getLastIndex(),
-                });
+        private handleContextMenuOnItem(e: Event, track: Track) {
+            e.stopPropagation();
 
-                this[UPDATE_PLAYING_QUEUE_INDEX](this.queueGroup.activeIndex);
-                this[PLAY_TRACK]({ index: this.queue.activeIndex });
-            },
+            this.$emit("contextMenu", e, [
+                [{
+                    callback: () => { this.addToQueue(track); },
+                    icon: "playlist-music",
+                    text: "Add to playlist",
+                }, {
+                    callback: () => { this.addToQueueAndPlay(track, true); },
+                    icon: "play",
+                    text: "Force playing",
+                }],
+                ...this.getContextMenuConfig(),
+            ]);
+        }
 
-            handleContextMenu(e, track) {
-                this.$emit('contextMenu', e, (type) => {
-                    if (type === 'add') {
-                        this.addToPlayback(track);
-                    } else if ( type === 'import') {
-                        this[INSERT_QUEUE]({
-                            index: this.queueGroup.length,
-                            queue: new TrackQueue({ name: `${this.trackListSelected.name}(${moment().format('YYYY-MM-DD')})` })
-                        });
+        private handleContextMenuOnPanel(e: Event) {
+            this.$emit("contextMenu", e, this.getContextMenuConfig());
+        }
 
-                        this[UPDATE_QUEUE_GROUP]({ activeIndex: this.queueGroup.length - 1 });
+        private fixDrag() {
+            const el: HTMLElement|null = document.querySelector(".sortable-fallback");
 
-                        this.addToPlayback(this.tracks[0]);
+            if (el) {
+                el.style.width = (this.$refs.list as HTMLElement).offsetWidth + "px";
+            }
+        }
 
-                        this.tracks.slice(1).forEach(track => {
-                            this[ADD_TRACK]({ track });
-                        });
-                    }
-                });
-            },
-
-            fixDrag() {
-                const el = document.querySelector('.sortable-fallback');
-                if (el) {
-                    el.style.width = this.$refs.list.offsetWidth;
-                }
-            },
-
-            ...mapMutations([
-                UPDATE_QUEUE_GROUP,
-                INSERT_QUEUE,
-                UPDATE_QUEUE,
-                UPDATE_PLAYING_QUEUE_INDEX,
-                ADD_TRACK,
-                UPDATE_ACTIVE_VISUALIZER_TYPE,
-                VISUALIZER_LOAD_RESOURCE
-            ]),
-
-            ...mapActions([PLAY_TRACK]),
-        },
-
-        filters: {
-            formatDuration
-        },
-
-        created() {
+        private created() {
             if (this.sources.length) {
                 this.sourceSelected = this.sources[0];
                 this.trackListSelected = this.sourceSelected.get(0);
@@ -218,40 +238,47 @@
 
             if (!this.trackListSelected) {
                 const unwatch = this.$watch(() =>  this.sourceSelected, (sourceSelected) => {
-                    if (sourceSelected.get(0)) {
+                    if (!sourceSelected) {
+                        return;
+                    }
+
+                    const trackList = sourceSelected.get(0);
+
+                    if (trackList) {
                         unwatch();
-                        this.trackListSelected = this.sourceSelected.get(0);
+                        this.trackListSelected = trackList;
                     }
                 });
             }
-        },
+        }
 
-        watch: {
-            async trackListSelected(trackList) {
-                if (trackList) {
-                    this.loading = true;
+        @Watch("trackListSelected")
+        private async onTrackListSelectedChanged(trackList: TrackList) {
+            if (trackList) {
+                this.loading = true;
 
-                    try {
-                        this.tracks = await trackList.get();
-                        this.$refs.list.scrollTop = 0;
-                    } catch (e) {
-                        console.log(e);
-                    }
-
-                    this.loading = false;
-                } else {
-                    this.tracks = [];
+                try {
+                    this.tracks = await trackList.get();
+                    (this.$refs.list as Element).scrollTop = 0;
+                } catch (e) {
+                    // console.log(e);
                 }
-            },
 
-            sources(sources) {
-                this.sourceSelected = sources[0];
-                this.trackListSelected = this.sourceSelected.get(0);
-            },
-
-            sourceSelected(source) {
-                this.trackListSelected = source.get(0);
+                this.loading = false;
+            } else {
+                this.tracks = [];
             }
+        }
+
+        @Watch("sources")
+        private onSourcesChanged(sources: Source[]) {
+            this.sourceSelected = sources[0];
+            this.trackListSelected = this.sourceSelected.get(0);
+        }
+
+        @Watch("sourceSelected")
+        private onSourceSelectedChanged(source: Source) {
+            this.trackListSelected = source.get(0);
         }
     }
 </script>

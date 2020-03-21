@@ -254,7 +254,7 @@
                 });
             },
 
-            async addToPlayback(track) {
+            async addToPlayback(track, force = false) {
                 this[ADD_TRACK]({ track });
 
                 this[UPDATE_QUEUE]({
@@ -263,15 +263,19 @@
                 });
 
                 this[UPDATE_PLAYING_QUEUE_INDEX](this.queueGroup.activeIndex);
-                this[PLAY_TRACK]({ index: this.queue.activeIndex });
+                this[PLAY_TRACK]({ index: this.queue.activeIndex, force });
             },
 
             handleContextMenu(e, track) {
-                this.$emit('contextMenu', e, type => {
-                    if (type === 'add') {
-                        this.addToPlayback(track);
-                    }
-                });
+                this.$emit('contextMenu', e, [[{
+                    text: "Add to playlist",
+                    icon: "play",
+                    callback: () => { this.addToPlayback(track); },
+                }, {
+                    text: "Force playing",
+                    icon: "play",
+                    callback: () => { this.addToPlayback(track, true); },
+                }]]);
             },
 
             fixDrag() {
