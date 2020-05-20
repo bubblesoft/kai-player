@@ -1,4 +1,7 @@
 # Created by .ignore support plugin (hsz.mobi)
 
+/dist/*
+/distdemo/*
+
 /node_modules/*
 /.idea/*
