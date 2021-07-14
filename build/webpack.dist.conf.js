@@ -6,10 +6,10 @@
 
 const path = require('path');
 
-const webpack = require('webpack');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
+const ServiceWorkerWebpackPlugin = require('serviceworker-webpack-plugin');
 
 const rootDir = path.resolve(__dirname, '..');
 
@@ -20,6 +20,7 @@ module.exports = {
     },
     output: {
         filename: '[name].bundle.js',
+        chunkFilename: '[name].bundle.js',
         path: path.resolve(rootDir, 'dist')
     },
     module: {
@@ -27,6 +28,14 @@ module.exports = {
             {
                 test: /\.vue$/,
                 loader: 'vue-loader'
+            },
+            {
+                test: /\.ts$/,
+                exclude: /node_modules/,
+                loaders: [{
+                    loader: 'ts-loader',
+                    options: { appendTsSuffixTo: [/\.vue$/] }
+                }, 'tslint-loader']
             },
             {
                 test: /\.js$/,
@@ -79,7 +88,10 @@ module.exports = {
             chunks: [ 'app', 'runtime' ]
         }),
         new VueLoaderPlugin(),
-        new UglifyJSPlugin()
+        new UglifyJSPlugin(),
+        new ServiceWorkerWebpackPlugin({
+            entry: path.join(rootDir, 'src', "app", 'sw'),
+        })
     ],
     optimization: {
         runtimeChunk: {
@@ -87,6 +99,6 @@ module.exports = {
         }
     },
     resolve: {
-        extensions: [ '.vue', '.scss', '.less', '.js', '.css' ]
+        extensions: [ '.vue', '.ts', '.scss', '.json', '.less', '.js', '.css' ]
     }
 };
